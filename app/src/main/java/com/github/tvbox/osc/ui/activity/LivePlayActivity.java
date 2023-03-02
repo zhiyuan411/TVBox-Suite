@@ -833,6 +833,9 @@ public class LivePlayActivity extends BaseActivity {
     }
 
     public void playNextSource() {
+        if (mVideoView == null) {
+            return;
+        }
         if (!isCurrentLiveChannelValid()) return;
         currentLiveChannelItem.nextSource();
         playChannel(currentChannelGroupIndex, currentLiveChannelIndex, true);

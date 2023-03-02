@@ -236,7 +236,9 @@ public class HomeActivity extends BaseActivity {
 //                dataInitOk = false;
 //                jarInitOk = true;
 //                showSiteSwitch();
-                File dir = mContext.getCacheDir();
+                File dir = getCacheDir();
+                FileUtils.recursiveDelete(dir);
+                dir = getExternalCacheDir();
                 FileUtils.recursiveDelete(dir);
                 Toast.makeText(HomeActivity.this, getString(R.string.hm_cache_del), Toast.LENGTH_SHORT).show();
             }
