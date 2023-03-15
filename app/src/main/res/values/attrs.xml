@@ -13,7 +13,7 @@
         <attr name="color_theme_dark_70" format="color|reference" />
     </declare-styleable>
 
-    <declare-styleable name="VideoView">
+    <declare-styleable name="BaseVideoView">
         <attr name="looping" format="boolean"/>
         <attr name="enableAudioFocus" format="boolean"/>
         <attr name="screenScaleType" format="dimension">
