@@ -72,14 +72,18 @@ public class FileUtils {
     }
 
     public static void recursiveDelete(File file) {
-        if (!file.exists())
-            return;
-        if (file.isDirectory()) {
-            for (File f : file.listFiles()) {
-                recursiveDelete(f);
+        try {
+            if (!file.exists())
+                return;
+            if (file.isDirectory()) {
+                for (File f : file.listFiles()) {
+                    recursiveDelete(f);
+                }
             }
+            file.delete();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        file.delete();
     }
 
     public static String loadModule(String name) {
