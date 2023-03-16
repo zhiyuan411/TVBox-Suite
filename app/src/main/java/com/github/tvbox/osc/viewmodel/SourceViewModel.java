@@ -425,6 +425,8 @@ public class SourceViewModel extends ViewModel {
     // detailContent
     public void getDetail(String sourceKey, String id) {
         SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
+		if (sourceBean == null)
+			detailResult.postValue(null);
         int type = sourceBean.getType();
         if (type == 3) {
             spThreadPool.execute(new Runnable() {
@@ -836,7 +838,8 @@ public class SourceViewModel extends ViewModel {
                         urlInfo.beanList = infoBeanList;
                     }
                 }
-                video.sourceKey = sourceKey;
+                if (video.sourceKey == null)
+                    video.sourceKey = sourceKey;
             }
         }
     }

@@ -369,6 +369,16 @@ public class DetailActivity extends BaseActivity {
             }
         });
         setLoadSir(llLayout);
+        tvName.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ClipboardManager clipboard = (ClipboardManager) DetailActivity.this.getSystemService(Context.CLIPBOARD_SERVICE);
+                String cpContent = "视频ID：" + vodId + "，图片地址：" + (mVideo == null ? "" : mVideo.pic);
+                ClipData clipData = ClipData.newPlainText(null, cpContent);
+                clipboard.setPrimaryClip(clipData);
+                Toast.makeText(DetailActivity.this, "已复制" + cpContent, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private List<Runnable> pauseRunnable = null;

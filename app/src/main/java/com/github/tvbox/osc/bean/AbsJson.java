@@ -104,6 +104,7 @@ public class AbsJson implements Serializable {
         public String vod_weekday; //: ""
         public String vod_writer; //: "周炎青,刘恒,支雅雪,孙露军,李璐,王梦璇"
         public String vod_year; //: "2021"
+        public String vod_play_from_cfg; //vod_play_from运行时可能会被覆盖，定义这个记录用户配置在json里的值
 
         public Movie.Video toXmlVideo() {
             Movie.Video video = new Movie.Video();
@@ -141,6 +142,7 @@ public class AbsJson implements Serializable {
                 }
                 urlBean.infoList = infoList;
             }
+            if (vod_play_from_cfg != null) video.sourceKey = vod_play_from_cfg;
             video.urlBean = urlBean;
             video.des = vod_content;// <![CDATA[权来]
             video.tag = vod_tag;
