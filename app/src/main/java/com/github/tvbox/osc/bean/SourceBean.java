@@ -10,6 +10,7 @@ public class SourceBean {
     private int searchable; // 是否可搜索
     private int quickSearch; // 是否可以快速搜索
     private int filterable; // 可筛选?
+    private int hide; // 设置的选择列表里隐藏
     private String playerUrl; // 站点解析Url
     private String ext; // 扩展数据
     private String jar; // 自定义jar
@@ -79,6 +80,14 @@ public class SourceBean {
 
     public void setFilterable(int filterable) {
         this.filterable = filterable;
+    }
+
+    public int getHide() {
+        return hide;
+    }
+
+    public void setHide(int hide) {
+        this.hide = hide;
     }
 
     public String getExt() {
