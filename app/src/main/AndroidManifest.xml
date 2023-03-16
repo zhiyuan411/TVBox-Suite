@@ -88,6 +88,11 @@
                 <action android:name="android.content.movie.search.Action" />
             </intent-filter>
         </receiver>
+        <receiver android:name=".receiver.DetailReceiver">
+            <intent-filter>
+                <action android:name="android.content.movie.detail.Action" />
+            </intent-filter>
+        </receiver>
         <receiver android:name=".receiver.CustomWebReceiver">
             <intent-filter>
                 <action android:name="android.content.movie.custom.web.Action" />

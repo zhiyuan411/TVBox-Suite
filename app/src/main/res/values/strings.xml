@@ -30,6 +30,7 @@
     <string name="det_expand">Expand</string>
     <string name="det_search">Search</string>
     <string name="det_sort">Sort</string>
+    <string name="det_push">Push</string>
     <string name="det_fav">Favorite</string>
     <string name="det_fav_add">Added to Favorite</string>
     <string name="det_fav_del">Removed from Favorite</string>

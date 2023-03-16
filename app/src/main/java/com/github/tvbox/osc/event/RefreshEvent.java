@@ -6,6 +6,7 @@ package com.github.tvbox.osc.event;
  * @description:
  */
 public class RefreshEvent {
+    public static final int TYPE_PUSH_VOD = 99;
     public static final int TYPE_REFRESH = 0;
     public static final int TYPE_HISTORY_REFRESH = 1;
     public static final int TYPE_QUICK_SEARCH = 2;
