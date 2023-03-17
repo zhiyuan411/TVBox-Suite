@@ -58,6 +58,11 @@ public class InputRequestProcess implements RequestProcess {
                             mDataReceiver.onPushReceived(params.get("url").trim());
                             break;
                         }
+                        case "mirror": {
+                            //推送当前电影、电视剧……
+                            mDataReceiver.onMirrorReceived(params.get("id").trim(), params.get("sourceKey").trim());
+                            return RemoteServer.createPlainTextResponse(NanoHTTPD.Response.Status.OK, "mirrored");
+                        }
                     }
                 }
                 return RemoteServer.createPlainTextResponse(NanoHTTPD.Response.Status.OK, "ok");
