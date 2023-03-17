@@ -11,10 +11,10 @@
     android:paddingRight="@dimen/vs_20"
     android:paddingBottom="@dimen/vs_10">
 
-
     <TableLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:padding="@dimen/vs_10">
 
         <TableRow
             android:layout_width="match_parent"
@@ -28,7 +28,7 @@
                 android:layout_marginRight="@dimen/vs_20"
                 android:gravity="center_vertical|end"
                 android:text="远端tvbox地址"
-                android:textColor="@color/color_FF000000"
+                android:textColor="@color/color_FFFFFF"
                 android:textSize="@dimen/ts_20" />
 
             <EditText
@@ -50,8 +50,7 @@
 
         <TableRow
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginBottom="@dimen/vs_10">
+            android:layout_height="match_parent">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -59,8 +58,12 @@
                 android:layout_marginEnd="@dimen/vs_20"
                 android:layout_marginRight="@dimen/vs_20"
                 android:gravity="center_vertical|end"
+                android:shadowColor="@color/color_000000_60"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="5"
                 android:text="远端tvbox端口"
-                android:textColor="@color/color_FF000000"
+                android:textColor="@color/color_FFFFFF"
                 android:textSize="@dimen/ts_20" />
 
             <EditText
@@ -74,7 +77,11 @@
                 android:maxLines="1"
                 android:paddingLeft="@dimen/vs_10"
                 android:paddingRight="@dimen/vs_10"
-                android:textColor="@android:color/white"
+                android:shadowColor="@color/color_000000_60"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="5"
+                android:textColor="@color/color_FFFFFF"
                 android:textColorHint="#99FFFFFF"
                 android:textSize="@dimen/ts_20" />
         </TableRow>
@@ -85,7 +92,10 @@
         android:layout_height="match_parent"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="@dimen/vs_10"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/vs_10"
+        android:paddingRight="@dimen/vs_10"
+        android:paddingBottom="@dimen/vs_10">
 
         <TextView
             android:id="@+id/btnConfirm"
@@ -103,14 +113,14 @@
 
         <TextView
             android:id="@+id/btnCancel"
-            android:layout_width="@dimen/vs_480"
+            android:layout_width="@dimen/vs_120"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/button_dialog_main"
             android:focusable="true"
             android:gravity="center"
             android:padding="@dimen/vs_10"
-            android:text="不会填，扫描看看"
+            android:text="当前IP"
             android:textColor="@android:color/white"
             android:textSize="@dimen/vs_20" />
 

@@ -1,7 +1,9 @@
 package com.github.tvbox.osc.ui.dialog;
 
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.text.format.Formatter;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -78,7 +80,10 @@ public class PushDialog extends BaseDialog {
         findViewById(R.id.btnCancel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(PushDialog.this.getContext(), "功能还没实现~", Toast.LENGTH_SHORT).show();
+                Context context = getContext().getApplicationContext();
+                WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+                Toast.makeText(PushDialog.this.getContext(), "当前IP " + ip, Toast.LENGTH_SHORT).show();
             }
         });
     }
