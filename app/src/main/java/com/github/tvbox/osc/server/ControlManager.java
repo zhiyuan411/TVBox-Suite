@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import com.github.tvbox.osc.event.RefreshEvent;
+import com.github.tvbox.osc.receiver.DetailReceiver;
 import com.github.tvbox.osc.receiver.SearchReceiver;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.orhanobut.hawk.Hawk;
@@ -89,6 +90,21 @@ public class ControlManager {
                 @Override
                 public void onPushReceived(String url) {
                     EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_PUSH_URL, url));
+                }
+
+                @Override
+                public void onMirrorReceived(String id, String sourceKey) {
+                    if (!TextUtils.isEmpty(id) && !TextUtils.isEmpty(sourceKey)) {
+                        Intent intent = new Intent();
+                        Bundle bundle = new Bundle();
+                        bundle.putString("id", id);
+                        bundle.putString("sourceKey", sourceKey);
+                        intent.setAction(DetailReceiver.action);
+                        intent.setPackage(mContext.getPackageName());
+                        intent.setComponent(new ComponentName(mContext, DetailReceiver.class));
+                        intent.putExtras(bundle);
+                        mContext.sendBroadcast(intent);
+                    }
                 }
             });
             try {
