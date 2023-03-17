@@ -27,9 +27,14 @@
                 android:layout_marginEnd="@dimen/vs_20"
                 android:layout_marginRight="@dimen/vs_20"
                 android:gravity="center_vertical|end"
+                android:shadowColor="@color/color_000000_60"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="5"
                 android:text="远端tvbox地址"
                 android:textColor="@color/color_FFFFFF"
-                android:textSize="@dimen/ts_20" />
+                android:textSize="@dimen/ts_20"
+                android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/etAddr"
@@ -64,7 +69,8 @@
                 android:shadowRadius="5"
                 android:text="远端tvbox端口"
                 android:textColor="@color/color_FFFFFF"
-                android:textSize="@dimen/ts_20" />
+                android:textSize="@dimen/ts_20"
+                android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/etPort"
@@ -120,7 +126,7 @@
             android:focusable="true"
             android:gravity="center"
             android:padding="@dimen/vs_10"
-            android:text="当前IP"
+            android:text="当前 IP"
             android:textColor="@android:color/white"
             android:textSize="@dimen/vs_20" />
 
