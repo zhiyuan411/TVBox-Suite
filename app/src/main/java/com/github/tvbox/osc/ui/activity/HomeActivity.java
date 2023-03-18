@@ -570,6 +570,9 @@ public class HomeActivity extends BaseActivity {
                 } else {
                     exit();
                 }
+            } else if (baseLazyFragment instanceof UserFragment && UserFragment.tvHotListForGrid.canScrollVertically(-1)) {
+                UserFragment.tvHotListForGrid.scrollToPosition(0);
+                this.mGridView.setSelection(0);
             } else {
                 exit();
             }
@@ -645,7 +648,7 @@ public class HomeActivity extends BaseActivity {
         boolean activated = count > 0;
         currentView.findViewById(R.id.tvFilter).setVisibility(View.VISIBLE);
         ImageView imgView = currentView.findViewById(R.id.tvFilter);
-        imgView.setColorFilter(activated?this.getThemeColor(): Color.WHITE);
+        imgView.setColorFilter(activated ? this.getThemeColor() : Color.WHITE);
     }
 
     private final Runnable mDataRunnable = new Runnable() {

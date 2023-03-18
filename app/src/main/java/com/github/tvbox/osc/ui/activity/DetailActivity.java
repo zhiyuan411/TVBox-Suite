@@ -42,6 +42,7 @@ import com.github.tvbox.osc.bean.VodInfo;
 import com.github.tvbox.osc.cache.RoomDataManger;
 import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.picasso.RoundTransformation;
+import com.github.tvbox.osc.player.controller.VodController;
 import com.github.tvbox.osc.ui.adapter.SeriesAdapter;
 import com.github.tvbox.osc.ui.adapter.SeriesFlagAdapter;
 import com.github.tvbox.osc.ui.dialog.PushDialog;
@@ -930,6 +931,7 @@ public class DetailActivity extends BaseActivity {
         if (fullWindows) {
             if (playFragment.onBackPressed())
                 return;
+            VodController.mProgressTop.setVisibility(View.INVISIBLE);
             toggleFullPreview();
             mGridView.requestFocus();
             return;
