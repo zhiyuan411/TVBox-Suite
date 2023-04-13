@@ -33,7 +33,8 @@
 
         <activity
             android:name=".ui.activity.HomeActivity"
-            android:screenOrientation="sensorLandscape">
+            android:screenOrientation="sensorLandscape"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -83,17 +84,20 @@
             android:name=".ui.activity.SettingActivity"
             android:screenOrientation="sensorLandscape" />
 
-        <receiver android:name=".receiver.SearchReceiver">
+        <receiver android:name=".receiver.SearchReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.content.movie.search.Action" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".receiver.DetailReceiver">
+        <receiver android:name=".receiver.DetailReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.content.movie.detail.Action" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".receiver.CustomWebReceiver">
+        <receiver android:name=".receiver.CustomWebReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.content.movie.custom.web.Action" />
             </intent-filter>

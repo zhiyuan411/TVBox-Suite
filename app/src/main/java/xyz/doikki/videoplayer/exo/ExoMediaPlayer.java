@@ -18,6 +18,7 @@ import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.Tracks;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
@@ -279,11 +280,10 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
     }
 
     @Override
-    public void onTracksChanged(@NonNull TrackGroupArray trackGroups, @NonNull TrackSelectionArray trackSelections) {
+    public void onTracksChanged(Tracks tracks) {
         trackNameProvider = new ExoTrackNameProvider(mAppContext.getResources());
-        mTrackSelections = trackSelections;
     }
-
+    
     @Override
     public void onPlaybackStateChanged(int playbackState) {
         if (mPlayerEventListener == null) return;
