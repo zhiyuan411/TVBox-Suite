@@ -147,6 +147,8 @@
     <string name="vod_sub_delay">延迟</string>
     <string name="vod_sub_search">搜索</string>
     <string name="vod_sub_off">字幕已关闭</string>
+    <string name="vod_remaining_time">影片剩余</string>
+    <string name="vod_ends_at">影片结束</string>
 
     // EXO Player
     <string name="exo_track_selection_title_video">视频</string>
