@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId 'com.github.tvbox.osc.tk'
-        minSdkVersion 16
+        minSdkVersion 18
         targetSdkVersion 33
         versionCode 1
         versionName "1.0.".concat(buildTime())
@@ -118,13 +118,15 @@ dependencies {
     implementation 'com.orhanobut:hawk:2.0.1'
 
     implementation 'androidx.annotation:annotation:1.6.0'
-    implementation "com.google.android.exoplayer:exoplayer-core:2.18.5"
-    implementation "com.google.android.exoplayer:exoplayer-dash:2.18.5"
-    implementation "com.google.android.exoplayer:exoplayer-hls:2.18.5"
-    implementation "com.google.android.exoplayer:exoplayer-rtsp:2.18.5"
-    implementation "com.google.android.exoplayer:extension-rtmp:2.18.5"
+    implementation "com.google.android.exoplayer:exoplayer-core:2.18.7"
+    implementation "com.google.android.exoplayer:exoplayer-dash:2.18.7"
+    implementation "com.google.android.exoplayer:exoplayer-hls:2.18.7"
+    implementation "com.google.android.exoplayer:exoplayer-rtsp:2.18.7"
+    implementation "com.google.android.exoplayer:extension-rtmp:2.18.7"
     //implementation 'com.google.android.exoplayer:extension-okhttp:' + rootProject.ext.exoVersion
 
+    implementation "com.aliyun.sdk.android:AliyunPlayer:5.5.1.0-full"
+    implementation 'com.alivc.conan:AlivcConan:0.9.5'
     implementation 'xyz.doikki.android.dkplayer:dkplayer-ui:3.3.7'
     implementation 'xyz.doikki.android.dkplayer:videocache:3.3.7'
 
