@@ -16,9 +16,9 @@ import com.github.tvbox.osc.server.ControlManager;
 import com.github.tvbox.osc.ui.activity.HomeActivity;
 import com.github.tvbox.osc.ui.adapter.ApiHistoryDialogAdapter;
 import com.github.tvbox.osc.ui.tv.QRCodeGen;
+import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.hjq.permissions.OnPermissionCallback;
-import com.hjq.permissions.Permission;
 import com.hjq.permissions.XXPermissions;
 import com.orhanobut.hawk.Hawk;
 
@@ -203,11 +203,11 @@ public class ApiDialog extends BaseDialog {
         findViewById(R.id.storagePermission).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (XXPermissions.isGranted(getContext(), Permission.Group.STORAGE)) {
+                if (XXPermissions.isGranted(getContext(), DefaultConfig.StoragePermissionGroup())) {
                     Toast.makeText(getContext(), "已获得存储权限", Toast.LENGTH_SHORT).show();
                 } else {
                     XXPermissions.with(getContext())
-                            .permission(Permission.Group.STORAGE)
+                            .permission(DefaultConfig.StoragePermissionGroup())
                             .request(new OnPermissionCallback() {
                                 @Override
                                 public void onGranted(List<String> permissions, boolean all) {

@@ -13,6 +13,7 @@ import com.github.tvbox.osc.server.ControlManager;
 import com.github.tvbox.osc.ui.activity.HomeActivity;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.hjq.permissions.Permission;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -179,4 +180,11 @@ public class DefaultConfig {
             return urlOri.replace("proxy://", ControlManager.get().getAddress(true) + "proxy?");
         return urlOri;
     }
+
+    public static String[] StoragePermissionGroup() {
+        return new String[] {
+                Permission.MANAGE_EXTERNAL_STORAGE
+        };
+    }
+
 }
