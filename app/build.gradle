@@ -126,6 +126,7 @@ dependencies {
     //implementation 'com.google.android.exoplayer:extension-okhttp:' + rootProject.ext.exoVersion
 
     implementation 'xyz.doikki.android.dkplayer:dkplayer-ui:3.3.7'
+    implementation 'xyz.doikki.android.dkplayer:videocache:3.3.7'
 
     implementation project(":quickjs")
 
