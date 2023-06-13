@@ -73,6 +73,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
     private TextView tvPIP;
     private TextView tvPlay;
     private TextView tvMediaCodec;
+    private TextView tvVideoPurifyText;
 
     // System Section
     private TextView tvLocale;
@@ -121,6 +122,8 @@ public class ModelSettingFragment extends BaseLazyFragment {
         tvPlay.setText(PlayerHelper.getPlayerName(Hawk.get(HawkConfig.PLAY_TYPE, 0)));
         tvMediaCodec = findViewById(R.id.tvMediaCodec);
         tvMediaCodec.setText(Hawk.get(HawkConfig.IJK_CODEC, ""));
+        tvVideoPurifyText = findViewById(R.id.tvVideoPurifyText);
+        tvVideoPurifyText.setText(Hawk.get(HawkConfig.VIDEO_PURIFY, true) ? "开启" : "关闭");
         // System Section
         tvLocale = findViewById(R.id.tvLocale);
         tvLocale.setText(getLocaleView(Hawk.get(HawkConfig.HOME_LOCALE, 0)));
@@ -489,6 +492,12 @@ public class ModelSettingFragment extends BaseLazyFragment {
                 }, ijkCodes, defaultPos);
                 dialog.show();
             }
+        });
+        // toggle purify video -------------------------------------
+        findViewById(R.id.llVideoPurify).setOnClickListener(v -> {
+            FastClickCheckUtil.check(v);
+            Hawk.put(HawkConfig.VIDEO_PURIFY, !Hawk.get(HawkConfig.VIDEO_PURIFY, true));
+            tvVideoPurifyText.setText(Hawk.get(HawkConfig.VIDEO_PURIFY, true) ? "开启" : "关闭");
         });
         // 3. SYSTEM Configuration -------------------------------------------------------------- //
         // Select Webview ---------------------------------------------
