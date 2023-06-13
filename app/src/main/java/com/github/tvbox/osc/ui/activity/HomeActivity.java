@@ -416,7 +416,10 @@ public class HomeActivity extends BaseActivity {
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(HomeActivity.this, getString(R.string.hm_notok), Toast.LENGTH_SHORT).show();
+                                if ("".equals(msg))
+                                    Toast.makeText(HomeActivity.this, getString(R.string.hm_notok), Toast.LENGTH_SHORT).show();
+                                else
+                                    Toast.makeText(HomeActivity.this, msg, Toast.LENGTH_SHORT).show();
                                 initData();
                             }
                         });

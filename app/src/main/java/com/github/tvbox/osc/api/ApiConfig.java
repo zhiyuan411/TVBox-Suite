@@ -132,7 +132,7 @@ public class ApiConfig {
         // Embedded Source : Update in Strings.xml if required
         String apiUrl = Hawk.get(HawkConfig.API_URL, HomeActivity.getRes().getString(R.string.app_source));
         if (apiUrl.isEmpty()) {
-            callback.error("-1");
+            callback.error("源地址为空");
             return;
         }
         File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + MD5.encode(apiUrl));
@@ -236,7 +236,7 @@ public class ApiConfig {
                 if (jarLoader.load(cache.getAbsolutePath())) {
                     callback.success();
                 } else {
-                    callback.error("");
+                    callback.error("从缓存加载jar失败");
                 }
                 return;
             }
@@ -275,17 +275,17 @@ public class ApiConfig {
                             if (jarLoader.load(response.body().getAbsolutePath())) {
                                 callback.success();
                             } else {
-                                callback.error("");
+                                callback.error("从网络上加载jar写入缓存后加载失败");
                             }
                         } else {
-                            callback.error("");
+                            callback.error("从网络上加载jar地址字节数据为空");
                         }
                     }
 
                     @Override
                     public void onError(Response<File> response) {
                         super.onError(response);
-                        callback.error("");
+                        callback.error("从网络上加载jar失败：" + response.getException().getMessage());
                     }
                 });
     }
