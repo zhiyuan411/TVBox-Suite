@@ -651,9 +651,13 @@ public class PlayFragment extends BaseLazyFragment {
         OkGo.getInstance().cancelTag("m3u8-2");
         //remove ads in m3u8
         HttpHeaders hheaders = new HttpHeaders();
-        for (Map.Entry<String, String> s : headers.entrySet()) {
-            hheaders.put(s.getKey(), s.getValue());
+        if(headers != null){
+            for (Map.Entry<String, String> s : headers.entrySet()) {
+                hheaders.put(s.getKey(), s.getValue());
+            }
         }
+
+
         OkGo.<String>get(url)
                 .tag("m3u8-1")
                 .headers(hheaders)
