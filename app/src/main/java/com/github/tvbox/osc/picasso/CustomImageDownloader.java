@@ -2,6 +2,7 @@ package com.github.tvbox.osc.picasso;
 
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.util.SSL.SSLSocketFactoryCompat;
+import com.github.tvbox.osc.util.UA;
 import com.squareup.picasso.Downloader;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -55,7 +56,7 @@ public class CustomImageDownloader implements Downloader {
         if (url.contains("@User-Agent=")) {
             builder.addHeader("User-Agent", url.split("@User-Agent=")[1].split("@")[0]);
         } else {
-            String userAgent = getUserAgent();
+            String userAgent = UA.getSystemWebviewUserAgent();
             builder.addHeader("User-Agent", userAgent);
         }
         url = url.split("@")[0];
@@ -64,14 +65,6 @@ public class CustomImageDownloader implements Downloader {
         // 发送请求并获取Response
         Response response = client.newCall(newRequest).execute();
         return response;
-    }
-
-    private String getUserAgent() {
-        String userAgent = System.getProperty("http.agent");
-        if (userAgent == null) {
-            userAgent = "Mozilla/5.0 (Linux; Android 11; Pixel 2 Build/RPB3.200720.005) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.106 Mobile Safari/537.36";
-        }
-        return userAgent;
     }
 
     @Override
