@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import me.jessyan.autosize.utils.AutoSizeUtils;
 
 public class HomeHotVodAdapter extends BaseQuickAdapter<Movie.Video, BaseViewHolder> {
-
+public String DouBanReferer = "@Referer=https://movie.douban.com/";
     public HomeHotVodAdapter() {
         super(R.layout.item_user_hot_vod, new ArrayList<>());
     }
@@ -50,7 +50,7 @@ public class HomeHotVodAdapter extends BaseQuickAdapter<Movie.Video, BaseViewHol
         //由于部分电视机使用glide报错
         if (!TextUtils.isEmpty(item.pic)) {
             Picasso.get()
-                    .load(DefaultConfig.checkReplaceProxy(item.pic))
+                    .load(DefaultConfig.checkReplaceProxy(item.pic + DouBanReferer))
                     .transform(new RoundTransformation(MD5.string2MD5(item.pic + "position=" + helper.getLayoutPosition()))
                             .centerCorp(true)
                             .override(AutoSizeUtils.mm2px(mContext, 300), AutoSizeUtils.mm2px(mContext, 400))
