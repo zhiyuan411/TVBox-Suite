@@ -407,6 +407,7 @@ public class SearchActivity extends BaseActivity {
     private void search(String title) {
         cancel();
         showLoading();
+        etSearch.setText(title);
         this.searchTitle = title;
         mGridView.setVisibility(View.INVISIBLE);
         searchAdapter.setNewData(new ArrayList<>());
