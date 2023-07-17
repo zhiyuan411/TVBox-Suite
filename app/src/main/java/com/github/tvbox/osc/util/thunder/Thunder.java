@@ -74,6 +74,13 @@ public class Thunder {
         }
     }
 
+    public static void stopCurrentTask() {
+        if (currentTask > 0) {
+            XLTaskHelper.instance().stopTask(currentTask);
+            currentTask = 0L;
+        }
+    }
+
     public interface ThunderCallback {
 
         void status(int code, String info);
