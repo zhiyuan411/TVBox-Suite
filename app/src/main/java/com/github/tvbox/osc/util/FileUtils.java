@@ -208,5 +208,13 @@ public class FileUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        String ijkCachePath = getExternalCachePath() + "/ijkcaches/";
+        File ijkCacheDir = new File(ijkCachePath);
+        try {
+            if (ijkCacheDir.exists()) recursiveDelete(ijkCacheDir);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
