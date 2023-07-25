@@ -298,7 +298,7 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
         ArrayList<Movie.Video> result = new ArrayList<>();
         try {
             JsonObject infoJson = new Gson().fromJson(json, JsonObject.class);
-            String userAgent = UA.getSystemWebviewUserAgent();
+            String userAgent = UA.random();
             JsonArray array = infoJson.getAsJsonArray("data");
             for (JsonElement ele : array) {
                 JsonObject obj = (JsonObject) ele;
