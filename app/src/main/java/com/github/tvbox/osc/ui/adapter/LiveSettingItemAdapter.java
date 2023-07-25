@@ -46,6 +46,7 @@ public class LiveSettingItemAdapter extends BaseQuickAdapter<LiveSettingItem, Ba
             }
         }
         if (selectedItemIndex != -1) {
+            if (getData().size() <= selectedItemIndex) return;
             getData().get(selectedItemIndex).setItemSelected(select);
             notifyItemChanged(selectedItemIndex);
         }
