@@ -3,6 +3,7 @@ package com.github.tvbox.osc.picasso;
 import android.text.TextUtils;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.SSL.SSLSocketFactoryCompat;
+import com.github.tvbox.osc.util.UA;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.squareup.picasso.Downloader;
@@ -44,6 +45,14 @@ public class CustomImageDownloader implements Downloader {
         if (url.contains("@Referer=")) referer = url.split("@Referer=")[1].split("@")[0];
         if (url.contains("@User-Agent=")) userAgent = url.split("@User-Agent=")[1].split("@")[0];
 
+        // takagen99 : Shift Douban referer to here instead
+        if (url.contains("douban")) {
+            userAgent = UA.random();
+            referer = "https://movie.douban.com/";
+            builder.addHeader("User-Agent", userAgent);
+            builder.addHeader("Referer", referer);
+        }
+
         url = url.split("@")[0];
         if (!TextUtils.isEmpty(header)) {
             JsonObject jsonInfo = new Gson().fromJson(header, JsonObject.class);
@@ -64,4 +73,5 @@ public class CustomImageDownloader implements Downloader {
         client.dispatcher().executorService().shutdown();
         client.connectionPool().evictAll();
     }
+
 }

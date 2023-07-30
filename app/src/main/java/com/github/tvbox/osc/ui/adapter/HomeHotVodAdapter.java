@@ -9,11 +9,14 @@ import android.widget.TextView;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
 import com.github.tvbox.osc.R;
+import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.bean.Movie;
+import com.github.tvbox.osc.bean.SourceBean;
 import com.github.tvbox.osc.picasso.RoundTransformation;
 import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.MD5;
+import com.orhanobut.hawk.Hawk;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -21,7 +24,7 @@ import java.util.ArrayList;
 import me.jessyan.autosize.utils.AutoSizeUtils;
 
 public class HomeHotVodAdapter extends BaseQuickAdapter<Movie.Video, BaseViewHolder> {
-public String DouBanReferer = "@Referer=https://movie.douban.com/";
+
     public HomeHotVodAdapter() {
         super(R.layout.item_user_hot_vod, new ArrayList<>());
     }
@@ -37,6 +40,16 @@ public String DouBanReferer = "@Referer=https://movie.douban.com/";
             tvDel.setVisibility(View.GONE);
         }
 
+        // check if set as last watched
+        TextView tvYear = helper.getView(R.id.tvYear);
+        if (Hawk.get(HawkConfig.HOME_REC, 0) == 2) {
+            tvYear.setVisibility(View.VISIBLE);
+            SourceBean source = ApiConfig.get().getSource(item.sourceKey);
+            tvYear.setText(source!=null?source.getName():"");
+        } else {
+            tvYear.setVisibility(View.GONE);
+        }
+
         TextView tvRate = helper.getView(R.id.tvNote);
         if (item.note == null || item.note.isEmpty()) {
             tvRate.setVisibility(View.GONE);
@@ -50,7 +63,7 @@ public String DouBanReferer = "@Referer=https://movie.douban.com/";
         //由于部分电视机使用glide报错
         if (!TextUtils.isEmpty(item.pic)) {
             Picasso.get()
-                    .load(DefaultConfig.checkReplaceProxy(item.pic + DouBanReferer))
+                    .load(DefaultConfig.checkReplaceProxy(item.pic))
                     .transform(new RoundTransformation(MD5.string2MD5(item.pic + "position=" + helper.getLayoutPosition()))
                             .centerCorp(true)
                             .override(AutoSizeUtils.mm2px(mContext, 300), AutoSizeUtils.mm2px(mContext, 400))
