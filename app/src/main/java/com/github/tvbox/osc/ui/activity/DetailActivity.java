@@ -848,7 +848,7 @@ public class DetailActivity extends BaseActivity {
         OkGo.getInstance().cancelTag("quick_search");
         OkGo.getInstance().cancelTag("pushVod");
         EventBus.getDefault().unregister(this);
-        Thunder.stop();
+        if (!showPreview) Thunder.stop();
     }
 
     boolean PiPON = Hawk.get(HawkConfig.PIC_IN_PIC, false);
