@@ -89,6 +89,7 @@
     <string name="dia_dns">Select DNS</string>
     <string name="dia_locale">Select Language</string>
     <string name="dia_theme">Select Theme</string>
+    <string name="dia_confirm">Confirm to Clear All ?</string>
 
     // Settings Backup Restore Page //
     <string name="set_bkup_ok">Backup Success</string>
@@ -105,14 +106,14 @@
 
     // Activity Page //
     <string name="act_app">Applications</string>
-    <string name="act_app_sel">Select to</string>
+    <string name="act_app_sel">Select to Uninstall</string>
     <string name="act_app_rm">Uninstall</string>
     <string name="act_fav">Favorite</string>
-    <string name="act_fav_sel">Select to</string>
+    <string name="act_fav_sel">Select to Remove</string>
     <string name="act_fav_rm">Remove</string>
     <string name="act_drive">Drives</string>
     <string name="act_hist">History</string>
-    <string name="act_hist_sel">Select to</string>
+    <string name="act_hist_sel">Select to Remove</string>
     <string name="act_hist_rm">Remove</string>
     <string name="act_search">Search</string>
     <string name="act_search_clr">Clear</string>

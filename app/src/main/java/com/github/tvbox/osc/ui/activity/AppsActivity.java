@@ -4,11 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.view.View;
 import android.view.animation.BounceInterpolator;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
@@ -31,8 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AppsActivity extends BaseActivity {
-    private TextView tvDel;
     private TextView tvDelTip;
+    private ImageView tvDelete;
     private TvRecyclerView mGridViewApps;
     private AppsAdapter appsAdapter;
     private boolean delMode = false;
@@ -78,19 +78,19 @@ public class AppsActivity extends BaseActivity {
         tvDelTip.setVisibility(delMode ? View.VISIBLE : View.GONE);
 
         // takagen99: Added Theme Color
-        tvDel.setTextColor(delMode ? getThemeColor() : Color.WHITE);
+//        tvDel.setTextColor(delMode ? getThemeColor() : Color.WHITE);
     }
 
     private void initView() {
         EventBus.getDefault().register(this);
-        tvDel = findViewById(R.id.tvDel);
         tvDelTip = findViewById(R.id.tvDelTip);
+        tvDelete = findViewById(R.id.tvDelete);
         mGridViewApps = findViewById(R.id.mGridViewApps);
         mGridViewApps.setHasFixedSize(true);
         mGridViewApps.setLayoutManager(new V7GridLayoutManager(this.mContext, isBaseOnWidth() ? 6 : 7));
         appsAdapter = new AppsAdapter();
         mGridViewApps.setAdapter(appsAdapter);
-        tvDel.setOnClickListener(new View.OnClickListener() {
+        tvDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 toggleDelMode();
@@ -100,8 +100,8 @@ public class AppsActivity extends BaseActivity {
             @Override
             public boolean onInBorderKeyEvent(int direction, View focused) {
                 if (direction == View.FOCUS_UP) {
-                    tvDel.setFocusable(true);
-                    tvDel.requestFocus();
+                    tvDelete.setFocusable(true);
+                    tvDelete.requestFocus();
                 }
                 return false;
             }
@@ -151,7 +151,7 @@ public class AppsActivity extends BaseActivity {
         appsAdapter.setOnItemLongClickListener(new BaseQuickAdapter.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(BaseQuickAdapter adapter, View view, int position) {
-                tvDel.setFocusable(true);
+                tvDelete.setFocusable(true);
                 toggleDelMode();
                 return true;
             }
