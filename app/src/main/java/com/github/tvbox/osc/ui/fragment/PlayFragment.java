@@ -1814,9 +1814,14 @@ public class PlayFragment extends BaseLazyFragment {
                 final String contentTypeValue = response.header("Content-Type");
                 if (contentTypeValue != null) {
                     if (contentTypeValue.indexOf("charset=") > 0) {
-                        final String[] contentTypeAndEncoding = contentTypeValue.split("; ");
+                        final String[] contentTypeAndEncoding = contentTypeValue.replace(" ","").split(";");
                         final String contentType = contentTypeAndEncoding[0];
-                        final String charset = contentTypeAndEncoding[1].split("=")[1];
+                        String charset = null;
+                        if (contentTypeAndEncoding.length >= 2) {
+                            String[] csArray = contentTypeAndEncoding[1].split("=");
+                            if (csArray.length >= 2)
+                                charset = csArray[1];
+                        }
                         return new WebResourceResponse(contentType, charset, response.body().byteStream());
                     } else {
                         return new WebResourceResponse(contentTypeValue, null, response.body().byteStream());
