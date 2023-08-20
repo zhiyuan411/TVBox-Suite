@@ -110,7 +110,6 @@ import org.xwalk.core.XWalkWebResourceResponse;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -121,12 +120,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.jessyan.autosize.AutoSize;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import tv.danmaku.ijk.media.player.IMediaPlayer;
 import tv.danmaku.ijk.media.player.IjkTimedText;
 import xyz.doikki.videoplayer.player.AbstractPlayer;
@@ -1924,49 +1920,9 @@ public class PlayActivity extends BaseActivity {
                 }
             }
 
-            if (ad || loadFoundCount.get() > 0) return AdBlocker.createEmptyResource();
-            try {
-                Request okHttpRequest = new Request.Builder().url(url).build();
-                OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
-                clientBuilder.readTimeout(10000, TimeUnit.MILLISECONDS);
-                clientBuilder.writeTimeout(10000, TimeUnit.MILLISECONDS);
-                clientBuilder.connectTimeout(10000, TimeUnit.MILLISECONDS);
-                okhttp3.Response response = clientBuilder.build().newCall(okHttpRequest).execute();
-
-                final String contentTypeValue = response.header("Content-Type");
-                if (contentTypeValue != null) {
-                    if (contentTypeValue.indexOf("charset=") > 0) {
-                        final String[] contentTypeAndEncoding = contentTypeValue.replace(" ","").split(";");
-                        final String contentType = contentTypeAndEncoding[0];
-                        String charset = null;
-                        if (contentTypeAndEncoding.length >= 2) {
-                            String[] csArray = contentTypeAndEncoding[1].split("=");
-                            if (csArray.length >= 2)
-                                charset = csArray[1];
-                        }
-                        return new WebResourceResponse(contentType, charset, response.body().byteStream());
-                    } else {
-                        return new WebResourceResponse(contentTypeValue, null, response.body().byteStream());
-                    }
-                } else {
-                    String guessMimeType = "application/octet-stream";
-                    if (url.contains(".htm")) {
-                        guessMimeType = "text/html";
-                    } else if (url.contains(".css")) {
-                        guessMimeType = "text/css";
-                    } else if (url.contains(".js")) {
-                        guessMimeType = "application/javascript";
-                    } else if (url.endsWith(".png")) {
-                        guessMimeType = "image/png";
-                    } else if (url.endsWith(".jpg") || url.endsWith(".jpeg")) {
-                        guessMimeType = "image/jpeg";
-                    }
-                    return new WebResourceResponse(guessMimeType, null, response.body().byteStream());
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
+            return ad || loadFoundCount.get() > 0 ?
+                    AdBlocker.createEmptyResource() :
+                    null;
         }
 
         @Nullable
