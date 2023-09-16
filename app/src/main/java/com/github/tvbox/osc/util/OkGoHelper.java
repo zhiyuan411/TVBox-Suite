@@ -175,7 +175,7 @@ public class OkGoHelper {
         }
 
         HttpHeaders.setUserAgent(Version.userAgent());
-
+        builder.cache(new okhttp3.Cache(new File(FileUtils.getCachePath() + "/pic/"), 100 * 1024 * 1024)); // 缓存 100 MB
         OkHttpClient okHttpClient = builder.build();
         OkGo.getInstance().setOkHttpClient(okHttpClient);
 
@@ -191,7 +191,7 @@ public class OkGoHelper {
 
     static void initPicasso(OkHttpClient client) {
 //        OkHttp3Downloader downloader = new OkHttp3Downloader(client);
-        CustomImageDownloader downloader = new CustomImageDownloader();
+        CustomImageDownloader downloader = new CustomImageDownloader(client);
         Picasso picasso = new Picasso.Builder(App.getInstance()).downloader(downloader).build();
         Picasso.setSingletonInstance(picasso);
     }
