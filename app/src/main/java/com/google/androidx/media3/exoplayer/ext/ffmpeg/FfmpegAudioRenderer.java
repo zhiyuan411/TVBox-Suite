@@ -13,30 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.android.exoplayer2.ext.ffmpeg;
+package com.google.androidx.media3.exoplayer.ext.ffmpeg;
 
-import static com.google.android.exoplayer2.audio.AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY;
-import static com.google.android.exoplayer2.audio.AudioSink.SINK_FORMAT_SUPPORTED_WITH_TRANSCODING;
-import static com.google.android.exoplayer2.audio.AudioSink.SINK_FORMAT_UNSUPPORTED;
+
+import static androidx.media3.exoplayer.audio.AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY;
+import static androidx.media3.exoplayer.audio.AudioSink.SINK_FORMAT_SUPPORTED_WITH_TRANSCODING;
+import static androidx.media3.exoplayer.audio.AudioSink.SINK_FORMAT_UNSUPPORTED;
 
 import android.os.Handler;
 
 import androidx.annotation.Nullable;
+import androidx.media3.common.C;
+import androidx.media3.common.Format;
+import androidx.media3.common.MimeTypes;
+import androidx.media3.common.audio.AudioProcessor;
+import androidx.media3.common.util.Assertions;
+import androidx.media3.common.util.TraceUtil;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.common.util.Util;
+import androidx.media3.decoder.CryptoConfig;
+import androidx.media3.exoplayer.audio.AudioRendererEventListener;
+import androidx.media3.exoplayer.audio.AudioSink;
+import androidx.media3.exoplayer.audio.DecoderAudioRenderer;
+import androidx.media3.exoplayer.audio.DefaultAudioSink;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.audio.AudioProcessor;
-import com.google.android.exoplayer2.audio.AudioRendererEventListener;
-import com.google.android.exoplayer2.audio.AudioSink;
-import com.google.android.exoplayer2.audio.AudioSink.SinkFormatSupport;
-import com.google.android.exoplayer2.audio.DecoderAudioRenderer;
-import com.google.android.exoplayer2.audio.DefaultAudioSink;
-import com.google.android.exoplayer2.decoder.CryptoConfig;
-import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.MimeTypes;
-import com.google.android.exoplayer2.util.TraceUtil;
-import com.google.android.exoplayer2.util.Util;
 
+@UnstableApi
 /**
  * Decodes and renders audio using FFmpeg.
  */
@@ -161,7 +163,7 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
             return true;
         }
 
-        @SinkFormatSupport
+        @AudioSink.SinkFormatSupport
         int formatSupport =
                 getSinkFormatSupport(
                         Util.getPcmFormat(

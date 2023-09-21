@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.android.exoplayer2.ext.ffmpeg;
+package com.google.androidx.media3.exoplayer.ext.ffmpeg;
 
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.decoder.DecoderInputBuffer;
-import com.google.android.exoplayer2.decoder.SimpleDecoder;
-import com.google.android.exoplayer2.decoder.SimpleDecoderOutputBuffer;
-import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.MimeTypes;
-import com.google.android.exoplayer2.util.ParsableByteArray;
-import com.google.android.exoplayer2.util.Util;
+import androidx.media3.common.C;
+import androidx.media3.common.Format;
+import androidx.media3.common.MimeTypes;
+import androidx.media3.common.util.Assertions;
+import androidx.media3.common.util.ParsableByteArray;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.common.util.Util;
+import androidx.media3.decoder.DecoderInputBuffer;
+import androidx.media3.decoder.SimpleDecoder;
+import androidx.media3.decoder.SimpleDecoderOutputBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 
+@UnstableApi
 /**
  * FFmpeg audio decoder.
  */
@@ -78,6 +79,57 @@ import java.util.List;
             throw new FfmpegDecoderException("Initialization failed.");
         }
         setInitialInputBufferSize(initialInputBufferSize);
+    }
+
+    /**
+     * Returns FFmpeg-compatible codec-specific initialization data ("extra data"), or {@code null} if
+     * not required.
+     */
+    @Nullable
+    private static byte[] getExtraData(String mimeType, List<byte[]> initializationData) {
+        switch (mimeType) {
+            case MimeTypes.AUDIO_AAC:
+            case MimeTypes.AUDIO_OPUS:
+                return initializationData.get(0);
+            case MimeTypes.AUDIO_ALAC:
+                return getAlacExtraData(initializationData);
+            case MimeTypes.AUDIO_VORBIS:
+                return getVorbisExtraData(initializationData);
+            default:
+                // Other codecs do not require extra data.
+                return null;
+        }
+    }
+
+    private static byte[] getAlacExtraData(List<byte[]> initializationData) {
+        // FFmpeg's ALAC decoder expects an ALAC atom, which contains the ALAC "magic cookie", as extra
+        // data. initializationData[0] contains only the magic cookie, and so we need to package it into
+        // an ALAC atom. See:
+        // https://ffmpeg.org/doxygen/0.6/alac_8c.html
+        // https://github.com/macosforge/alac/blob/master/ALACMagicCookieDescription.txt
+        byte[] magicCookie = initializationData.get(0);
+        int alacAtomLength = 12 + magicCookie.length;
+        ByteBuffer alacAtom = ByteBuffer.allocate(alacAtomLength);
+        alacAtom.putInt(alacAtomLength);
+        alacAtom.putInt(0x616c6163); // type=alac
+        alacAtom.putInt(0); // version=0, flags=0
+        alacAtom.put(magicCookie, /* offset= */ 0, magicCookie.length);
+        return alacAtom.array();
+    }
+
+    private static byte[] getVorbisExtraData(List<byte[]> initializationData) {
+        byte[] header0 = initializationData.get(0);
+        byte[] header1 = initializationData.get(1);
+        byte[] extraData = new byte[header0.length + header1.length + 6];
+        extraData[0] = (byte) (header0.length >> 8);
+        extraData[1] = (byte) (header0.length & 0xFF);
+        System.arraycopy(header0, 0, extraData, 2, header0.length);
+        extraData[header0.length + 2] = 0;
+        extraData[header0.length + 3] = 0;
+        extraData[header0.length + 4] = (byte) (header1.length >> 8);
+        extraData[header0.length + 5] = (byte) (header1.length & 0xFF);
+        System.arraycopy(header1, 0, extraData, header0.length + 6, header1.length);
+        return extraData;
     }
 
     @Override
@@ -173,57 +225,6 @@ import java.util.List;
      */
     public @C.PcmEncoding int getEncoding() {
         return encoding;
-    }
-
-    /**
-     * Returns FFmpeg-compatible codec-specific initialization data ("extra data"), or {@code null} if
-     * not required.
-     */
-    @Nullable
-    private static byte[] getExtraData(String mimeType, List<byte[]> initializationData) {
-        switch (mimeType) {
-            case MimeTypes.AUDIO_AAC:
-            case MimeTypes.AUDIO_OPUS:
-                return initializationData.get(0);
-            case MimeTypes.AUDIO_ALAC:
-                return getAlacExtraData(initializationData);
-            case MimeTypes.AUDIO_VORBIS:
-                return getVorbisExtraData(initializationData);
-            default:
-                // Other codecs do not require extra data.
-                return null;
-        }
-    }
-
-    private static byte[] getAlacExtraData(List<byte[]> initializationData) {
-        // FFmpeg's ALAC decoder expects an ALAC atom, which contains the ALAC "magic cookie", as extra
-        // data. initializationData[0] contains only the magic cookie, and so we need to package it into
-        // an ALAC atom. See:
-        // https://ffmpeg.org/doxygen/0.6/alac_8c.html
-        // https://github.com/macosforge/alac/blob/master/ALACMagicCookieDescription.txt
-        byte[] magicCookie = initializationData.get(0);
-        int alacAtomLength = 12 + magicCookie.length;
-        ByteBuffer alacAtom = ByteBuffer.allocate(alacAtomLength);
-        alacAtom.putInt(alacAtomLength);
-        alacAtom.putInt(0x616c6163); // type=alac
-        alacAtom.putInt(0); // version=0, flags=0
-        alacAtom.put(magicCookie, /* offset= */ 0, magicCookie.length);
-        return alacAtom.array();
-    }
-
-    private static byte[] getVorbisExtraData(List<byte[]> initializationData) {
-        byte[] header0 = initializationData.get(0);
-        byte[] header1 = initializationData.get(1);
-        byte[] extraData = new byte[header0.length + header1.length + 6];
-        extraData[0] = (byte) (header0.length >> 8);
-        extraData[1] = (byte) (header0.length & 0xFF);
-        System.arraycopy(header0, 0, extraData, 2, header0.length);
-        extraData[header0.length + 2] = 0;
-        extraData[header0.length + 3] = 0;
-        extraData[header0.length + 4] = (byte) (header1.length >> 8);
-        extraData[header0.length + 5] = (byte) (header1.length & 0xFF);
-        System.arraycopy(header1, 0, extraData, header0.length + 6, header1.length);
-        return extraData;
     }
 
     private native long ffmpegInitialize(
