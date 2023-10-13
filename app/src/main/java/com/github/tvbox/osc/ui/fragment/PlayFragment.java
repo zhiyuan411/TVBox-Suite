@@ -46,6 +46,7 @@ import com.acsbendi.requestinspectorwebview.WebViewRequest;
 import com.github.catvod.crawler.Spider;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
+import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.base.BaseLazyFragment;
 import com.github.tvbox.osc.bean.ParseBean;
 import com.github.tvbox.osc.bean.SourceBean;
@@ -116,6 +117,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.jessyan.autosize.AutoSize;
+import okhttp3.Cache;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -1850,11 +1852,18 @@ public class PlayFragment extends BaseLazyFragment {
                 clientBuilder.connectTimeout(10000, TimeUnit.MILLISECONDS);
                 clientBuilder.followRedirects(false);
                 clientBuilder.followSslRedirects(false);
+                clientBuilder.cache(new Cache(new File(App.getInstance().getCacheDir().getAbsolutePath(), "xiutancache"), 10 * 1024 * 1024));
                 okhttp3.Response response = clientBuilder.build().newCall(requestBuilder.build()).execute();
 
                 final String contentTypeValue = response.header("Content-Type");
                 String responsePhase = OkGoHelper.httpPhaseMap.get(response.code());
                 if (responsePhase == null) responsePhase = "Internal Server Error";
+
+//                if (response.code() >= 300 && response.code() <= 399) {
+//                    String content = "<script>location.href = '" + response.header("Location") + "'</script>";
+//                    return new WebResourceResponse("text/html", "utf-8", new ByteArrayInputStream(content.getBytes()));
+//                }
+
                 if (contentTypeValue != null) {
                     if (contentTypeValue.indexOf("charset=") > 0) {
                         final String[] contentTypeAndEncoding = contentTypeValue.replace(" ", "").split(";");
