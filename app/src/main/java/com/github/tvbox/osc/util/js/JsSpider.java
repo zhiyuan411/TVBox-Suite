@@ -162,10 +162,10 @@ public class JsSpider extends Spider {
             if(content.startsWith("//bb")){
                 cat = true;
                 byte[] b = Base64.decode(content.replace("//bb",""), 0);
-                //ctx.execute(byteFF(b), key + ".js");
-                //ctx.evaluateModule(String.format(SPIDER_STRING_CODE, key + ".js") + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
-                ctx.execute(byteFF(b), key + ".js","__jsEvalReturn");
-                ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;");
+                ctx.execute(byteFF(b), key + ".js");
+                ctx.evaluateModule(String.format(SPIDER_STRING_CODE, key + ".js") + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
+                //ctx.execute(byteFF(b), key + ".js","__jsEvalReturn");
+                //ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;");
             } else {
                 if (content.contains("__JS_SPIDER__")) {
                     content = content.replaceAll("__JS_SPIDER__\\s*=", "export default ");
@@ -175,10 +175,10 @@ public class JsSpider extends Spider {
                     moduleExtName = "__jsEvalReturn";
                     cat = true;
                 }
-                //ctx.evaluateModule(content, api);
-                //ctx.evaluateModule(String.format(SPIDER_STRING_CODE, api) + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
-                ctx.evaluateModule(content, api, moduleExtName);
-                ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;");
+                ctx.evaluateModule(content, api);
+                ctx.evaluateModule(String.format(SPIDER_STRING_CODE, api) + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
+                //ctx.evaluateModule(content, api, moduleExtName);
+                //ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;");
             }
             jsObject = (JSObject) ctx.get(ctx.getGlobalObject(), key);
             return null;
@@ -303,7 +303,6 @@ public class JsSpider extends Spider {
         result[2] = getStream(array.opt(2));
         return result;
     }
-
     
     private Object[] proxy2(Map<String, String> params) throws Exception {
         String url = params.get("url");
