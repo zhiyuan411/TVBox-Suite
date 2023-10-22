@@ -28,6 +28,7 @@ public class HawkConfig {
     public static final String HOME_LOCALE = "language";                 // 0 中文 1 英文
     public static final String HOME_SEARCH_POSITION = "search_position"; // true=Up, false=Down
     public static final String HOME_MENU_POSITION = "menu_position";     // true=Up, false=Down
+	public static final String HOME_DEFAULT_SHOW = "home_default_show";  //启动时直接进直播的开关
 
     // Player Settings
     public static final String SHOW_PREVIEW = "show_preview";
