@@ -5,8 +5,11 @@ def static buildTime() {
     return new Date().format("yyyyMMdd_HHmm", TimeZone.getTimeZone("GMT+08:00"))
 }
 
+def appName = "TVBox_takagen99"
+
 android {
     compileSdk 33
+    flavorDimensions "abi"
 
     defaultConfig {
         applicationId 'com.github.tvbox.osc.tk'
@@ -27,25 +30,43 @@ android {
         exclude 'META-INF/DEPENDENCIES'
     }
 
-    buildTypes {
-        debug {
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            minifyEnabled false
-
-            ndk {
-                abiFilters 'armeabi-v7a'
-                abiFilters 'arm64-v8a'
-            }
-        }
+    buildTypes {        
         release {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            minifyEnabled true
-
-            ndk {
-                abiFilters 'armeabi-v7a'
-                abiFilters 'arm64-v8a'
-            }
+            minifyEnabled true            
         }
+    }
+    
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def type = variant.buildType.name
+            def abi = "全包"
+            if(variant.productFlavors[0].name == "armeabi_v7a"){
+                abi = "32位"
+            } else if(variant.productFlavors[0].name == "arm64_v8a"){
+                abi = "64位"
+            }
+            def fileName = appName + "_" + abi + "_V" + versionName + ".apk"
+            outputFileName = fileName
+        }
+    }
+    
+    productFlavors {
+        armeabi_v7a {
+            dimension "abi"
+            //noinspection ChromeOsAbiSupport
+            ndk { abiFilters "armeabi-v7a" }
+        }
+        arm64_v8a {
+            dimension "abi"
+            //noinspection ChromeOsAbiSupport
+            ndk { abiFilters "arm64-v8a" }
+        }
+        /*quan {
+            dimension "abi"
+            //noinspection ChromeOsAbiSupport
+            ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
+        }*/
     }
 
     compileOptions {
