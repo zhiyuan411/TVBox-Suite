@@ -36,6 +36,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -50,8 +51,6 @@ import androidx.media3.common.Player;
 import androidx.media3.common.text.Cue;
 import androidx.recyclerview.widget.DiffUtil;
 
-import com.acsbendi.requestinspectorwebview.RequestInspectorWebViewClient;
-import com.acsbendi.requestinspectorwebview.WebViewRequest;
 import com.github.catvod.crawler.Spider;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
@@ -124,15 +123,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.jessyan.autosize.AutoSize;
 import okhttp3.Cache;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
+
 import tv.danmaku.ijk.media.player.IMediaPlayer;
 import tv.danmaku.ijk.media.player.IjkTimedText;
 import xyz.doikki.videoplayer.player.AbstractPlayer;
@@ -1896,16 +1891,12 @@ public class PlayActivity extends BaseActivity {
                 return true;
             }
         });
-        mSysWebClient = new SysWebClient(mSysWebView);
+        mSysWebClient = new SysWebClient();
         webView.setWebViewClient(mSysWebClient);
         webView.setBackgroundColor(Color.BLACK);
     }
 
-    private class SysWebClient extends RequestInspectorWebViewClient {
-
-        public SysWebClient(@NonNull WebView webView) {
-            super(webView);
-        }
+    private class SysWebClient extends WebViewClient {
 
         @Override
         public void onReceivedSslError(WebView webView, SslErrorHandler sslErrorHandler, SslError sslError) {
@@ -1945,7 +1936,7 @@ public class PlayActivity extends BaseActivity {
             }
         }
 
-        WebResourceResponse checkIsVideo(String url, WebViewRequest request) {
+        WebResourceResponse checkIsVideo(String url, HashMap<String, String> headers) {
             if (url.endsWith("/favicon.ico")) {
                 if (url.startsWith("http://127.0.0.1")) {
                     return new WebResourceResponse("image/x-icon", "UTF-8", null);
@@ -1969,95 +1960,23 @@ public class PlayActivity extends BaseActivity {
 
             if (!ad) {
                 if (checkVideoFormat(url)) {
-                    HashMap<String, String> webHeaders = new HashMap<>();
-                    Map<String, String> hds = request.getHeaders();
-                    if (hds != null && hds.keySet().size() > 0) {
-                        for (String k : hds.keySet()) {
-                            if (k.equalsIgnoreCase("user-agent")
-                                    || k.equalsIgnoreCase("referer")
-                                    || k.equalsIgnoreCase("origin")) {
-                                webHeaders.put(k, " " + hds.get(k));
-                            }
-                        }
-                    }
-
                     loadFoundVideoUrls.add(url);
-                    loadFoundVideoUrlsHeader.put(url, webHeaders);
+                    loadFoundVideoUrlsHeader.put(url, headers);
                     LOG.i("loadFoundVideoUrl:" + url);
                     if (loadFoundCount.incrementAndGet() == 1) {
                         url = loadFoundVideoUrls.poll();
                         mHandler.removeMessages(100);
                         String cookie = CookieManager.getInstance().getCookie(url);
-                        if (!TextUtils.isEmpty(cookie))
-                            webHeaders.put("Cookie", " " + cookie);//携带cookie
-                        playUrl(url, webHeaders);
+                        if(!TextUtils.isEmpty(cookie))headers.put("Cookie", " " + cookie);//携带cookie
+                        playUrl(url, headers);
                         stopLoadWebView(false);
                     }
                 }
             }
-
-            if (ad || loadFoundCount.get() > 0) return AdBlocker.createEmptyResource();
-            yxdm(url, request.getHeaders());
-            if ("POST".equals(request.getMethod())) {
-                if (request.getBody().isEmpty())//得不到jquery.post内容，后面再看看第三方webview类有没有更新
-                    return null;
-            } else if (!"GET".equals(request.getMethod()))
-                return null;
-            try {
-                Request.Builder requestBuilder = new Request.Builder().url(url);
-                for (Map.Entry<String, String> entrySet : request.getHeaders().entrySet()) {
-                    requestBuilder.addHeader(entrySet.getKey(), entrySet.getValue());
-                }
-                if ("POST".equals(request.getMethod())) {
-                    String encType = request.getEnctype();
-                    if (encType == null) encType = "application/x-www-form-urlencoded";
-                    requestBuilder.post(RequestBody.create(MediaType.get(encType + "; charset=utf-8"), request.getBody()));
-                }
-                OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
-                clientBuilder.readTimeout(10000, TimeUnit.MILLISECONDS);
-                clientBuilder.writeTimeout(10000, TimeUnit.MILLISECONDS);
-                clientBuilder.connectTimeout(10000, TimeUnit.MILLISECONDS);
-                clientBuilder.followRedirects(false);
-                clientBuilder.followSslRedirects(false);
-                clientBuilder.cache(new Cache(new File(App.getInstance().getCacheDir().getAbsolutePath(), "xiutancache"), 10 * 1024 * 1024));
-                okhttp3.Response response = clientBuilder.build().newCall(requestBuilder.build()).execute();
-
-                final String contentTypeValue = response.header("Content-Type");
-                String responsePhase = OkGoHelper.httpPhaseMap.get(response.code());
-                if (responsePhase == null) responsePhase = "Internal Server Error";
-                if (contentTypeValue != null) {
-                    if (contentTypeValue.indexOf("charset=") > 0) {
-                        final String[] contentTypeAndEncoding = contentTypeValue.replace(" ", "").split(";");
-                        final String contentType = contentTypeAndEncoding[0];
-                        String charset = null;
-                        if (contentTypeAndEncoding.length >= 2) {
-                            String[] csArray = contentTypeAndEncoding[1].split("=");
-                            if (csArray.length >= 2)
-                                charset = csArray[1];
-                        }
-                        return new WebResourceResponse(contentType, charset, response.code(), responsePhase, request.getHeaders(), response.body().byteStream());
-                    } else {
-                        return new WebResourceResponse(contentTypeValue, null, response.code(), responsePhase, request.getHeaders(), response.body().byteStream());
-                    }
-                } else {
-                    String guessMimeType = "application/octet-stream";
-                    if (url.contains(".htm")) {
-                        guessMimeType = "text/html";
-                    } else if (url.contains(".css")) {
-                        guessMimeType = "text/css";
-                    } else if (url.contains(".js")) {
-                        guessMimeType = "application/javascript";
-                    } else if (url.endsWith(".png")) {
-                        guessMimeType = "image/png";
-                    } else if (url.endsWith(".jpg") || url.endsWith(".jpeg")) {
-                        guessMimeType = "image/jpeg";
-                    }
-                    return new WebResourceResponse(guessMimeType, null, response.code(), responsePhase, request.getHeaders(), response.body().byteStream());
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return null;
+            
+            return ad || loadFoundCount.get() > 0 ?
+                    AdBlocker.createEmptyResource() :
+                    null;
         }
 
         @Nullable
@@ -2069,10 +1988,21 @@ public class PlayActivity extends BaseActivity {
         @Nullable
         @Override
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-        public WebResourceResponse shouldInterceptRequest(WebView view, WebViewRequest request) {
-            String url = request.getUrl();
+        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            String url = request.getUrl().toString();
             LOG.i("shouldInterceptRequest url:" + url);
-            return checkIsVideo(url, request);
+            HashMap<String, String> webHeaders = new HashMap<>();
+            Map<String, String> hds = request.getRequestHeaders();
+            if (hds != null && hds.keySet().size() > 0) {
+                for (String k : hds.keySet()) {
+                    if (k.equalsIgnoreCase("user-agent")
+                            || k.equalsIgnoreCase("referer")
+                            || k.equalsIgnoreCase("origin")) {
+                        webHeaders.put(k," " + hds.get(k));
+                    }
+                }
+            }
+            return checkIsVideo(url, webHeaders);
         }
 
         @Override
