@@ -5,7 +5,7 @@ def static buildTime() {
     return new Date().format("yyyyMMdd_HHmm", TimeZone.getTimeZone("GMT+08:00"))
 }
 
-def appName = "TVBox_takagen99"
+//def appName = "TVBox_takagen99"
 
 android {
     compileSdk 33
