@@ -57,12 +57,12 @@ android {
             //noinspection ChromeOsAbiSupport
             ndk { abiFilters "armeabi-v7a" }
         }
-        arm64_v8a {
+        /*arm64_v8a {
             dimension "abi"
             //noinspection ChromeOsAbiSupport
             ndk { abiFilters "arm64-v8a" }
         }
-        /*quan {
+        quan {
             dimension "abi"
             //noinspection ChromeOsAbiSupport
             ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
@@ -121,6 +121,7 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.3.0'
     implementation 'com.google.android.material:material:1.4.0'
     implementation files('libs\\thunder.jar')
+    implementation project(path: ':quickjs')
 
     annotationProcessor 'androidx.room:room-compiler:2.5.1'
     implementation 'androidx.room:room-runtime:2.5.1'

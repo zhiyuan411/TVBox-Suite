@@ -63,6 +63,7 @@ import com.github.tvbox.osc.player.controller.VodController;
 import com.github.tvbox.osc.player.thirdparty.Kodi;
 import com.github.tvbox.osc.player.thirdparty.MXPlayer;
 import com.github.tvbox.osc.player.thirdparty.ReexPlayer;
+import com.github.tvbox.osc.server.ControlManager;
 import com.github.tvbox.osc.server.RemoteServer;
 import com.github.tvbox.osc.ui.activity.DetailActivity;
 import com.github.tvbox.osc.ui.adapter.SelectDialogAdapter;
@@ -803,14 +804,15 @@ public class PlayFragment extends BaseLazyFragment {
 
     void startPlayUrl(String url, HashMap<String, String> headers) {
         if (!isAdded()) return;
+        final String finalUrl = url;
         requireActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 stopParse();
                 if (mVideoView != null) {
                     mVideoView.release();
-                    if (url != null) {
-                        videoURL = url;
+                    if (finalUrl != null) {
+                        String url = finalUrl;                        
                         try {
                             int playerType = mVodPlayerCfg.getInt("pl");
                             // takagen99: Check for External Player
@@ -844,7 +846,17 @@ public class PlayFragment extends BaseLazyFragment {
                             e.printStackTrace();
                         }
                         hideTip();
-                        PlayerHelper.updateCfg(mVideoView, mVodPlayerCfg);
+                        if (url.startsWith("data:application/dash+xml;base64,")) {
+                            PlayerHelper.updateCfg(mVideoView, mVodPlayerCfg, 2);
+                            App.getInstance()
+                                .setDashData(url.split("base64,")[1]);
+                            url = ControlManager.get()
+                                .getAddress(true) + "dash/proxy.mpd";
+                        } else if (url.contains(".mpd") || url.contains("type=mpd")) {
+                            PlayerHelper.updateCfg(mVideoView, mVodPlayerCfg, 2);
+                        } else {
+                            PlayerHelper.updateCfg(mVideoView, mVodPlayerCfg);
+                        }
                         mVideoView.setProgressKey(progressKey);
                         if (headers != null) {
                             mVideoView.setUrl(url, headers);
@@ -1088,6 +1100,7 @@ public class PlayFragment extends BaseLazyFragment {
         stopParse();
         Thunder.stop(true); // 停止磁力下载
         Jianpian.finish();//停止p2p下载
+        App.getInstance().setDashData(null);
     }
 
     private VodInfo mVodInfo;
