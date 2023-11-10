@@ -5,16 +5,12 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.resource.bitmap.CenterCrop;
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
-import com.bumptech.glide.request.RequestOptions;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.bean.Movie;
 import com.github.tvbox.osc.util.DefaultConfig;
+import com.github.tvbox.osc.util.ImgUtil;
 
 import java.util.ArrayList;
 
@@ -33,22 +29,14 @@ public class GridAdapter extends BaseQuickAdapter<Movie.Video, BaseViewHolder> {
 
     @Override
     protected void convert(BaseViewHolder helper, Movie.Video item) {
-        RequestOptions options = new RequestOptions();
-        options.diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
-                .placeholder(R.drawable.img_loading_placeholder)
-                .error(R.drawable.img_loading_placeholder)
-                .transform(new CenterCrop(), new RoundedCorners(14));
-
         if (this.mShowList) {
             helper.setText(R.id.tvNote, item.note);
             helper.setText(R.id.tvName, item.name);
             ImageView ivThumb = helper.getView(R.id.ivThumb);
             //由于部分电视机使用glide报错
             if (!TextUtils.isEmpty(item.pic)) {
-                Glide.with(ivThumb)
-                        .load(DefaultConfig.checkReplaceProxy(item.pic))
-                        .apply(options)
-                        .into(ivThumb);
+            	item.pic=item.pic.trim();
+                ImgUtil.load(item.pic, ivThumb, 14);
             } else {
                 ivThumb.setImageResource(R.drawable.img_loading_placeholder);
             }
@@ -89,10 +77,7 @@ public class GridAdapter extends BaseQuickAdapter<Movie.Video, BaseViewHolder> {
         ImageView ivThumb = helper.getView(R.id.ivThumb);
         //由于部分电视机使用glide报错
         if (!TextUtils.isEmpty(item.pic)) {
-            Glide.with(ivThumb)
-                    .load(DefaultConfig.checkReplaceProxy(item.pic))
-                    .apply(options)
-                    .into(ivThumb);
+            ImgUtil.load(item.pic, ivThumb, 14);
         } else {
             ivThumb.setImageResource(R.drawable.img_loading_placeholder);
         }
