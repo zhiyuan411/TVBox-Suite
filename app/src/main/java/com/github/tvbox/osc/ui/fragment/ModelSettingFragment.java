@@ -70,8 +70,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
 
     // Player Section
     private TextView tvShowPreviewText;
-    private TextView tvScale;
-    private TextView tvPIP;
+    private TextView tvScale;    
     private TextView tvPlay;
     private TextView tvMediaCodec;
     private TextView tvVideoPurifyText;
@@ -116,9 +115,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
         tvShowPreviewText = findViewById(R.id.showPreviewText);
         tvShowPreviewText.setText(Hawk.get(HawkConfig.SHOW_PREVIEW, true) ? "开启" : "关闭");
         tvScale = findViewById(R.id.tvScaleType);
-        tvScale.setText(PlayerHelper.getScaleName(Hawk.get(HawkConfig.PLAY_SCALE, 0)));
-        tvPIP = findViewById(R.id.tvPIP);
-        tvPIP.setText(Hawk.get(HawkConfig.PIC_IN_PIC, false) ? "开启" : "关闭");
+        tvScale.setText(PlayerHelper.getScaleName(Hawk.get(HawkConfig.PLAY_SCALE, 0)));        
         tvPlay = findViewById(R.id.tvPlay);
         tvPlay.setText(PlayerHelper.getPlayerName(Hawk.get(HawkConfig.PLAY_TYPE, 0)));
         tvMediaCodec = findViewById(R.id.tvMediaCodec);
@@ -400,15 +397,41 @@ public class ModelSettingFragment extends BaseLazyFragment {
                 dialog.show();
             }
         });
-        // Switch to ON / OFF Picture-In-Picture -------------------------
-        findViewById(R.id.llPIP).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FastClickCheckUtil.check(v);
-                Hawk.put(HawkConfig.PIC_IN_PIC, !Hawk.get(HawkConfig.PIC_IN_PIC, false));
-                tvPIP.setText(Hawk.get(HawkConfig.PIC_IN_PIC, true) ? "开启" : "关闭");
-            }
-        });
+        //后台播放
+        View backgroundPlay = findViewById(R.id.llBackgroundPlay);
+        TextView tvBgPlayType = findViewById(R.id.tvBackgroundPlayType);
+        Integer defaultBgPlayTypePos = Hawk.get(HawkConfig.BACKGROUND_PLAY_TYPE, 0);
+        ArrayList<String> bgPlayTypes = new ArrayList<>();
+        bgPlayTypes.add("关闭");
+        bgPlayTypes.add("开启");
+        bgPlayTypes.add("画中画");
+        tvBgPlayType.setText(bgPlayTypes.get(defaultBgPlayTypePos));
+        backgroundPlay.setOnClickListener(view -> {
+            FastClickCheckUtil.check(view);
+            SelectDialog<String> dialog = new SelectDialog<>(mActivity);
+            dialog.setTip("请选择");
+            dialog.setAdapter(new SelectDialogAdapter.SelectDialogInterface<String>() {
+                @Override
+                public void click(String value, int pos) {
+                    tvBgPlayType.setText(value);
+                    Hawk.put(HawkConfig.BACKGROUND_PLAY_TYPE, pos);
+                }
+                @Override
+                public String getDisplay(String val) {
+                    return val;
+                }
+            }, new DiffUtil.ItemCallback<String>() {
+                @Override
+                public boolean areItemsTheSame(@NonNull @NotNull String oldItem, @NonNull @NotNull String newItem) {
+                    return oldItem.equals(newItem);
+                }
+                @Override
+                public boolean areContentsTheSame(@NonNull @NotNull String oldItem, @NonNull @NotNull String newItem) {
+                    return oldItem.equals(newItem);
+                }
+            }, bgPlayTypes,defaultBgPlayTypePos);
+            dialog.show();
+        });        
         // Select PLAYER Type --------------------------------------------
         findViewById(R.id.llPlay).setOnClickListener(new View.OnClickListener() {
             @Override

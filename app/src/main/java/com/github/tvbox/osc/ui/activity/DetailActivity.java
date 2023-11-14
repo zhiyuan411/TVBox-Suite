@@ -30,7 +30,7 @@ import androidx.annotation.RequiresApi;
 import androidx.fragment.app.FragmentContainerView;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-
+import com.blankj.utilcode.util.ServiceUtils;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
@@ -42,6 +42,7 @@ import com.github.tvbox.osc.bean.VodInfo;
 import com.github.tvbox.osc.cache.RoomDataManger;
 import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.player.controller.VodController;
+import com.github.tvbox.osc.server.PlayService;
 import com.github.tvbox.osc.ui.adapter.SeriesAdapter;
 import com.github.tvbox.osc.ui.adapter.SeriesFlagAdapter;
 import com.github.tvbox.osc.ui.dialog.PushDialog;
@@ -129,7 +130,15 @@ public class DetailActivity extends BaseActivity {
     private static final int PIP_BOARDCAST_ACTION_PLAYPAUSE = 1;
     private static final int PIP_BOARDCAST_ACTION_NEXT = 2;
 
-    private ImageView tvPlayUrl;
+    private ImageView tvPlayUrl;    
+    /**
+     * Home键广播,用于触发后台服务
+     */
+    private BroadcastReceiver mHomeKeyReceiver;
+    /**
+     * 是否开启后台播放标记,不在广播开启,onPause根据标记开启
+     */
+    boolean openBackgroundPlay;
 
     @Override
     protected int getLayoutResID() {
@@ -139,9 +148,43 @@ public class DetailActivity extends BaseActivity {
     @Override
     protected void init() {
         EventBus.getDefault().register(this);
+        initReceiver();
         initView();
         initViewModel();
         initData();
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        openBackgroundPlay = false;
+        if (ServiceUtils.isServiceRunning(PlayService.class)){
+            PlayService.stop();
+        }
+    }
+    
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (openBackgroundPlay){
+            PlayService.start(playFragment.getPlayer());
+        }
+    }
+    
+    private void initReceiver(){
+        // 注册广播接收器
+        if (mHomeKeyReceiver == null) {
+            mHomeKeyReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String action = intent.getAction();
+                    if (action != null && action.equals(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)) {
+                        openBackgroundPlay = Hawk.get(HawkConfig.BACKGROUND_PLAY_TYPE, 0) == 1 && playFragment.getPlayer() != null && playFragment.getPlayer().isPlaying();
+                    }
+                }
+            };
+            registerReceiver(mHomeKeyReceiver, new IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
+        }
     }
 
     private void initView() {
@@ -834,6 +877,11 @@ public class DetailActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // 注销广播接收器
+        if (mHomeKeyReceiver != null) {
+            unregisterReceiver(mHomeKeyReceiver);
+            mHomeKeyReceiver = null;
+        }
         try {
             if (searchExecutorService != null) {
                 searchExecutorService.shutdownNow();
@@ -848,14 +896,16 @@ public class DetailActivity extends BaseActivity {
         OkGo.getInstance().cancelTag("pushVod");
         EventBus.getDefault().unregister(this);
         if (!showPreview) Thunder.stop(true);
-    }
-
-    boolean PiPON = Hawk.get(HawkConfig.PIC_IN_PIC, false);
+    }    
 
     @Override
     public void onUserLeaveHint() {
         // takagen99 : Additional check for external player
-        if (supportsPiPMode() && showPreview && !playFragment.extPlay && PiPON) {
+        if (supportsPiPMode() && showPreview && !playFragment.extPlay && Hawk.get(HawkConfig.BACKGROUND_PLAY_TYPE, 0) == 2 ) {
+        	// 创建一个Intent对象，模拟按下Home键
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_HOME);
+            startActivity(intent);
             // Calculate Video Resolution
             int vWidth = playFragment.mVideoView.getVideoSize()[0];
             int vHeight = playFragment.mVideoView.getVideoSize()[1];
@@ -876,10 +926,15 @@ public class DetailActivity extends BaseActivity {
                     .setAspectRatio(ratio)
                     .setActions(actions).build();
             if (!fullWindows) {
-                toggleFullPreview();
-            }
+                    toggleFullPreview();
+                }
             enterPictureInPictureMode(params);
             playFragment.getVodController().hideBottom();
+            playFragment.getPlayer().postDelayed(() -> {
+                if (!playFragment.getPlayer().isPlaying()){
+                    playFragment.getVodController().togglePlay();
+                }
+            },400);
         }
         super.onUserLeaveHint();
     }

@@ -930,57 +930,59 @@ public class PlayActivity extends BaseActivity {
 
     private void initViewModel() {
         sourceViewModel = new ViewModelProvider(this).get(SourceViewModel.class);
-        sourceViewModel.playResult.observe(this, new Observer<JSONObject>() {
-            @Override
-            public void onChanged(JSONObject info) {
-                if (info != null) {
-                    try {
-                        progressKey = info.optString("proKey", null);
-                        boolean parse = info.optString("parse", "1").equals("1");
-                        boolean jx = info.optString("jx", "0").equals("1");
-                        playSubtitle = info.optString("subt", /*"https://dash.akamaized.net/akamai/test/caption_test/ElephantsDream/ElephantsDream_en.vtt"*/"");
-                        subtitleCacheKey = info.optString("subtKey", null);
-                        String playUrl = info.optString("playUrl", "");
-                        String flag = info.optString("flag");
-                        String url = info.getString("url");
-                        HashMap<String, String> headers = null;
-                        webUserAgent = null;
-                        webHeaderMap = null;
-                        if (info.has("header")) {
-                            try {
-                                JSONObject hds = new JSONObject(info.getString("header"));
-                                Iterator<String> keys = hds.keys();
-                                while (keys.hasNext()) {
-                                    String key = keys.next();
-                                    if (headers == null) {
-                                        headers = new HashMap<>();
-                                    }
-                                    headers.put(key, hds.getString(key));
-                                    if (key.equalsIgnoreCase("user-agent")) {
-                                        webUserAgent = hds.getString(key).trim();
-                                    }
-                                }
-                                webHeaderMap = headers;
-                            } catch (Throwable th) {
+        sourceViewModel.playResult.observeForever(mObserverPlayResult);
+    }
 
+    private final Observer<JSONObject> mObserverPlayResult= new Observer<JSONObject>() {
+        @Override
+        public void onChanged(JSONObject info) {
+            if (info != null) {
+                try {
+                    progressKey = info.optString("proKey", null);
+                    boolean parse = info.optString("parse", "1").equals("1");
+                    boolean jx = info.optString("jx", "0").equals("1");
+                    playSubtitle = info.optString("subt", /*"https://dash.akamaized.net/akamai/test/caption_test/ElephantsDream/ElephantsDream_en.vtt"*/"");
+                    subtitleCacheKey = info.optString("subtKey", null);
+                    String playUrl = info.optString("playUrl", "");
+                    String flag = info.optString("flag");
+                    String url = info.getString("url");
+                    HashMap<String, String> headers = null;
+                    webUserAgent = null;
+                    webHeaderMap = null;
+                    if (info.has("header")) {
+                        try {
+                            JSONObject hds = new JSONObject(info.getString("header"));
+                            Iterator<String> keys = hds.keys();
+                            while (keys.hasNext()) {
+                                String key = keys.next();
+                                if (headers == null) {
+                                    headers = new HashMap<>();
+                                }
+                                headers.put(key, hds.getString(key));
+                                if (key.equalsIgnoreCase("user-agent")) {
+                                    webUserAgent = hds.getString(key).trim();
+                                }
                             }
+                            webHeaderMap = headers;
+                        } catch (Throwable th) {
+
                         }
-                        if (parse || jx) {
-                            boolean userJxList = (playUrl.isEmpty() && ApiConfig.get().getVipParseFlags().contains(flag)) || jx;
-                            initParse(flag, userJxList, playUrl, url);
-                        } else {
-                            mController.showParse(false);
-                            playUrl(playUrl + url, headers);
-                        }
-                    } catch (Throwable th) {
-                        errorWithRetry("获取播放信息错误", true);
                     }
-                } else {
+                    if (parse || jx) {
+                        boolean userJxList = (playUrl.isEmpty() && ApiConfig.get().getVipParseFlags().contains(flag)) || jx;
+                        initParse(flag, userJxList, playUrl, url);
+                    } else {
+                        mController.showParse(false);
+                        playUrl(playUrl + url, headers);
+                    }
+                } catch (Throwable th) {
                     errorWithRetry("获取播放信息错误", true);
                 }
+            } else {
+                errorWithRetry("获取播放信息错误", true);
             }
-        });
-    }
+        }        
+    };
 
     private void initData() {
         Intent intent = getIntent();
@@ -1129,19 +1131,6 @@ public class PlayActivity extends BaseActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (mVideoView != null) {
-            if (supportsPiPMode()) {
-                if (isInPictureInPictureMode()) {
-                    // Continue playback
-                    mVideoView.resume();
-                } else {
-                    // Pause playback
-                    mVideoView.pause();
-                }
-            } else {
-                mVideoView.pause();
-            }
-        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -1195,6 +1184,8 @@ public class PlayActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        //手动注销
+        sourceViewModel.playResult.removeObserver(mObserverPlayResult);
         if (mVideoView != null) {
             mVideoView.release();
             mVideoView = null;

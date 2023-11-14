@@ -929,57 +929,59 @@ public class PlayFragment extends BaseLazyFragment {
 
     private void initViewModel() {
         sourceViewModel = new ViewModelProvider(this).get(SourceViewModel.class);
-        sourceViewModel.playResult.observe(this, new Observer<JSONObject>() {
-            @Override
-            public void onChanged(JSONObject info) {
-                if (info != null) {
-                    try {
-                        progressKey = info.optString("proKey", null);
-                        boolean parse = info.optString("parse", "1").equals("1");
-                        boolean jx = info.optString("jx", "0").equals("1");
-                        playSubtitle = info.optString("subt", /*"https://dash.akamaized.net/akamai/test/caption_test/ElephantsDream/ElephantsDream_en.vtt"*/"");
-                        subtitleCacheKey = info.optString("subtKey", null);
-                        String playUrl = info.optString("playUrl", "");
-                        String flag = info.optString("flag");
-                        String url = info.getString("url");
-                        HashMap<String, String> headers = null;
-                        webUserAgent = null;
-                        webHeaderMap = null;
-                        if (info.has("header")) {
-                            try {
-                                JSONObject hds = new JSONObject(info.getString("header"));
-                                Iterator<String> keys = hds.keys();
-                                while (keys.hasNext()) {
-                                    String key = keys.next();
-                                    if (headers == null) {
-                                        headers = new HashMap<>();
-                                    }
-                                    headers.put(key, hds.getString(key));
-                                    if (key.equalsIgnoreCase("user-agent")) {
-                                        webUserAgent = hds.getString(key).trim();
-                                    }
-                                }
-                                webHeaderMap = headers;
-                            } catch (Throwable th) {
+        sourceViewModel.playResult.observeForever(mObserverPlayResult);
+    }
 
+    private final Observer<JSONObject> mObserverPlayResult= new Observer<JSONObject>() {
+        @Override
+        public void onChanged(JSONObject info) {
+            if (info != null) {
+                try {
+                    progressKey = info.optString("proKey", null);
+                    boolean parse = info.optString("parse", "1").equals("1");
+                    boolean jx = info.optString("jx", "0").equals("1");
+                    playSubtitle = info.optString("subt", /*"https://dash.akamaized.net/akamai/test/caption_test/ElephantsDream/ElephantsDream_en.vtt"*/"");
+                    subtitleCacheKey = info.optString("subtKey", null);
+                    String playUrl = info.optString("playUrl", "");
+                    String flag = info.optString("flag");
+                    String url = info.getString("url");
+                    HashMap<String, String> headers = null;
+                    webUserAgent = null;
+                    webHeaderMap = null;
+                    if (info.has("header")) {
+                        try {
+                            JSONObject hds = new JSONObject(info.getString("header"));
+                            Iterator<String> keys = hds.keys();
+                            while (keys.hasNext()) {
+                                String key = keys.next();
+                                if (headers == null) {
+                                    headers = new HashMap<>();
+                                }
+                                headers.put(key, hds.getString(key));
+                                if (key.equalsIgnoreCase("user-agent")) {
+                                    webUserAgent = hds.getString(key).trim();
+                                }
                             }
+                            webHeaderMap = headers;
+                        } catch (Throwable th) {
+
                         }
-                        if (parse || jx) {
-                            boolean userJxList = (playUrl.isEmpty() && ApiConfig.get().getVipParseFlags().contains(flag)) || jx;
-                            initParse(flag, userJxList, playUrl, url);
-                        } else {
-                            mController.showParse(false);
-                            playUrl(playUrl + url, headers);
-                        }
-                    } catch (Throwable th) {
-                        errorWithRetry("获取播放信息错误", true);
                     }
-                } else {
+                    if (parse || jx) {
+                        boolean userJxList = (playUrl.isEmpty() && ApiConfig.get().getVipParseFlags().contains(flag)) || jx;
+                        initParse(flag, userJxList, playUrl, url);
+                    } else {
+                        mController.showParse(false);
+                        playUrl(playUrl + url, headers);
+                    }
+                } catch (Throwable th) {
                     errorWithRetry("获取播放信息错误", true);
                 }
+            } else {
+                errorWithRetry("获取播放信息错误", true);
             }
-        });
-    }
+        }        
+    };
 
     public void setData(Bundle bundle) {
         mVodInfo = (VodInfo) bundle.getSerializable("VodInfo");
@@ -1047,16 +1049,8 @@ public class PlayFragment extends BaseLazyFragment {
     @Override
     public void onStop() {
         super.onStop();
-        mVideoView.pause();
+        //mVideoView.pause();
     }
-
-//    @Override
-//    public void onPause() {
-//        super.onPause();
-//        if (mVideoView != null) {
-//            mVideoView.pause();
-//        }
-//    }
 
     @Override
     public void onResume() {
@@ -1091,6 +1085,8 @@ public class PlayFragment extends BaseLazyFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        //手动注销
+        sourceViewModel.playResult.removeObserver(mObserverPlayResult);
         EventBus.getDefault().unregister(this);
         if (mVideoView != null) {
             mVideoView.release();
@@ -1101,6 +1097,10 @@ public class PlayFragment extends BaseLazyFragment {
         Thunder.stop(true); // 停止磁力下载
         Jianpian.finish();//停止p2p下载
         App.getInstance().setDashData(null);
+    }
+    
+    public MyVideoView getPlayer() {
+        return mVideoView;
     }
 
     private VodInfo mVodInfo;

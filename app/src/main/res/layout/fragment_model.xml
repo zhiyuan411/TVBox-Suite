@@ -510,7 +510,7 @@
                         </LinearLayout>
 
                         <LinearLayout
-                            android:id="@+id/llPIP"
+                            android:id="@+id/llBackgroundPlay"
                             android:layout_width="@dimen/vs_0"
                             android:layout_height="match_parent"
                             android:layout_marginStart="@dimen/vs_5"
@@ -526,7 +526,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/mn_pip"
+                                android:text="@string/mn_bgplay"
                                 android:textColor="@android:color/white"
                                 android:textSize="@dimen/ts_24" />
 
@@ -536,7 +536,7 @@
                                 android:layout_weight="1" />
 
                             <TextView
-                                android:id="@+id/tvPIP"
+                                android:id="@+id/tvBackgroundPlayType"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textColor="@android:color/white"

@@ -5,11 +5,8 @@ def static buildTime() {
     return new Date().format("yyyyMMdd_HHmm", TimeZone.getTimeZone("GMT+08:00"))
 }
 
-//def appName = "TVBox_takagen99"
-
 android {
     compileSdk 33
-    //flavorDimensions "abi"
 
     defaultConfig {
         applicationId 'com.github.tvbox.osc.tk'
@@ -39,38 +36,6 @@ android {
             }
         }
     }
-    
-    /*applicationVariants.all { variant ->
-        variant.outputs.all {
-            def type = variant.buildType.name
-            def abi = "全包"
-            if(variant.productFlavors[0].name == "armeabi_v7a"){
-                abi = "32位"
-            } else if(variant.productFlavors[0].name == "arm64_v8a"){
-                abi = "64位"
-            }
-            def fileName = appName + "_" + abi + "_V" + versionName + ".apk"
-            outputFileName = fileName
-        }
-    }
-    
-    productFlavors {
-        armeabi_v7a {
-            dimension "abi"
-            //noinspection ChromeOsAbiSupport
-            ndk { abiFilters "armeabi-v7a" }
-        }
-        /*arm64_v8a {
-            dimension "abi"
-            //noinspection ChromeOsAbiSupport
-            ndk { abiFilters "arm64-v8a" }
-        }
-        quan {
-            dimension "abi"
-            //noinspection ChromeOsAbiSupport
-            ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
-        }
-    }*/
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -85,18 +50,6 @@ android {
     buildFeatures {
         dataBinding = true
     }
-
-//    splits {
-//        abi {
-//            enable true
-//            reset()
-//
-//            // Specifies a list of ABIs that Gradle should create APKs for.
-//            include "x86", "x86_64", "armeabi-v7a", "arm64-v8a", "armeabi", "mips", "mips64"
-//            universalApk true //generate an additional APK that contains all the ABIs
-//        }
-//    }
-
 }
 
 dependencies {
@@ -149,7 +102,6 @@ dependencies {
     implementation "androidx.media3:media3-exoplayer-hls:1.1.1"
     implementation "androidx.media3:media3-exoplayer-rtsp:1.1.1"
     implementation "androidx.media3:media3-datasource-rtmp:1.1.1"
-    //implementation 'com.google.android.exoplayer:extension-okhttp:' + rootProject.ext.exoVersion
 
     implementation "com.aliyun.sdk.android:AliyunPlayer:5.5.1.0-full"
     implementation 'com.alivc.conan:AlivcConan:0.9.5'
@@ -161,7 +113,7 @@ dependencies {
     }
     implementation 'com.lzy.net:okgo:3.0.4'
     implementation 'com.owen:tv-recyclerview:3.0.0'
-
+    implementation 'com.blankj:utilcodex:1.31.0'
     implementation 'com.github.getActivity:XXPermissions:18.5'
     implementation 'org.jsoup:jsoup:1.16.1'
     implementation 'com.github.hedzr:android-file-chooser:v1.2.0-final'
