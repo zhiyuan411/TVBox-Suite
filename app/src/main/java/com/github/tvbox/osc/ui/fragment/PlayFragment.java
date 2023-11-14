@@ -1045,11 +1045,13 @@ public class PlayFragment extends BaseLazyFragment {
 
     // takagen99 : Picture-in-Picture support
     public boolean extPlay;
-
+    
     @Override
-    public void onStop() {
-        super.onStop();
-        //mVideoView.pause();
+    public void onPause() {
+        super.onPause();
+        if (mVideoView != null) {
+            mVideoView.pause();
+        }
     }
 
     @Override
