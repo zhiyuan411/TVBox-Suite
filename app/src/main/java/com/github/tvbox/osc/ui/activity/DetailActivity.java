@@ -978,6 +978,9 @@ public class DetailActivity extends BaseActivity {
         } else {
             unregisterReceiver(pipActionReceiver);
             pipActionReceiver = null;
+            if (playFragment.getPlayer().isPlaying()){
+                playFragment.getVodController().togglePlay();
+            }
         }
     }
 
