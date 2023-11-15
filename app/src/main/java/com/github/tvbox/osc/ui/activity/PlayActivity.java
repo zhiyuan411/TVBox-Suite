@@ -6,10 +6,8 @@ import android.app.Activity;
 import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
 import android.app.RemoteAction;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
@@ -141,12 +139,7 @@ public class PlayActivity extends BaseActivity {
     private ProgressBar mPlayLoading;
     private VodController mController;
     private SourceViewModel sourceViewModel;
-    private Handler mHandler;
-
-    private BroadcastReceiver pipActionReceiver;
-    private static final int PIP_BOARDCAST_ACTION_PREV = 0;
-    private static final int PIP_BOARDCAST_ACTION_PLAYPAUSE = 1;
-    private static final int PIP_BOARDCAST_ACTION_NEXT = 2;
+    private Handler mHandler;  
 
     private String videoURL;
 
@@ -802,7 +795,8 @@ public class PlayActivity extends BaseActivity {
                     }
                 });
     }
-
+    
+    private boolean extPlay = false;
 
     void startPlayUrl(String url, HashMap<String, String> headers) {
         final String finalUrl = url;
@@ -1059,38 +1053,6 @@ public class PlayActivity extends BaseActivity {
         mController.setPlayerConfig(mVodPlayerCfg);
     }
 
-    // takagen99 : Add check for external players not enter PIP
-    private boolean extPlay = false;
-    boolean PiPON = Hawk.get(HawkConfig.PIC_IN_PIC, false);
-
-    @Override
-    public void onUserLeaveHint() {
-        if (supportsPiPMode() && !extPlay && PiPON) {
-            // Calculate Video Resolution
-            int vWidth = mVideoView.getVideoSize()[0];
-            int vHeight = mVideoView.getVideoSize()[1];
-            Rational ratio = null;
-            if (vWidth != 0) {
-                if ((((double) vWidth) / ((double) vHeight)) > 2.39) {
-                    vHeight = (int) (((double) vWidth) / 2.35);
-                }
-                ratio = new Rational(vWidth, vHeight);
-            } else {
-                ratio = new Rational(16, 9);
-            }
-            List<RemoteAction> actions = new ArrayList<>();
-            actions.add(generateRemoteAction(android.R.drawable.ic_media_previous, PIP_BOARDCAST_ACTION_PREV, "Prev", "Play Previous"));
-            actions.add(generateRemoteAction(android.R.drawable.ic_media_play, PIP_BOARDCAST_ACTION_PLAYPAUSE, "Play/Pause", "Play or Pause"));
-            actions.add(generateRemoteAction(android.R.drawable.ic_media_next, PIP_BOARDCAST_ACTION_NEXT, "Next", "Play Next"));
-            PictureInPictureParams params = new PictureInPictureParams.Builder()
-                    .setAspectRatio(ratio)
-                    .setActions(actions).build();
-            enterPictureInPictureMode(params);
-            mController.hideBottom();
-        }
-        super.onUserLeaveHint();
-    }
-
     @Override
     public void onBackPressed() {
         if (mController.onBackPressed()) {
@@ -1131,54 +1093,6 @@ public class PlayActivity extends BaseActivity {
     @Override
     protected void onPause() {
         super.onPause();
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    private RemoteAction generateRemoteAction(int iconResId, int actionCode, String title, String desc) {
-
-        final PendingIntent intent =
-                PendingIntent.getBroadcast(
-                        PlayActivity.this,
-                        actionCode,
-                        new Intent("PIP_VOD_CONTROL").putExtra("action", actionCode),
-                        0);
-        final Icon icon = Icon.createWithResource(PlayActivity.this, iconResId);
-        return (new RemoteAction(icon, title, desc, intent));
-    }
-
-    // takagen99 : PIP fix to close video when close window
-    @Override
-    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {
-        super.onPictureInPictureModeChanged(isInPictureInPictureMode);
-        if (supportsPiPMode() && isInPictureInPictureMode) {
-            pipActionReceiver = new BroadcastReceiver() {
-
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    if (intent == null || !intent.getAction().equals("PIP_VOD_CONTROL") || mController == null) {
-                        return;
-                    }
-
-                    int currentStatus = intent.getIntExtra("action", 1);
-                    if (currentStatus == PIP_BOARDCAST_ACTION_PREV) {
-                        playPrevious();
-                    } else if (currentStatus == PIP_BOARDCAST_ACTION_PLAYPAUSE) {
-                        mController.togglePlay();
-                    } else if (currentStatus == PIP_BOARDCAST_ACTION_NEXT) {
-                        playNext(false);
-                    }
-                }
-            };
-            registerReceiver(pipActionReceiver, new IntentFilter("PIP_VOD_CONTROL"));
-
-        } else {
-            // Closed playback
-            if (onStopCalled) {
-                mVideoView.release();
-            }
-            unregisterReceiver(pipActionReceiver);
-            pipActionReceiver = null;
-        }
     }
 
     @Override
@@ -1284,8 +1198,9 @@ public class PlayActivity extends BaseActivity {
     public void play(boolean reset) {
         VodInfo.VodSeries vs = mVodInfo.seriesMap.get(mVodInfo.playFlag).get(mVodInfo.playIndex);
         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_REFRESH, mVodInfo.playIndex));
-        setTip("正在获取播放信息", true, false);
+        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_REFRESH_NOTIFY, mVodInfo.name + "&&" + vs.name));
         String playTitleInfo = mVodInfo.name + " : " + vs.name;
+        setTip("正在获取播放信息", true, false);
         mController.setTitle(playTitleInfo);
 
         stopParse();
