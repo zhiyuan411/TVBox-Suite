@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.os.IBinder;
+import android.widget.RemoteViews;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -26,7 +27,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import org.json.JSONObject;
 
 public class PlayService extends Service {
-	static String videoInfo = "TvBox&&第一集";
+	static String videoInfo = "TVBox&&第一集";
     private static MyVideoView videoView;
 
     public static void start(MyVideoView controller,String currentVideoInfo) {
@@ -72,24 +73,22 @@ public class PlayService extends Service {
     }
     
     private Notification buildNotification(){
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle(videoInfo.split("&&")[0])
-                .setContentText("正在播放: "+videoInfo.split("&&")[1])
-                .setSmallIcon(R.drawable.app_icon)
-                .setContentIntent(getPendingIntentActivity());
+        RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.notification_player);
+        remoteViews.setTextViewText(R.id.tv_title, videoInfo.split("&&")[0]);
+        remoteViews.setTextViewText(R.id.tv_subtitle, "正在播放: "+videoInfo.split("&&")[1]);
+        remoteViews.setImageViewResource(R.id.iv_play_pause,videoView.isPlaying()?R.drawable.ic_notify_pause:R.drawable.ic_notify_play);
 
         // 创建通知栏操作
-        NotificationCompat.Action previousAction = buildNotificationAction(
-                R.drawable.ic_play_pre, "上一集", getPendingIntent(DetailActivity.BROADCAST_ACTION_PREV));
-        NotificationCompat.Action pauseAction = buildNotificationAction(
-                R.drawable.ic_pause, videoView.isPlaying()?"暂停":"播放",getPendingIntent(DetailActivity.BROADCAST_ACTION_PLAYPAUSE));
-        NotificationCompat.Action nextAction = buildNotificationAction(
-                R.drawable.ic_play_next, "下一集", getPendingIntent(DetailActivity.BROADCAST_ACTION_NEXT));
-
-        // 将通知栏操作添加到通知中
-        builder.addAction(previousAction);
-        builder.addAction(pauseAction);
-        builder.addAction(nextAction);
+        remoteViews.setOnClickPendingIntent(R.id.iv_previous, getPendingIntent(DetailActivity.BROADCAST_ACTION_PREV));
+        remoteViews.setOnClickPendingIntent(R.id.iv_play_pause, getPendingIntent(DetailActivity.BROADCAST_ACTION_PLAYPAUSE));
+        remoteViews.setOnClickPendingIntent(R.id.iv_next, getPendingIntent(DetailActivity.BROADCAST_ACTION_NEXT));
+        
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.app_icon)
+                .setContent(remoteViews)
+                .setCustomContentView(remoteViews)
+                .setContentIntent(getPendingIntentActivity())
+                .setOngoing(true);
 
         return builder.build();
     }
