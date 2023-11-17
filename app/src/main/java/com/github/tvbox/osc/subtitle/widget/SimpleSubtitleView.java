@@ -68,6 +68,10 @@ public class SimpleSubtitleView extends TextView
             return;
         }
         String text = subtitle.content;
+        if (text.startsWith("Dialogue:") || text.startsWith("m ")) {
+            setText(EMPTY_TEXT);
+            return;
+        }
         text = text.replaceAll("(?:\\r\\n)", "<br />");
         text = text.replaceAll("(?:\\r)", "<br />");
         text = text.replaceAll("(?:\\n)", "<br />");        
