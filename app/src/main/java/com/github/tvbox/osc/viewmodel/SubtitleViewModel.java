@@ -4,9 +4,10 @@ import android.text.TextUtils;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.github.tvbox.osc.bean.Subtitle;
+import com.github.tvbox.osc.bean.SubtitleBean;
 import com.github.tvbox.osc.bean.SubtitleData;
 import com.github.tvbox.osc.ui.dialog.SearchSubtitleDialog;
+import com.github.tvbox.osc.util.LOG;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.callback.AbsCallback;
 
@@ -41,15 +42,15 @@ public class SubtitleViewModel extends ViewModel {
         searchResultFromAssrt(title, page);
     }
 
-    public void getSearchResultSubtitleUrls(Subtitle subtitle) {
+    public void getSearchResultSubtitleUrls(SubtitleBean subtitle) {
         getSearchResultSubtitleUrlsFromAssrt(subtitle);
     }
 
-    public void getSubtitleUrl(Subtitle subtitle, SearchSubtitleDialog.SubtitleLoader subtitleLoader) {
+    public void getSubtitleUrl(SubtitleBean subtitle, SearchSubtitleDialog.SubtitleLoader subtitleLoader) {
         getSubtitleUrlFromAssrt(subtitle, subtitleLoader);
     }
 
-    private void setSearchListData(List<Subtitle> data, boolean isNew, boolean isZip) {
+    private void setSearchListData(List<SubtitleBean> data, boolean isNew, boolean isZip) {
         try {
             SubtitleData subtitleData = new SubtitleData();
             subtitleData.setSubtitleList(data);
@@ -59,6 +60,7 @@ public class SubtitleViewModel extends ViewModel {
         } catch (Throwable e) {
             e.printStackTrace();
             searchResult.postValue(null);
+            LOG.e(e);
         }
     }
 
@@ -74,6 +76,7 @@ public class SubtitleViewModel extends ViewModel {
             String searchApiUrl = "https://secure.assrt.net/sub/";
             OkGo.<String>get(searchApiUrl)
                     .params("searchword", title)
+                    .params("sort", "rank")
                     .params("page", page)
                     .params("no_redir", "1")
                     .execute(new AbsCallback<String>() {
@@ -82,13 +85,13 @@ public class SubtitleViewModel extends ViewModel {
                             try {
                                 String content = response.body();
                                 Document doc = Jsoup.parse(content);
-                                Elements items = doc.select(".resultcard .subitem a.introtitle");
-                                List<Subtitle> data = new ArrayList<>();
+                                Elements items = doc.select(".resultcard .sublist_box_title a.introtitle");
+                                List<SubtitleBean> data = new ArrayList<>();
                                 for (Element item : items) {
                                     String title = item.attr("title");
                                     String href = item.attr("href");
                                     if (TextUtils.isEmpty(href)) continue;
-                                    Subtitle one = new Subtitle();
+                                    SubtitleBean one = new SubtitleBean();
                                     one.setName(title);
                                     one.setUrl("https://assrt.net" + href);
                                     one.setIsZip(true);
@@ -120,12 +123,13 @@ public class SubtitleViewModel extends ViewModel {
                     });
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.e(e);
         }
     }
 
     Pattern regexShooterFileOnclick = Pattern.compile("onthefly\\(\"(\\d+)\",\"(\\d+)\",\"([\\s\\S]*)\"\\)");
 
-    private void getSearchResultSubtitleUrlsFromAssrt(Subtitle subtitle) {
+    private void getSearchResultSubtitleUrlsFromAssrt(SubtitleBean subtitle) {
         try {
             String url = subtitle.getUrl();
             OkGo.<String>get(url).execute(new AbsCallback<String>() {
@@ -133,7 +137,7 @@ public class SubtitleViewModel extends ViewModel {
                 public void onSuccess(com.lzy.okgo.model.Response<String> response) {
                     try {
                         String content = response.body();
-                        List<Subtitle> data = new ArrayList<>();
+                        List<SubtitleBean> data = new ArrayList<>();
                         Document doc = Jsoup.parse(content);
                         Elements items = doc.select("#detail-filelist .waves-effect");
                         if (items.size() > 0) {//压缩包里面的字幕
@@ -143,7 +147,7 @@ public class SubtitleViewModel extends ViewModel {
                                 Matcher matcher = regexShooterFileOnclick.matcher(onclick);
                                 if (matcher.find()) {
                                     String url = String.format("https://secure.assrt.net/download/%s/-/%s/%s", matcher.group(1), matcher.group(2), matcher.group(3));
-                                    Subtitle one = new Subtitle();
+                                    SubtitleBean one = new SubtitleBean();
                                     Element name = item.selectFirst("#filelist-name");
                                     one.setName(name == null ? matcher.group(3) : name.text());
                                     one.setUrl(url);
@@ -159,7 +163,7 @@ public class SubtitleViewModel extends ViewModel {
                             String h2 = href.toLowerCase();
                             if (h2.endsWith("srt") || h2.endsWith("ass") || h2.endsWith("scc") || h2.endsWith("ttml")) {
                                 String url = "https://assrt.net" + href;
-                                Subtitle one = new Subtitle();
+                                SubtitleBean one = new SubtitleBean();
                                 String title = href.substring(href.lastIndexOf("/") + 1);
                                 one.setName(URLDecoder.decode(title));
                                 one.setUrl(url);
@@ -188,10 +192,11 @@ public class SubtitleViewModel extends ViewModel {
             });
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.e(e);
         }
     }
 
-    private void getSubtitleUrlFromAssrt(Subtitle subtitle, SearchSubtitleDialog.SubtitleLoader subtitleLoader) {
+    private void getSubtitleUrlFromAssrt(SubtitleBean subtitle, SearchSubtitleDialog.SubtitleLoader subtitleLoader) {
         String ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36";
         Request request = new Request.Builder()
                 .url(subtitle.getUrl())
@@ -220,5 +225,4 @@ public class SubtitleViewModel extends ViewModel {
             }
         });
     }
-
 }

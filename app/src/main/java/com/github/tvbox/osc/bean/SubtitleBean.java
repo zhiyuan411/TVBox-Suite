@@ -1,6 +1,6 @@
 package com.github.tvbox.osc.bean;
 
-public class Subtitle {
+public class SubtitleBean {
 
     private String name;
 
@@ -34,7 +34,7 @@ public class Subtitle {
 
     @Override
     public String toString() {
-        return "Subtitle{" +
+        return "SubtitleBean{" +
                 "name='" + name + '\'' +
                 ", url='" + url + '\'' +
                 ", isZip=" + isZip +

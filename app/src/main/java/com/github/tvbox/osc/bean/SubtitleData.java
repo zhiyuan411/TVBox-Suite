@@ -6,7 +6,7 @@ public class SubtitleData {
 
     private Boolean isNew;
 
-    private List<Subtitle> subtitleList;
+    private List<SubtitleBean> subtitleList;
 
     private Boolean isZip;
 
@@ -14,7 +14,7 @@ public class SubtitleData {
         return isNew;
     }
 
-    public List<Subtitle> getSubtitleList() {
+    public List<SubtitleBean> getSubtitleList() {
         return subtitleList;
     }
 
@@ -26,7 +26,7 @@ public class SubtitleData {
         this.isNew = isNew;
     }
 
-    public void setSubtitleList(List<Subtitle> subtitle) {
+    public void setSubtitleList(List<SubtitleBean> subtitle) {
         this.subtitleList = subtitle;
     }
 
@@ -40,5 +40,4 @@ public class SubtitleData {
                 "isNew='" + isNew + '\'' +
                 '}';
     }
-
 }
