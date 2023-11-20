@@ -26,10 +26,10 @@ import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LOG;
 import com.orhanobut.hawk.Hawk;
-
+import java.util.Locale;
 import java.util.Map;
-
 import xyz.doikki.videoplayer.player.AbstractPlayer;
+import xyz.doikki.videoplayer.util.PlayerUtils;
 
 public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
 
@@ -70,7 +70,7 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
         if (mLoadControl == null) {
             mLoadControl = new DefaultLoadControl();
         }
-        mTrackSelector.setParameters(mTrackSelector.getParameters().buildUpon().setPreferredTextLanguage("zh").setTunnelingEnabled(true));
+        mTrackSelector.setParameters(mTrackSelector.getParameters().buildUpon().setPreferredTextLanguage(Locale.getDefault().getISO3Language()).setTunnelingEnabled(true));
         /*mMediaPlayer = new ExoPlayer.Builder(
                 mAppContext,
                 mRenderersFactory,
@@ -266,19 +266,7 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
         if (mAppContext == null || unsupported()) {
             return 0;
         }
-        //使用getUidRxBytes方法获取该进程总接收量
-        long total = TrafficStats.getTotalRxBytes();
-        //记录当前的时间
-        long time = System.currentTimeMillis();
-        //数据接收量除以数据接收的时间，就计算网速了。
-        long diff = total - lastTotalRxBytes;
-        long speed = diff / Math.max(time - lastTimeStamp, 1);
-        //当前时间存到上次时间这个变量，供下次计算用
-        lastTimeStamp = time;
-        //当前总接收量存到上次接收总量这个变量，供下次计算用
-        lastTotalRxBytes = total;
-        LOG.e("TcpSpeed", speed * 1024 + "");
-        return speed * 1024;
+        return PlayerUtils.getNetSpeed(mAppContext);
     }
 
     @Override
