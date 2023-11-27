@@ -3,10 +3,14 @@ package com.github.tvbox.osc.ui.activity;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.PendingIntent;
+import android.app.PictureInPictureParams;
 import android.app.RemoteAction;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
@@ -17,6 +21,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
+import android.util.Rational;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -141,6 +146,12 @@ public class PlayActivity extends BaseActivity {
     private String videoURL;
     private long videoDuration = -1;
     private List<String> videoSegmentationURL = new ArrayList<>();
+    
+    private BroadcastReceiver pipActionReceiver;
+    public static final String BROADCAST_ACTION = "VOD_CONTROL";
+    public static final int BROADCAST_ACTION_PREV = 0;
+    public static final int BROADCAST_ACTION_PLAYPAUSE = 1;
+    public static final int BROADCAST_ACTION_NEXT = 2;
 
     @Override
     protected int getLayoutResID() {
@@ -798,8 +809,6 @@ public class PlayActivity extends BaseActivity {
                     }
                 });
     }
-    
-    private boolean extPlay = false;
 
     void startPlayUrl(String url, HashMap<String, String> headers) {
         final String finalUrl = url;
@@ -1103,6 +1112,42 @@ public class PlayActivity extends BaseActivity {
         }
         mController.setPlayerConfig(mVodPlayerCfg);
     }
+    
+    // takagen99 : Add check for external players not enter PIP    
+    private boolean extPlay = false;
+    
+    @Override
+    public void onUserLeaveHint() {
+        if (supportsPiPMode() && !extPlay && Hawk.get(HawkConfig.BACKGROUND_PLAY_TYPE, 0) == 2) {
+            // Calculate Video Resolution
+            int vWidth = mVideoView.getVideoSize()[0];
+            int vHeight = mVideoView.getVideoSize()[1];
+            Rational ratio = null;
+            if (vWidth != 0) {
+                if ((((double) vWidth) / ((double) vHeight)) > 2.39) {
+                    vHeight = (int) (((double) vWidth) / 2.35);
+                }
+                ratio = new Rational(vWidth, vHeight);
+            } else {
+                ratio = new Rational(16, 9);
+            }
+            List<RemoteAction> actions = new ArrayList<>();
+            actions.add(generateRemoteAction(android.R.drawable.ic_media_previous, BROADCAST_ACTION_PREV, "Prev", "Play Previous"));
+            actions.add(generateRemoteAction(android.R.drawable.ic_media_play, BROADCAST_ACTION_PLAYPAUSE, "Play/Pause", "Play or Pause"));
+            actions.add(generateRemoteAction(android.R.drawable.ic_media_next, BROADCAST_ACTION_NEXT, "Next", "Play Next"));
+            PictureInPictureParams params = new PictureInPictureParams.Builder()
+                    .setAspectRatio(ratio)
+                    .setActions(actions).build();
+            enterPictureInPictureMode(params);
+            mController.hideBottom();
+            mVideoView.postDelayed(() -> {
+                if (!mVideoView.isPlaying()){
+                    mController.togglePlay();
+                }
+            },400);
+        }
+        super.onUserLeaveHint();
+    }
 
     @Override
     public void onBackPressed() {
@@ -1146,6 +1191,54 @@ public class PlayActivity extends BaseActivity {
         super.onPause();
         if (mVideoView != null) {
             mVideoView.pause();
+        }
+    }
+    
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private RemoteAction generateRemoteAction(int iconResId, int actionCode, String title, String desc) {
+
+        final PendingIntent intent =
+                PendingIntent.getBroadcast(
+                        PlayActivity.this,
+                        actionCode,
+                        new Intent(BROADCAST_ACTION).putExtra("action", actionCode),
+                        0);
+        final Icon icon = Icon.createWithResource(PlayActivity.this, iconResId);
+        return (new RemoteAction(icon, title, desc, intent));
+    }
+
+    // takagen99 : PIP fix to close video when close window
+    @Override
+    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode);
+        if (supportsPiPMode() && isInPictureInPictureMode) {
+            pipActionReceiver = new BroadcastReceiver() {
+
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (intent == null || !intent.getAction().equals(BROADCAST_ACTION) || mController == null) {
+                        return;
+                    }
+
+                    int currentStatus = intent.getIntExtra("action", 1);
+                    if (currentStatus == BROADCAST_ACTION_PREV) {
+                        playPrevious();
+                    } else if (currentStatus == BROADCAST_ACTION_PLAYPAUSE) {
+                        mController.togglePlay();
+                    } else if (currentStatus == BROADCAST_ACTION_NEXT) {
+                        playNext(false);
+                    }
+                }
+            };
+            registerReceiver(pipActionReceiver, new IntentFilter(BROADCAST_ACTION));
+
+        } else {
+            // Closed playback
+            if (onStopCalled) {
+                mVideoView.release();
+            }
+            unregisterReceiver(pipActionReceiver);
+            pipActionReceiver = null;
         }
     }
 

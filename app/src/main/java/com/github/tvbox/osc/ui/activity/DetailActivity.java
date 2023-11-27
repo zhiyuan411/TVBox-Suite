@@ -888,8 +888,7 @@ public class DetailActivity extends BaseActivity {
     }
 
     @Override
-    protected void onDestroy() {
-    	registerActionReceiver(false);
+    protected void onDestroy() {    	
         super.onDestroy();
         // 注销广播接收器
         if (mHomeKeyReceiver != null) {
