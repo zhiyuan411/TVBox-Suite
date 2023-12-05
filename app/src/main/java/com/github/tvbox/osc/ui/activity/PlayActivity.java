@@ -819,7 +819,8 @@ public class PlayActivity extends BaseActivity {
                 if (mVideoView != null) {
                     mVideoView.release();
                     if (finalUrl != null) {
-                        String url = finalUrl;              
+                        String url = finalUrl;
+                        videoURL = url;              
                         try {
                             int playerType = mVodPlayerCfg.getInt("pl");
                             // takagen99: Check for External Player
