@@ -187,9 +187,12 @@ public class HomeActivity extends BaseActivity {
                     textView.invalidate();
 //                    if (!sortAdapter.getItem(position).filters.isEmpty())
 //                        view.findViewById(R.id.tvFilter).setVisibility(View.VISIBLE);
-
+                    if (position == -1) {
+                        position = 0;
+                        HomeActivity.this.mGridView.setSelection(0);
+                    }
                     MovieSort.SortData sortData = sortAdapter.getItem(position);
-                    if (!sortData.filters.isEmpty()) {
+                    if (null != sortData && !sortData.filters.isEmpty()) {
                         showFilterIcon(sortData.filterSelectCount());
                     }
                     HomeActivity.this.sortFocusView = view;
