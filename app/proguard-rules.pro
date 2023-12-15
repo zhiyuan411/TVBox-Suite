@@ -220,7 +220,8 @@
 
 # 支持影视的ali相关的jar
 -keep class com.google.gson.**{*;}
-
+# 某些类会反射调用zxing导致生成阿里云二维码报错
+-keep class com.google.zxing.** {*;}
 #阿里云播放器
 -keep class com.alivc.**{*;}
 -keep class com.aliyun.**{*;}
