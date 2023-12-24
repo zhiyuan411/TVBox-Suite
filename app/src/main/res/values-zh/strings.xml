@@ -116,6 +116,8 @@
     <string name="act_hist">历史记录</string>
     <string name="act_hist_sel">确定键删除当前选中记录</string>
     <string name="act_hist_rm">删除记录</string>
+    <string name="act_live_play_empty_live_url">直播地址未配置，请前往设置界面配置哦</string>
+    <string name="act_live_play_empty_channel">频道列表为空</string>
     <string name="act_search">搜索</string>
     <string name="act_search_clr">清空</string>
     <string name="act_search_del">删除</string>

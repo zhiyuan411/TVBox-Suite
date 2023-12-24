@@ -7,6 +7,7 @@ import androidx.collection.ArrayMap;
 import com.github.tvbox.osc.bean.Doh;
 import com.github.catvod.utils.Path;
 import com.github.catvod.utils.Util;
+import com.github.tvbox.osc.util.OkGoHelper;
 import com.google.common.net.HttpHeaders;
 
 import java.util.Map;
@@ -42,7 +43,8 @@ public class OkHttp {
     }
 
     public static Dns dns() {
-        return get().dns != null ? get().dns : Dns.SYSTEM;
+//        return get().dns != null ? get().dns : Dns.SYSTEM; // 由于 setDoh(Doh doh)没有被调用导致这里选择的是 Dns.SYSTEM
+        return get().dns != null ? get().dns : OkGoHelper.dnsOverHttps;
     }
 
     public void setDoh(Doh doh) {
