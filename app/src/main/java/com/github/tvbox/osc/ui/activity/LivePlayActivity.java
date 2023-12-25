@@ -784,6 +784,30 @@ public class LivePlayActivity extends BaseActivity {
         });
     }
 
+    private boolean replayChannel() {
+        if (mVideoView == null) return true;
+        mVideoView.release();
+        currentLiveChannelItem = getLiveChannels(currentChannelGroupIndex).get(currentLiveChannelIndex);
+        Hawk.put(HawkConfig.LIVE_CHANNEL, currentLiveChannelItem.getChannelName());
+        livePlayerManager.getLiveChannelPlayer(mVideoView, currentLiveChannelItem.getChannelName());
+        channel_Name = currentLiveChannelItem;
+        currentLiveChannelItem.setinclude_back(currentLiveChannelItem.getUrl().indexOf("PLTV/8888") != -1);
+        mHandler.post(tv_sys_timeRunnable);
+        tv_channelname.setText(channel_Name.getChannelName());
+        tv_channelnum.setText("" + channel_Name.getChannelNum());
+        if (channel_Name == null || channel_Name.getSourceNum() <= 0) {
+            tv_source.setText("1/1");
+        } else {
+            tv_source.setText("线路 " + (channel_Name.getSourceIndex() + 1) + "/" + channel_Name.getSourceNum());
+        }
+
+        getEpg(new Date());
+        mVideoView.setUrl(currentLiveChannelItem.getUrl());
+        showChannelInfo();
+        mVideoView.start();
+        return true;
+    }
+
     //节目播放
     private boolean playChannel(int channelGroupIndex, int liveChannelIndex, boolean changeSource) {
         if ((channelGroupIndex == currentChannelGroupIndex && liveChannelIndex == currentLiveChannelIndex && !changeSource)
@@ -826,13 +850,6 @@ public class LivePlayActivity extends BaseActivity {
         if (!isCurrentLiveChannelValid()) return;
         Integer[] groupChannelIndex = getNextChannel(1);
         playChannel(groupChannelIndex[0], groupChannelIndex[1], false);
-    }
-
-    public void playCurrent() {
-        if (!isCurrentLiveChannelValid()) {
-            return;
-        }
-        playChannel(currentChannelGroupIndex, currentLiveChannelIndex, true);
     }
 
     private void playPrevious() {
@@ -1042,7 +1059,7 @@ public class LivePlayActivity extends BaseActivity {
     private final Runnable mConnectTimeoutReplayRun = new Runnable() {
         @Override
         public void run() {
-            playCurrent();
+            replayChannel();
         }
     };
 
