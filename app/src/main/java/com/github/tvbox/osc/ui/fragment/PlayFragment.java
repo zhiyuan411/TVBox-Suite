@@ -1854,18 +1854,8 @@ public class PlayFragment extends BaseLazyFragment {
             super.onPageFinished(view, url);
             String click = sourceBean.getClickSelector();
             LOG.i("onPageFinished url:" + url);
-
             if (!click.isEmpty()) {
-                String selector;
-                if (click.contains(";")) {
-                    if (!url.contains(click.split(";")[0])) return;
-                    selector = click.split(";")[1];
-                } else {
-                    selector = click.trim();
-                }
-                String js = "$(\"" + selector + "\").click();";
-                LOG.i("javascript:" + js);
-                mSysWebView.loadUrl("javascript:" + js);
+                mSysWebView.loadUrl("javascript:" + click);
             }
         }
 

@@ -1986,15 +1986,7 @@ public class PlayActivity extends BaseActivity {
             String click = sourceBean.getClickSelector();
             LOG.i("onPageFinished url:" + url);
             if (!click.isEmpty()) {
-                String selector;
-                if (click.contains(";")) {
-                    if (!url.contains(click.split(";")[0])) return;
-                    selector = click.split(";")[1];
-                } else {
-                    selector = click.trim();
-                }
-                String js = "$(\"" + selector + "\").click();";
-                mSysWebView.loadUrl("javascript:" + js);
+                mSysWebView.loadUrl("javascript:" + click);
             }
         }
 
