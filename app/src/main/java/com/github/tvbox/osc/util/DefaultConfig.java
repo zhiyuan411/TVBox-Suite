@@ -1,12 +1,16 @@
 package com.github.tvbox.osc.util;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.os.Environment;
 import android.text.TextUtils;
 
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
+import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.bean.MovieSort;
 import com.github.tvbox.osc.bean.SourceBean;
 import com.github.tvbox.osc.server.ControlManager;
@@ -15,9 +19,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.hjq.permissions.Permission;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -38,6 +47,17 @@ public class DefaultConfig {
                         if (sortData.name.equals(cate)) {
                             if (sortData.filters == null)
                                 sortData.filters = new ArrayList<>();
+                            if (sortData.filterSelect.isEmpty()){
+                                HashMap<String, String> filterCelect = new HashMap<>();
+                                for(MovieSort.SortFilter filter:sortData.filters){
+                                    Iterator<Map.Entry<String, String>> it = filter.values.entrySet().iterator();
+                                    if(it.hasNext()){
+                                        Map.Entry<String, String> first = it.next();
+                                        filterCelect.put(filter.key,first.getValue());
+                                    }
+                                }
+                                sortData.filterSelect = filterCelect;
+                            }
                             data.add(sortData);
                         }
                     }
@@ -46,6 +66,17 @@ public class DefaultConfig {
                 for (MovieSort.SortData sortData : list) {
                     if (sortData.filters == null)
                         sortData.filters = new ArrayList<>();
+                    if (sortData.filterSelect.isEmpty()){
+                        HashMap<String, String> filterCelect = new HashMap<>();
+                        for(MovieSort.SortFilter filter:sortData.filters){
+                            Iterator<Map.Entry<String, String>> it = filter.values.entrySet().iterator();
+                            if(it.hasNext()){
+                                Map.Entry<String, String> first = it.next();
+                                filterCelect.put(filter.key,first.getValue());
+                            }
+                        }
+                        sortData.filterSelect = filterCelect;
+                    }
                     data.add(sortData);
                 }
             }
@@ -68,6 +99,72 @@ public class DefaultConfig {
         return -1;
     }
 
+    public static void resetApp(Context mContext){
+        //使用
+        clearPublic(mContext);
+        clearPrivate(mContext);
+        restartApp();
+    }
+
+    public static void restartApp() {
+        Activity activity = AppManager.getInstance().getActivity(HomeActivity.class);
+        final Intent intent = activity.getPackageManager().getLaunchIntentForPackage(activity.getPackageName());
+        if (intent != null) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            activity.startActivity(intent);
+        }
+        //杀掉以前进程
+        android.os.Process.killProcess(android.os.Process.myPid());
+    }
+
+    /**
+     * 清空公有目录
+     */
+    public static void clearPublic(Context mContext) {
+        File dir = new File(App.getInstance().getExternalFilesDir("").getParentFile().getAbsolutePath());
+        File[] files = dir.listFiles();
+        if (null != files) {
+            for (File file : files) {
+                FileUtils.recursiveDelete(file);
+            }
+        }
+        String publicFilePath = Environment.getExternalStorageDirectory().getPath() + "/" + getPackageName(mContext);
+        dir = new File(publicFilePath);
+        files = dir.listFiles();
+        if (null != files) {
+            for (File file : files) {
+                FileUtils.recursiveDelete(file);
+            }
+        }
+    }
+
+    /**
+     * 清空私有目录
+     */
+    public static  void clearPrivate(Context mContext) {
+        //清空文件夹
+        File dir = new File(Objects.requireNonNull(mContext.getFilesDir().getParent()));
+        File[] files = dir.listFiles();
+        if (null != files) {
+            for (File file : files) {
+                if (!file.getName().contains("lib")) {
+                    FileUtils.recursiveDelete(file);
+                }
+            }
+        }
+    }
+
+    public static String getPackageName(Context mContext) {
+        //包管理操作管理类
+        PackageManager pm = mContext.getPackageManager();
+        try {
+            PackageInfo packageInfo = pm.getPackageInfo(mContext.getPackageName(), 0);
+            return packageInfo.packageName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
     public static String getAppVersionName(Context mContext) {
         //包管理操作管理类
         PackageManager pm = mContext.getPackageManager();
@@ -183,7 +280,7 @@ public class DefaultConfig {
 
     public static String[] StoragePermissionGroup() {
         return new String[] {
-                Permission.MANAGE_EXTERNAL_STORAGE
+                Permission.MANAGE_EXTERNAL_STORAGE                
         };
     }
 

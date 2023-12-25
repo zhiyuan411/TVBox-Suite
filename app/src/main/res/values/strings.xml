@@ -71,6 +71,7 @@
     <string name="mn_theme">Theme</string>
     <string name="mn_about">About</string>
     <string name="mn_purify">Skip Ad</string>
+    <string name="mn_reset">resetApp</string>
 
     // Settings Dialog Pop-Up //
     <string name="dia_source">Select Source</string>

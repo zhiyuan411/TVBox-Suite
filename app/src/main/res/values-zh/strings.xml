@@ -71,6 +71,7 @@
     <string name="mn_theme">主题</string>
     <string name="mn_about">关于</string>
     <string name="mn_purify">广告过滤</string>
+    <string name="mn_reset">重置</string>
 
     // Settings Dialog Pop-Up //
     <string name="dia_source">请选择数据源</string>
