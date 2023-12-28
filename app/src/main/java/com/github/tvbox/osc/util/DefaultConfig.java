@@ -47,17 +47,6 @@ public class DefaultConfig {
                         if (sortData.name.equals(cate)) {
                             if (sortData.filters == null)
                                 sortData.filters = new ArrayList<>();
-                            if (sortData.filterSelect.isEmpty()){
-                                HashMap<String, String> filterCelect = new HashMap<>();
-                                for(MovieSort.SortFilter filter:sortData.filters){
-                                    Iterator<Map.Entry<String, String>> it = filter.values.entrySet().iterator();
-                                    if(it.hasNext()){
-                                        Map.Entry<String, String> first = it.next();
-                                        filterCelect.put(filter.key,first.getValue());
-                                    }
-                                }
-                                sortData.filterSelect = filterCelect;
-                            }
                             data.add(sortData);
                         }
                     }
@@ -66,17 +55,6 @@ public class DefaultConfig {
                 for (MovieSort.SortData sortData : list) {
                     if (sortData.filters == null)
                         sortData.filters = new ArrayList<>();
-                    if (sortData.filterSelect.isEmpty()){
-                        HashMap<String, String> filterCelect = new HashMap<>();
-                        for(MovieSort.SortFilter filter:sortData.filters){
-                            Iterator<Map.Entry<String, String>> it = filter.values.entrySet().iterator();
-                            if(it.hasNext()){
-                                Map.Entry<String, String> first = it.next();
-                                filterCelect.put(filter.key,first.getValue());
-                            }
-                        }
-                        sortData.filterSelect = filterCelect;
-                    }
                     data.add(sortData);
                 }
             }
