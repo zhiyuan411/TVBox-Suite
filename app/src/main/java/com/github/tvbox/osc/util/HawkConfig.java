@@ -51,6 +51,7 @@ public class HawkConfig {
     public static final String SUBTITLE_TIME_DELAY = "subtitle_time_delay";
     public static final String THEME_SELECT = "theme_select";
     public static final String BACKGROUND_PLAY_TYPE = "background_play_type";
+    public static final String FAST_SEARCH_MODE = "fast_search_mode";
 
     // Live Settings
     public static final String LIVE_CHANNEL = "last_live_channel_name";

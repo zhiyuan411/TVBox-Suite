@@ -45,6 +45,7 @@
     <string name="det_actor">演员</string>
     <string name="det_dir">导演</string>
     <string name="det_des"></string>
+    <string name="det_synopsis">简介</string>
 
     // Settings Menu Page //
     <string name="mn_config">配置地址</string>
@@ -72,6 +73,7 @@
     <string name="mn_about">关于</string>
     <string name="mn_purify">广告过滤</string>
     <string name="mn_reset">重置</string>
+    <string name="mn_fastsearch">聚搜</string>
 
     // Settings Dialog Pop-Up //
     <string name="dia_source">请选择数据源</string>
