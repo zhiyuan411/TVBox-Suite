@@ -294,29 +294,9 @@ public class FileUtils {
     }
     
     public static void cleanPlayerCache() {
-        String thunderCachePath = getCachePath() + "/thunder/";
-        File thunderCacheDir = new File(thunderCachePath);
-        try {
-            if (thunderCacheDir.exists()) recursiveDelete(thunderCacheDir);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        String ijkCachePath = getExternalCachePath() + "/ijkcaches/";
-        File ijkCacheDir = new File(ijkCachePath);
-        try {
-            if (ijkCacheDir.exists()) recursiveDelete(ijkCacheDir);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        String jpaliCachePath = getExternalCachePath() + "/jpali/Downloads/";
-        File jpaliCacheDir = new File(jpaliCachePath);
-        try {
-            if (jpaliCacheDir.exists()) recursiveDelete(jpaliCacheDir);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        recursiveDelete(new File(getCachePath() + File.separator + "thunder"));
+        recursiveDelete(new File(getExternalCachePath() + File.separator + "ijkcaches"));
+        recursiveDelete(new File(getExternalCachePath() + File.separator + "jpali" + File.separator + "Downloads"));
     }
 
     public static String getFileName(String filePath) {
