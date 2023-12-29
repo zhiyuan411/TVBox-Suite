@@ -517,6 +517,7 @@ public class PlayFragment extends BaseLazyFragment {
                         public void run() {
                             mediaPlayer.seekTo(progress);
                             mediaPlayer.start();
+                            mController.startProgress();
                         }
                     }, 800);
                     dialog.dismiss();
