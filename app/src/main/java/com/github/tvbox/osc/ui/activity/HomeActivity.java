@@ -320,6 +320,14 @@ public class HomeActivity extends BaseActivity {
         setLoadSir(this.contentLayout);
         //mHandler.postDelayed(mFindFocus, 250);
     }
+    
+    public static void homeRecf() { //站点切换
+        int homeRec = Hawk.get(HawkConfig.HOME_REC, -1);
+        int limit = 2;
+        if (homeRec == limit) homeRec = -1;
+        homeRec++;
+        Hawk.put(HawkConfig.HOME_REC, homeRec);
+    }
 
     private void initViewModel() {
         sourceViewModel = new ViewModelProvider(this).get(SourceViewModel.class);
