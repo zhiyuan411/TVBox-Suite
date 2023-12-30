@@ -47,6 +47,7 @@ import com.github.tvbox.osc.ui.dialog.SelectDialog;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.PlayerHelper;
+import com.github.tvbox.osc.util.ScreenUtils;
 import com.github.tvbox.osc.util.SubtitleHelper;
 import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
@@ -137,6 +138,7 @@ public class VodController extends BaseController {
                         // takagen99: Check if Touch Screen, show back button
                         if (((BaseActivity) mActivity).supportsTouch()) {
                             mBack.setVisibility(VISIBLE);
+                            showLockView();
                         }
 
                         if (isKeyUp) {
@@ -247,6 +249,11 @@ public class VodController extends BaseController {
 
     // center BACK button
     LinearLayout mBack;
+    
+    //center LOCK button
+    private boolean isLock = false;
+    ImageView mLockView;
+    LockRunnable lockRunnable = new LockRunnable();
 
     // bottom container
     LinearLayout mBottomRoot;
@@ -312,6 +319,12 @@ public class VodController extends BaseController {
             mBottomRoot.requestLayout();
         }
     };
+    
+    private void showLockView() {
+        mLockView.setVisibility(ScreenUtils.isTv(getContext()) ? INVISIBLE : VISIBLE);
+        mHandler.removeCallbacks(lockRunnable);
+        mHandler.postDelayed(lockRunnable, 3000);
+    }
 
     @Override
     protected void onDetachedFromWindow() {
@@ -345,6 +358,9 @@ public class VodController extends BaseController {
 
         // center back button
         mBack = findViewById(R.id.tvBackButton);
+        
+        // center lock button
+        mLockView = findViewById(R.id.tv_lock);
 
         // bottom container
         mBottomRoot = findViewById(R.id.bottom_container);
@@ -398,6 +414,32 @@ public class VodController extends BaseController {
 
         // initialize subtitle
         initSubtitleInfo();
+        
+        mLockView.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isLock = !isLock;
+                mLockView.setImageResource(isLock ? R.drawable.icon_lock : R.drawable.icon_unlock);
+                if (isLock) {
+                    Message obtain = Message.obtain();
+                    obtain.what = 1003; //隐藏底部菜单
+                    mHandler.sendMessage(obtain);
+                }
+                showLockView();
+            }
+        });
+        
+        View rootView = findViewById(R.id.rootView);
+        rootView.setOnTouchListener(new OnTouchListener() {@Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (isLock) {
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        showLockView();
+                    }
+                }
+                return isLock;
+            }
+        });
 
         mGridView.setLayoutManager(new V7LinearLayoutManager(getContext(), 0, false));
         ParseAdapter parseAdapter = new ParseAdapter();
@@ -1474,6 +1516,12 @@ public class VodController extends BaseController {
             });
             anim.setDuration(600);
             anim.start();
+        }
+    }
+    
+    private class LockRunnable implements Runnable {@Override
+        public void run() {
+            mLockView.setVisibility(INVISIBLE);
         }
     }
 
