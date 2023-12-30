@@ -287,6 +287,9 @@ public class VodController extends BaseController {
     TextView mPlayerTimeStartBtn;
     TextView mPlayerTimeSkipBtn;
     TextView mPlayerTimeStepBtn;
+    public TextView mPlayerTimeResetBtn;
+    public ImageView mLvPortraitBtn;
+    public LinearLayout mLandscapePortraitBtn;
 
     // parse container
     LinearLayout mParseRoot;
@@ -380,6 +383,9 @@ public class VodController extends BaseController {
         mPlayerTimeStartBtn = findViewById(R.id.play_time_start);
         mPlayerTimeSkipBtn = findViewById(R.id.play_time_end);
         mPlayerTimeStepBtn = findViewById(R.id.play_time_step);
+        mPlayerTimeResetBtn = findViewById(R.id.play_time_reset);
+        mLandscapePortraitBtn = findViewById(R.id.landscape_portrait);
+        mLvPortraitBtn = findViewById(R.id.lv_portrait);
 
         // parse container
         mParseRoot = findViewById(R.id.parse_root);
@@ -727,6 +733,35 @@ public class VodController extends BaseController {
                 FastClickCheckUtil.check(view);
                 listener.selectAudioTrack();
             }
+        });        
+        //        增加播放页面片头片尾时间重置
+        mPlayerTimeResetBtn.setOnClickListener(new OnClickListener() {@Override
+            public void onClick(View v) {
+                mHandler.removeCallbacks(mHideBottomRunnable);
+                mHandler.postDelayed(mHideBottomRunnable, 8000);
+                try {
+                    mPlayerConfig.put("et", 0);
+                    mPlayerConfig.put("st", 0);
+                    updatePlayerCfgView();
+                    listener.updatePlayerCfg();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        mPlayerTimeResetBtn.setOnLongClickListener(new OnLongClickListener() {@Override
+            public boolean onLongClick(View view) {
+                try {
+                    mPlayerConfig.put("st", 110);
+                    mPlayerConfig.put("et", 150);
+                    updatePlayerCfgView();
+                    listener.updatePlayerCfg();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                Toast.makeText(getContext(), "已预设片头片尾", Toast.LENGTH_SHORT).show();
+                return true;
+            }
         });
         // Button : SKIP time start -----------------------------------------
         mPlayerTimeStartBtn.setOnClickListener(new OnClickListener() {
@@ -830,6 +865,14 @@ public class VodController extends BaseController {
                 return true;
             }
         });
+        mLandscapePortraitBtn.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                FastClickCheckUtil.check(view);
+                setLandscapePortrait();
+                hideBottom();
+            }
+        });
         // Button: BACK click to go back to previous page -------------------
         mBack.setOnClickListener(new OnClickListener() {
             @Override
@@ -847,6 +890,28 @@ public class VodController extends BaseController {
                 }
             }
         });
+    }
+    
+    public void initLandscapePortraitBtnInfo() {
+        if(mControlWrapper!=null){
+            int width = mControlWrapper.getVideoSize()[0];
+            int height = mControlWrapper.getVideoSize()[1];
+            if (width < height) {
+                mLandscapePortraitBtn.setVisibility(View.VISIBLE);
+                mLvPortraitBtn.setImageResource(R.drawable.htov);
+            }
+        }
+    }
+    
+    void setLandscapePortrait() {
+        int requestedOrientation = mActivity.getRequestedOrientation();
+        if (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE || requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE || requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE) {
+            mLvPortraitBtn.setImageResource(R.drawable.vtoh);
+            mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+        } else if (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT || requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT || requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT) {
+            mLvPortraitBtn.setImageResource(R.drawable.htov);
+            mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+        }
     }
 
     void initSubtitleInfo() {
@@ -1076,6 +1141,7 @@ public class VodController extends BaseController {
                 // takagen99 : Add Video Resolution
                 if (mControlWrapper.getVideoSize().length >= 2) {
                     mPlayerResolution.setText(mControlWrapper.getVideoSize()[0] + " x " + mControlWrapper.getVideoSize()[1]);
+                    initLandscapePortraitBtnInfo();
                 }
             case VideoView.STATE_BUFFERED:
                 break;
