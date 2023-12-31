@@ -6,9 +6,13 @@ public final class QuickJSLoader {
     }
 
     public static void init(Boolean bool) {
-        System.loadLibrary("quickjs-android-wrapper");
-        if (bool.booleanValue()) {
-            startRedirectingStdoutStderr("QuJs ==> ");
+        try {
+            System.loadLibrary("quickjs-android-wrapper");
+            if (bool.booleanValue()) {
+                startRedirectingStdoutStderr("QuJs ==> ");
+            }
+        } catch (Throwable throwable) {
+
         }
     }
 
