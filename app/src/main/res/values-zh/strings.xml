@@ -94,6 +94,7 @@
     <string name="dia_locale">请选择应用语言</string>
     <string name="dia_theme">请选择主题</string>
     <string name="dia_confirm">确定全部删除 ?</string>
+    <string name="dia_reset">确定重置将清除配置</string>
 
     // Settings Backup Restore Page //
     <string name="set_bkup_ok">备份成功!</string>

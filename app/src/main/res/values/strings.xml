@@ -94,6 +94,7 @@
     <string name="dia_locale">Select Language</string>
     <string name="dia_theme">Select Theme</string>
     <string name="dia_confirm">Confirm to Clear All ?</string>
+    <string name="dia_reset">Reset Clear Configuration</string>
 
     // Settings Backup Restore Page //
     <string name="set_bkup_ok">Backup Success</string>
