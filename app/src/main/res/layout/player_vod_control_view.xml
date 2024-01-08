@@ -179,8 +179,8 @@
         android:visibility="gone"
         tools:visibility="visible"
         android:layout_gravity="right"
-        android:layout_marginRight="@dimen/vs_15"
-        android:layout_marginTop="@dimen/vs_15"
+        android:layout_marginRight="@dimen/vs_35"
+        android:layout_marginTop="@dimen/vs_8"
         android:orientation="horizontal">
 
         <TextView
@@ -195,6 +195,7 @@
             android:tag="vod_control_pause_time"
             android:text="0Kb/s"
             android:textColor="@android:color/white"
+            android:textStyle="bold"
             android:textSize="@dimen/ts_22" />
 
         <TextView
@@ -209,6 +210,7 @@
             android:tag="vod_control_pause_time"
             android:text="00:00 | 00:00"
             android:textColor="@android:color/white"
+            android:textStyle="bold"
             android:textSize="@dimen/ts_22" />
 
         <TextView
@@ -223,6 +225,7 @@
             android:tag="vod_control_pause_time"
             android:text="00:00:00"
             android:textColor="@android:color/white"
+            android:textStyle="bold"
             android:textSize="@dimen/ts_22" />
     </LinearLayout>    
 
@@ -793,6 +796,7 @@
         <HorizontalScrollView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/vs_10"
             android:scrollbars="none">
             	
 	        <LinearLayout
@@ -800,7 +804,6 @@
 	            android:layout_width="match_parent"
 	            android:layout_height="match_parent"
 	            android:layout_gravity="center"
-	            android:layout_marginBottom="@dimen/vs_10"
 	            android:gravity="center"
 	            android:orientation="horizontal"
 	            android:paddingLeft="@dimen/vs_40"
