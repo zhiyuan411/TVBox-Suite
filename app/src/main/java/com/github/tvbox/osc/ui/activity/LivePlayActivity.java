@@ -117,7 +117,7 @@ public class LivePlayActivity extends BaseActivity {
     // 遥控器数字键输入的要切换的频道号码
     private int selectedChannelNumber = 0;
     private TextView tvSelectedChannel;
-    
+
     // Right Channel View
     private LinearLayout tvRightSettingLayout;
     private TvRecyclerView mSettingGroupView;
@@ -192,7 +192,7 @@ public class LivePlayActivity extends BaseActivity {
         EventBus.getDefault().register(this);
         setLoadSir(findViewById(R.id.live_root));
         mVideoView = findViewById(R.id.mVideoView);
-        
+
         tvSelectedChannel = findViewById(R.id.tv_selected_channel);
         tv_size = findViewById(R.id.tv_size);                 // Resolution
         tv_source = findViewById(R.id.tv_source);             // Source/Total Source
@@ -350,29 +350,38 @@ public class LivePlayActivity extends BaseActivity {
             Toast.makeText(mContext, getString(R.string.hm_exit_live), Toast.LENGTH_SHORT).show();
         }
     }
-    
+
     private final Runnable mPlaySelectedChannel = new Runnable() {
         @Override
         public void run() {
-            tvSelectedChannel.setVisibility(View.INVISIBLE);
+            tvSelectedChannel.setVisibility(View.GONE);
             tvSelectedChannel.setText("");
-            int maxChannelIndex = getLiveChannels(currentChannelGroupIndex).size();
-            if (selectedChannelNumber > maxChannelIndex) {
-                selectedChannelNumber = maxChannelIndex;
+
+            int grpIndx = 0;
+            int chaIndx = 0;
+            int getMin = 1;
+            int getMax;
+            for (int j = 0; j < 20; j++) {
+                getMax = getMin + getLiveChannels(j).size() - 1;
+
+                if (selectedChannelNumber >= getMin && selectedChannelNumber <= getMax) {
+                    grpIndx = j;
+                    chaIndx = selectedChannelNumber - getMin + 1;
+                    break;
+                } else {
+                    getMin = getMax + 1;
+                }
             }
+
             if (selectedChannelNumber > 0) {
-                playChannel(currentChannelGroupIndex, selectedChannelNumber - 1, false);
+                playChannel(grpIndx, chaIndx - 1, false);
             }
             selectedChannelNumber = 0;
         }
     };
 
     private void numericKeyDown(int digit) {
-        int maxChannelIndex = getLiveChannels(currentChannelGroupIndex).size();
         selectedChannelNumber = selectedChannelNumber * 10 + digit;
-        if (selectedChannelNumber > maxChannelIndex) {
-            selectedChannelNumber = maxChannelIndex;
-        }
 
         tvSelectedChannel.setText(Integer.toString(selectedChannelNumber));
         tvSelectedChannel.setVisibility(View.VISIBLE);
@@ -380,7 +389,7 @@ public class LivePlayActivity extends BaseActivity {
         mHandler.removeCallbacks(mPlaySelectedChannel);
         mHandler.postDelayed(mPlaySelectedChannel, 2000);
     }
-        
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
@@ -425,12 +434,12 @@ public class LivePlayActivity extends BaseActivity {
                     default:
                         if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
                             keyCode -= KeyEvent.KEYCODE_0;
-                        } else if ( keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && keyCode <= KeyEvent.KEYCODE_NUMPAD_9) {
+                        } else if (keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && keyCode <= KeyEvent.KEYCODE_NUMPAD_9) {
                             keyCode -= KeyEvent.KEYCODE_NUMPAD_0;
                         } else {
                             break;
                         }
-                        numericKeyDown(keyCode);                      
+                        numericKeyDown(keyCode);
                 }
             }
         } else if (event.getAction() == KeyEvent.ACTION_UP) {
@@ -1050,10 +1059,10 @@ public class LivePlayActivity extends BaseActivity {
                     case VideoView.STATE_PLAYBACK_COMPLETED:
                         mHandler.removeCallbacks(mConnectTimeoutChangeSourceRun);
                         mHandler.removeCallbacks(mConnectTimeoutReplayRun);
-                        if(Hawk.get(HawkConfig.LIVE_CONNECT_TIMEOUT, 2) == 0 ){
+                        if (Hawk.get(HawkConfig.LIVE_CONNECT_TIMEOUT, 2) == 0) {
                             //缓冲30s重新播放
                             mHandler.postDelayed(mConnectTimeoutReplayRun, 30 * 1000L);
-                        }else{
+                        } else {
                             mHandler.post(mConnectTimeoutChangeSourceRun);
                         }
                         break;
@@ -1061,10 +1070,10 @@ public class LivePlayActivity extends BaseActivity {
                     case VideoView.STATE_BUFFERING:
                         mHandler.removeCallbacks(mConnectTimeoutChangeSourceRun);
                         mHandler.removeCallbacks(mConnectTimeoutReplayRun);
-                        if(Hawk.get(HawkConfig.LIVE_CONNECT_TIMEOUT, 2) == 0 ){
+                        if (Hawk.get(HawkConfig.LIVE_CONNECT_TIMEOUT, 2) == 0) {
                             //缓冲30s重新播放
                             mHandler.postDelayed(mConnectTimeoutReplayRun, 30 * 1000L);
-                        }else{
+                        } else {
                             mHandler.postDelayed(mConnectTimeoutChangeSourceRun, (Hawk.get(HawkConfig.LIVE_CONNECT_TIMEOUT, 2)) * 5000L);
                         }
                         break;
