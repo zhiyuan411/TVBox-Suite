@@ -415,7 +415,7 @@ public class DetailActivity extends BaseActivity {
                         reload = true;
                     }
                     //选集全屏 想选集不全屏的注释下面一行
-                    if (showPreview && !fullWindows) toggleFullPreview();
+                    if (showPreview && !fullWindows && playFragment.getPlayer().isPlaying()) toggleFullPreview();
                     if (reload || !showPreview) jumpToPlay();
                 }
             }
