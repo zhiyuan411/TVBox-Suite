@@ -306,7 +306,7 @@ public class LivePlayActivity extends BaseActivity {
         });
     }
 
-    boolean PiPON = Hawk.get(HawkConfig.PIC_IN_PIC, false);
+    boolean PiPON = Hawk.get(HawkConfig.BACKGROUND_PLAY_TYPE, 0) == 2;
 
     // takagen99 : Enter PIP if supported
     @Override
@@ -779,7 +779,7 @@ public class LivePlayActivity extends BaseActivity {
         RequestOptions options = new RequestOptions();
         options.diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
                 .placeholder(R.drawable.img_logo_placeholder);
-        Glide.with(tv_logo)
+        Glide.with(App.getInstance())
                 .load(logoUrl)
                 .apply(options)
                 .into(tv_logo);
