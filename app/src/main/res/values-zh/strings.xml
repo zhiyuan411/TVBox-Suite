@@ -153,10 +153,13 @@
     <string name="vod_sub_int">内置</string>
     <string name="vod_sub_ext">外置</string>
     <string name="vod_sub_remote">搜索</string>
+    <string name="subtitleStyleOne">字幕样式一</string>
+    <string name="subtitleStyleTwo">字幕样式二</string>
     <string name="vod_sub_size">大小</string>
     <string name="vod_sub_delay">延迟</string>
     <string name="vod_sub_search">搜索</string>
     <string name="vod_sub_off">字幕已关闭</string>
+    <string name="vod_sub_on">字幕已开启</string>
     <string name="vod_remaining_time">影片剩余</string>
     <string name="vod_ends_at">影片结束</string>
 

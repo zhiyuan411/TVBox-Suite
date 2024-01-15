@@ -791,6 +791,18 @@ public class VodController extends BaseController {
                 return true;
             }
         });
+
+        // akumajac : 长按开字幕（vod_sub_on）
+        mSubtitleBtn.setOnLongClickListener(new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+            if (mSubtitleView.getVisibility() == View.GONE) {
+               Toast.makeText(getContext(), HomeActivity.getRes().getString(R.string.vod_sub_on), Toast.LENGTH_SHORT).show();
+               return true;
+           }
+        });
+
+
         // Button : AUDIO track selection --------------------------------------
         mAudioTrackBtn.setOnClickListener(new OnClickListener() {
             @Override
