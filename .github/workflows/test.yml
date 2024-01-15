@@ -1,36 +1,31 @@
-name: Release
+name: Test Build
+
 on:
-  push:
-    tags:
-      - "v*"
+#  push:
+#    branches:
+#      - main
+#  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
         with:
-          distribution: temurin
-          java-version: 11
-      - uses: gradle/gradle-build-action@v2
+          fetch-depth: 0
+      - name: Build With Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew assemblerelease --build-cache --parallel --daemon --warning-mode all
+      - name: Prepare App
+        run: |
+          mkdir -p ${{ github.workspace }}/apk/
+          for file in `find ~ -name "*.apk" -print`; do
+            mv "$file" ${{ github.workspace }}/apk/
+          done
+      - name: Upload App To Artifact
+        uses: actions/upload-artifact@v3
         with:
-          gradle-version: current
-          arguments: assembleRelease
-      - uses: r0adkll/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-      - run: mv ${{steps.sign_app.outputs.signedReleaseFile}} LittleGooseOffice_$GITHUB_REF_NAME.apk
-      - uses: ncipollo/release-action@v1
-        with:
-          artifacts: "*.apk"
-          token: ${{ github.token }}
-          generateReleaseNotes: true
-
+          name: com.github.tvbox.osc
+          path: ${{ github.workspace }}/apk/*
