@@ -113,6 +113,7 @@ public abstract class BaseController extends BaseVideoController implements Gest
     private ViewGroup mPauseRoot;
     private TextView mPauseTime;
     private TextView mSpeedTextTop;
+    private TextView mSpeedTextTopr;
     private TextView mSpeedTextHide;
     private LinearLayout mSpeedTop;
 
@@ -128,6 +129,7 @@ public abstract class BaseController extends BaseVideoController implements Gest
         public void run() {
             String format = String.format("%.2f", (float) mControlWrapper.getTcpSpeed() / 1024.0 / 1024.0);
             mSpeedTextTop.setText(format);
+            mSpeedTextTopr.setText(format);
             mSpeedTextHide.setText(format);
             mHandler.postDelayed(this, 1000);
         }
@@ -145,6 +147,7 @@ public abstract class BaseController extends BaseVideoController implements Gest
         mPauseRoot = findViewWithTag("vod_control_pause");
         mPauseTime = findViewWithTag("vod_control_pause_t");
         mSpeedTextTop = findViewWithTag("play_speed_top");
+        mSpeedTextTopr = findViewWithTag("play_speed_topr");
         mSpeedTextHide = findViewWithTag("play_speed_top_hide");
         mSpeedTop = findViewWithTag("top_container_hide");
 
