@@ -208,6 +208,7 @@ public class VodController extends BaseController {
                                     }
                                 });
                         mBack.setVisibility(GONE);
+                        mLockView.setVisibility(GONE);
                         break;
                     }
                     case 1004: { // 设置速度
@@ -954,6 +955,7 @@ public class VodController extends BaseController {
                     mTopRoot.setVisibility(GONE);
                     mBottomRoot.setVisibility(GONE);
                     mBack.setVisibility(GONE);
+                    mLockView.setVisibility(GONE);
                     mProgressTop.setVisibility(GONE);
                     mHandler.removeCallbacks(mHideBottomRunnable);
                     ((DetailActivity) mActivity).toggleFullPreview();
