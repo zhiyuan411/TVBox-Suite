@@ -450,7 +450,11 @@ public class VodController extends BaseController {
             public boolean onTouch(View v, MotionEvent event) {
                 if (isLock) {
                     if (event.getAction() == MotionEvent.ACTION_UP) {
-                        showLockView();
+                        if(mLockView.getVisibility() == View.VISIBLE){
+                            mLockView.setVisibility(GONE);
+                        }else{
+                            showLockView();
+                        }
                     }
                 }
                 return isLock;
@@ -1564,7 +1568,7 @@ public class VodController extends BaseController {
     
     private class LockRunnable implements Runnable {@Override
         public void run() {
-            mLockView.setVisibility(INVISIBLE);
+            mLockView.setVisibility(GONE);
         }
     }
 
