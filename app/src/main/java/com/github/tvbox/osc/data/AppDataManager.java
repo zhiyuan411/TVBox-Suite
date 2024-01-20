@@ -1,6 +1,5 @@
 package com.github.tvbox.osc.data;
 
-import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
 
 import androidx.annotation.NonNull;
@@ -25,7 +24,7 @@ import java.io.IOException;
 public class AppDataManager {
     private static final int DB_FILE_VERSION = 3;
     private static final String DB_NAME = "tvbox";
-    private static AppDataManager manager;
+    private static volatile AppDataManager manager;
     private static AppDataBase dbInstance;
 
     private AppDataManager() {
@@ -56,57 +55,26 @@ public class AppDataManager {
     static final Migration MIGRATION_2_3 = new Migration(2, 3) {
         @Override
         public void migrate(SupportSQLiteDatabase database) {
-            database.execSQL("CREATE TABLE IF NOT EXISTS `vodRecordTmp` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vodId` TEXT, `updateTime` INTEGER NOT NULL, `sourceKey` TEXT, `data` BLOB, `dataJson` TEXT, `testMigration` INTEGER NOT NULL)");
-
-            // Read every thing from the former Expense table
-            Cursor cursor = database.query("SELECT * FROM vodRecord");
-
-            int id;
-            int vodId;
-            long updateTime;
-            String sourceKey;
-            String dataJson;
-
-            while (cursor.moveToNext()) {
-                id = cursor.getInt(cursor.getColumnIndex("id"));
-                vodId = cursor.getInt(cursor.getColumnIndex("vodId"));
-                updateTime = cursor.getLong(cursor.getColumnIndex("updateTime"));
-                sourceKey = cursor.getString(cursor.getColumnIndex("sourceKey"));
-                dataJson = cursor.getString(cursor.getColumnIndex("dataJson"));
-                database.execSQL("INSERT INTO vodRecordTmp (id, vodId, updateTime, sourceKey, dataJson, testMigration) VALUES" +
-                        " ('" + id + "', '" + vodId + "', '" + updateTime + "', '" + sourceKey + "', '" + dataJson + "',0  )");
-            }
-
-
-            // Delete the former table
-            database.execSQL("DROP TABLE vodRecord");
-            // Rename the current table to the former table name so that all other code continues to work
-            database.execSQL("ALTER TABLE vodRecordTmp RENAME TO vodRecord");
-        }
-    };
-
-    static final Migration MIGRATION_3_4 = new Migration(3, 4) {
-        @Override
-        public void migrate(SupportSQLiteDatabase database) {
             try {
-                database.execSQL("ALTER TABLE vodRecord ADD COLUMN dataJson TEXT");
+                //database.execSQL("ALTER TABLE sourceState ADD COLUMN tidSort TEXT");
+                database.execSQL("CREATE TABLE IF NOT EXISTS t_search (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, searchKeyWords TEXT)");
+                //添加索引
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_t_search_searchKeyWords ON t_search (searchKeyWords)");
+
+                /*database.execSQL("CREATE TABLE IF NOT EXISTS t_search_temp (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, searchKeyWords TEXT)");
+                // Copy the data
+                database.execSQL("INSERT INTO t_search_temp (id, searchKeyWords) SELECT id, searchKeyWords FROM t_search");
+                // Remove the old table
+                database.execSQL("DROP TABLE t_search");
+                // Change the table name to the correct one
+                database.execSQL("ALTER TABLE t_search_temp RENAME TO t_search");
+                //添加索引
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_t_search_searchKeyWords ON t_search (searchKeyWords)");*/
             } catch (SQLiteException e) {
                 e.printStackTrace();
             }
         }
     };
-
-    static final Migration MIGRATION_4_5 = new Migration(4, 5) {
-        @Override
-        public void migrate(SupportSQLiteDatabase database) {
-            try {
-                database.execSQL("ALTER TABLE localSource ADD COLUMN type INTEGER NOT NULL DEFAULT 0");
-            } catch (SQLiteException e) {
-                e.printStackTrace();
-            }
-        }
-    };
-
     static String dbPath() {
         return DB_NAME + ".v" + DB_FILE_VERSION + ".db";
     }
@@ -119,9 +87,7 @@ public class AppDataManager {
             dbInstance = Room.databaseBuilder(App.getInstance(), AppDataBase.class, dbPath())
                     .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
                     .addMigrations(MIGRATION_1_2)
-                    //.addMigrations(MIGRATION_2_3)
-                    //.addMigrations(MIGRATION_3_4)
-                    //.addMigrations(MIGRATION_4_5)
+                    .addMigrations(MIGRATION_2_3)
                     .addCallback(new RoomDatabase.Callback() {
                         @Override
                         public void onCreate(@NonNull SupportSQLiteDatabase db) {

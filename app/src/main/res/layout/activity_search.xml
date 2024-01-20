@@ -23,8 +23,8 @@
                 android:layout_height="@dimen/vs_50"
                 android:layout_marginTop="@dimen/vs_10"
                 android:orientation="horizontal">
-
-                <EditText
+                	
+                <com.github.tvbox.osc.ui.tv.widget.CustomEditText
                     android:id="@+id/etSearch"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/vs_50"
@@ -158,6 +158,49 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="@dimen/vs_20">
+        
+        <RelativeLayout
+            android:id="@+id/search_tips"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/ll_search_layout">
+
+            <TextView
+                android:textColor="@android:color/white"
+                android:id="@+id/title_history"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/dp_10"
+                android:layout_marginTop="8dp"
+                android:textSize="@dimen/ts_22"
+                android:text="搜索历史" />
+
+            <TextView
+                android:textColor="@android:color/white"
+                android:id="@+id/clear_history"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginRight="20dp"
+                android:textSize="@dimen/ts_22"
+                android:text="清除记录"
+                android:layout_alignParentRight="true" />
+        </RelativeLayout>
+
+        <com.yang.flowlayoutlibrary.FlowLayout
+            android:id="@+id/tv_history"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginRight="10dp"
+            app:backgroundResource="@drawable/shape_user_focus"
+            app:horizontalSpacing="10dp"
+            app:itemColor="@android:color/white"
+            app:itemSize="15sp"
+            app:textPaddingH="10dp"
+            app:textPaddingV="4dp"
+            app:verticalSpacing="10dp" />        
 
         <com.owen.tvrecyclerview.widget.TvRecyclerView
             android:id="@+id/mGridView"

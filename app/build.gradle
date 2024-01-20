@@ -80,6 +80,7 @@ dependencies {
     implementation project(path: ':quickjs')
 
     annotationProcessor 'androidx.room:room-compiler:2.5.1'
+    implementation 'com.github.alidili:FlowLayout:v1.5'
     implementation 'androidx.room:room-runtime:2.5.1'
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'com.squareup.okhttp3:okhttp:3.12.11'
