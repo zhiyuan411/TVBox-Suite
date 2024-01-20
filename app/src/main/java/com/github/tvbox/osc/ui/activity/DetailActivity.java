@@ -345,6 +345,25 @@ public class DetailActivity extends BaseActivity {
 		        });
             }
         });
+
+        tvDesc.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        FastClickCheckUtil.check(v);
+                        ClipboardManager clipprofile = (ClipboardManager) DetailActivity.this.getSystemService(Context.CLIPBOARD_SERVICE);
+                        String cpContent = removeHtmlTag(mVideo.des);
+                        ClipData clipData = ClipData.newPlainText(null,cpContent);
+                        clipprofile.setPrimaryClip(clipData);
+                        Toast.makeText(DetailActivity.this, "已复制：" + cpContent, Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return true;
+            }
+        });
+
         tvPlayUrl.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
