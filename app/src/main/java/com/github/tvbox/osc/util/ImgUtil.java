@@ -6,6 +6,8 @@ import android.media.MediaMetadataRetriever;
 import android.text.TextUtils;
 import android.widget.ImageView;
 import androidx.annotation.Nullable;
+
+import com.aminography.redirectglide.GlideApp;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.DecodeFormat;
@@ -29,36 +31,36 @@ import java.net.URL;
 import java.net.URLDecoder;
 
 public class ImgUtil {
-    public static void load(String url, ImageView view) {
-        load(url, view, 10);
-    }
-
-    public static void load(String url, ImageView view, ImageView.ScaleType scaleType) {
-        load(url, view, 10, scaleType);
-    }
-
-    public static void load(String url, ImageView view, int roundingRadius, ImageView.ScaleType scaleType) {
-        view.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        if (TextUtils.isEmpty(url)) {
-            view.setImageResource(R.drawable.img_loading_placeholder);
-        } else {
-            if (roundingRadius == 0) roundingRadius = 1;
-            RequestOptions requestOptions = new RequestOptions()
-                .format(DecodeFormat.PREFER_RGB_565)
-                .diskCacheStrategy(getDiskCacheStrategy(4))
-                .dontAnimate()
-                .transform(
-            new RoundedCorners(roundingRadius));
-            Glide.with(App.getInstance())
-                .asBitmap()
-                .load(getUrl(url))
-                .error(R.drawable.img_loading_placeholder)
-                .placeholder(R.drawable.img_loading_placeholder)
-                .listener(getListener(view, scaleType))
-                .apply(requestOptions)
-                .into(view);
-        }
-    }
+//    public static void load(String url, ImageView view) {
+//        load(url, view, 10);
+//    }
+//
+//    public static void load(String url, ImageView view, ImageView.ScaleType scaleType) {
+//        load(url, view, 10, scaleType);
+//    }
+//
+//    public static void load(String url, ImageView view, int roundingRadius, ImageView.ScaleType scaleType) {
+//        view.setScaleType(ImageView.ScaleType.FIT_CENTER);
+//        if (TextUtils.isEmpty(url)) {
+//            view.setImageResource(R.drawable.img_loading_placeholder);
+//        } else {
+//            if (roundingRadius == 0) roundingRadius = 1;
+//            RequestOptions requestOptions = new RequestOptions()
+//                .format(DecodeFormat.PREFER_RGB_565)
+//                .diskCacheStrategy(getDiskCacheStrategy(4))
+//                .dontAnimate()
+//                .transform(
+//            new RoundedCorners(roundingRadius));
+//            Glide.with(App.getInstance())
+//                .asBitmap()
+//                .load(getUrl(url))
+//                .error(R.drawable.img_loading_placeholder)
+//                .placeholder(R.drawable.img_loading_placeholder)
+//                .listener(getListener(view, scaleType))
+//                .apply(requestOptions)
+//                .into(view);
+//        }
+//    }
 
     public static void load(String url, ImageView view, int roundingRadius) {
         view.setScaleType(ImageView.ScaleType.CENTER);
@@ -73,7 +75,7 @@ public class ImgUtil {
                 .transform(
             new CenterCrop(),
             new RoundedCorners(roundingRadius));
-            Glide.with(App.getInstance())
+            GlideApp.with(App.getInstance())
                 .asBitmap()
                 .load(getUrl(url))
                 .error(R.drawable.img_loading_placeholder)
