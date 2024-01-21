@@ -125,7 +125,7 @@
 
     <LinearLayout
         android:id="@+id/llWord"
-        android:layout_width="@dimen/vs_160"
+        android:layout_width="@dimen/vs_240"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:paddingTop="@dimen/vs_20"
@@ -170,8 +170,7 @@
                 android:id="@+id/title_history"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="@dimen/dp_10"
-                android:layout_marginTop="8dp"
+                android:layout_marginLeft="@dimen/vs_20"
                 android:textSize="@dimen/ts_22"
                 android:text="搜索历史" />
 
@@ -180,8 +179,7 @@
                 android:id="@+id/clear_history"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginRight="20dp"
+                android:layout_marginRight="@dimen/vs_20"
                 android:textSize="@dimen/ts_22"
                 android:text="清除记录"
                 android:layout_alignParentRight="true" />
@@ -191,16 +189,16 @@
             android:id="@+id/tv_history"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginRight="10dp"
+            android:layout_marginLeft="@dimen/vs_20"
+            android:layout_marginTop="@dimen/vs_20"
+            android:layout_marginRight="@dimen/vs_20"
             app:backgroundResource="@drawable/shape_user_focus"
-            app:horizontalSpacing="10dp"
+            app:horizontalSpacing="@dimen/vs_20"
             app:itemColor="@android:color/white"
-            app:itemSize="15sp"
-            app:textPaddingH="10dp"
-            app:textPaddingV="4dp"
-            app:verticalSpacing="10dp" />        
+            app:itemSize="@dimen/vs_20"
+            app:textPaddingH="@dimen/vs_20"
+            app:textPaddingV="@dimen/vs_10"
+            app:verticalSpacing="@dimen/vs_20" />        
 
         <com.owen.tvrecyclerview.widget.TvRecyclerView
             android:id="@+id/mGridView"

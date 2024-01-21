@@ -87,6 +87,7 @@ import com.yang.flowlayoutlibrary.FlowLayout;
  */
 public class SearchActivity extends BaseActivity {
     private LinearLayout llLayout;
+    private LinearLayout llWord;
     private TvRecyclerView mGridView;
     private TvRecyclerView mGridViewWord;
     private SourceViewModel sourceViewModel;
@@ -174,6 +175,7 @@ public class SearchActivity extends BaseActivity {
     private void initView() {
         EventBus.getDefault().register(this);
         llLayout = findViewById(R.id.llLayout);
+        llWord = findViewById(R.id.llWord);
         etSearch = findViewById(R.id.etSearch);
         tvSearch = findViewById(R.id.tvSearch);
         tvSearchCheckbox = findViewById(R.id.tvSearchCheckbox);
@@ -194,13 +196,14 @@ public class SearchActivity extends BaseActivity {
         wordAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
+            	keyword = wordAdapter.getItem(position);
+                etSearch.setText(keyword);
                 if(Hawk.get(HawkConfig.FAST_SEARCH_MODE, false)){
                     Bundle bundle = new Bundle();
-                    bundle.putString("title", wordAdapter.getItem(position));
+                    bundle.putString("title", keyword);
+                    refreshSearchHistory(keyword);
                     jumpActivity(FastSearchActivity.class, bundle);
-                }else {
-                    keyword = wordAdapter.getItem(position);
-                    etSearch.setText(keyword);
+                }else {                    
                     search(keyword);
                 }
             }
@@ -211,7 +214,7 @@ public class SearchActivity extends BaseActivity {
             mGridView.setLayoutManager(new V7LinearLayoutManager(this.mContext, 1, false));
             // with preview
         else
-            mGridView.setLayoutManager(new V7GridLayoutManager(this.mContext, 3));
+            mGridView.setLayoutManager(new V7GridLayoutManager(this.mContext, 4));
         searchAdapter = new SearchAdapter();
         mGridView.setAdapter(searchAdapter);
         searchAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
@@ -244,8 +247,9 @@ public class SearchActivity extends BaseActivity {
                     if(Hawk.get(HawkConfig.FAST_SEARCH_MODE, false)){
                         Bundle bundle = new Bundle();
                         bundle.putString("title", keyword);
+                        refreshSearchHistory(keyword);
                         jumpActivity(FastSearchActivity.class, bundle);
-                    }else {
+                    } else {
                         search(keyword);
                     }
                 } else {
@@ -275,6 +279,7 @@ public class SearchActivity extends BaseActivity {
                     cancel();
                     tv_history.setVisibility(View.VISIBLE);
                     searchTips.setVisibility(View.VISIBLE);
+                    llWord.setVisibility(View.VISIBLE);
                     mGridView.setVisibility(View.GONE);
                 }
             }
@@ -371,9 +376,16 @@ public class SearchActivity extends BaseActivity {
         Collections.reverse(historyList);
         tv_history.setViews(historyList, new FlowLayout.OnItemClickListener() {
             public void onItemClick(String content) {
-                search(content);
                 etSearch.setText(content);
+            	if(Hawk.get(HawkConfig.FAST_SEARCH_MODE, false)){                      	
+                    Bundle bundle = new Bundle();
+                    bundle.putString("title", content);
+                    refreshSearchHistory(content);
+                    jumpActivity(FastSearchActivity.class, bundle);
+                } else {
+                	search(content);
                 //etSearch.setSelection(etSearch.getText().length());
+                }
             }
         });
     }
@@ -439,6 +451,7 @@ public class SearchActivity extends BaseActivity {
             if(Hawk.get(HawkConfig.FAST_SEARCH_MODE, false)){
                 Bundle bundle = new Bundle();
                 bundle.putString("title", title);
+                refreshSearchHistory(title);
                 jumpActivity(FastSearchActivity.class, bundle);
             }else {
                 search(title);
@@ -501,6 +514,7 @@ public class SearchActivity extends BaseActivity {
             if(Hawk.get(HawkConfig.FAST_SEARCH_MODE, false)){
                 Bundle bundle = new Bundle();
                 bundle.putString("title", title);
+                refreshSearchHistory(title);
                 jumpActivity(FastSearchActivity.class, bundle);
             }else{
                 search(title);
@@ -611,6 +625,7 @@ public class SearchActivity extends BaseActivity {
                 searchAdapter.setNewData(data);
                 tv_history.setVisibility(View.GONE);
                 searchTips.setVisibility(View.GONE);
+                llWord.setVisibility(View.GONE);
                 mGridView.setVisibility(View.VISIBLE);
             }
         }
