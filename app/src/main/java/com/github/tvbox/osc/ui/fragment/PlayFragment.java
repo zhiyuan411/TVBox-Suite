@@ -590,24 +590,28 @@ public class PlayFragment extends BaseLazyFragment {
         }
     }
 
-    private void yxdm(String url, Map<String, String> headers) {
+    private boolean yxdm(String url, Map<String, String> headers) {
         if (url.startsWith("https://www.ziyuantt.com/") && url.endsWith(".mp4")) {
             int st = url.indexOf("&url=");
             if (st > 1) {
                 String [] urls = url.substring(st + 5).split("\\|");
-                if (urls.length < 2) return;
+                if (urls.length < 2) return false;
                 stopLoadWebView(false);
                 videoSegmentationURL.clear();
                 videoSegmentationURL.addAll(Arrays.asList(urls));
                 HashMap<String, String> hm = new HashMap<>();
                 if (headers != null && headers.keySet().size() > 0) {
                     for (String k : headers.keySet()) {
-                            hm.put(k, " " + headers.get(k));
+                        hm.put(k, " " + headers.get(k));
                     }
                 }
+                loadFoundVideoUrls.add(urls[0]);
+                loadFoundVideoUrlsHeader.put(videoSegmentationURL.get(0), hm);
                 startPlayUrl(videoSegmentationURL.get(0), hm);
+                return true;
             }
         }
+        return false;
     }
 
     private String removeMinorityUrl(String tsUrlPre, String m3u8content) {
@@ -1883,6 +1887,7 @@ public class PlayFragment extends BaseLazyFragment {
             }
 
             if (!ad) {
+                if (yxdm(url, headers)) return null;
                 if (checkVideoFormat(url)) {
                     loadFoundVideoUrls.add(url);
                     loadFoundVideoUrlsHeader.put(url, headers);
