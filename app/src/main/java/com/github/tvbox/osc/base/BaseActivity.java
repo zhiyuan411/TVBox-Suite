@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import io.github.inflationx.viewpump.ViewPumpContextWrapper;
 import me.jessyan.autosize.AutoSizeCompat;
 import me.jessyan.autosize.internal.CustomAdapt;
 import xyz.doikki.videoplayer.util.CutoutUtil;
@@ -53,10 +54,15 @@ public abstract class BaseActivity extends AppCompatActivity implements CustomAd
     // takagen99 : Fix for Locale change not persist on higher Android version
     @Override
     protected void attachBaseContext(Context base) {
+        Context newBase = base;
+        if (App.viewPump != null) {
+            newBase = ViewPumpContextWrapper.wrap(base, App.viewPump);
+        }
+
         if (Hawk.get(HawkConfig.HOME_LOCALE, 0) == 0) {
-            super.attachBaseContext(LocaleHelper.onAttach(base, "zh"));
+            super.attachBaseContext(LocaleHelper.onAttach(newBase, "zh"));
         } else {
-            super.attachBaseContext(LocaleHelper.onAttach(base, ""));
+            super.attachBaseContext(LocaleHelper.onAttach(newBase, ""));
         }
     }
 
