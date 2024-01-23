@@ -10,6 +10,6 @@
     android:marqueeRepeatLimit="marquee_forever"
     android:padding="@dimen/vs_10"
     android:singleLine="true"
-    android:textAlignment="center"
+    android:textAlignment="viewStart"
     android:textColor="@color/color_FFFFFF"
     android:textSize="@dimen/ts_22" />

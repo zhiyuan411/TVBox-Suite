@@ -125,19 +125,20 @@
 
     <LinearLayout
         android:id="@+id/llWord"
-        android:layout_width="@dimen/vs_240"
+        android:layout_width="@dimen/vs_260"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:paddingTop="@dimen/vs_20"
         android:paddingBottom="@dimen/vs_20">
 
-        <TextView
+        <TextView           
+            android:id="@+id/mHotSearch_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="@dimen/vs_10"
             android:text="@string/act_search_trend"
-            android:textAlignment="center"
+            android:textAlignment="viewStart"
             android:textColor="@android:color/white"
             android:textSize="@dimen/ts_22" />
 
@@ -174,14 +175,17 @@
                 android:textSize="@dimen/ts_22"
                 android:text="搜索历史" />
 
-            <TextView
-                android:textColor="@android:color/white"
+            <ImageView                
                 android:id="@+id/clear_history"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="@dimen/vs_20"
-                android:textSize="@dimen/ts_22"
-                android:text="清除记录"
+                android:layout_width="@dimen/vs_50"
+                android:layout_height="@dimen/vs_50"
+                android:gravity="center"
+                android:background="@drawable/shape_user_focus"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:padding="@dimen/vs_5"
+                android:layout_marginRight="@dimen/vs_20"              
+                android:src="@drawable/icon_delete"
                 android:layout_alignParentRight="true" />
         </RelativeLayout>
 

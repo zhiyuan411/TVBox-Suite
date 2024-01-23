@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -71,6 +72,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -103,9 +105,11 @@ public class SearchActivity extends BaseActivity {
     private ImageView tvSearchCheckbox;
     private RelativeLayout searchTips;
     private FlowLayout tv_history;
-    private TextView clearHistory;
+    private ImageView clearHistory;
     private SearchPresenter searchPresenter;
     public String keyword;
+    private TextView tHotSearchText;
+    private static ArrayList<String> hots = new ArrayList<>();
     private static HashMap<String, String> mCheckSources = null;
     private SearchCheckboxDialog mSearchCheckboxDialog = null;
 
@@ -179,6 +183,7 @@ public class SearchActivity extends BaseActivity {
         etSearch = findViewById(R.id.etSearch);
         tvSearch = findViewById(R.id.tvSearch);
         tvSearchCheckbox = findViewById(R.id.tvSearchCheckbox);
+        tHotSearchText = findViewById(R.id.mHotSearch_text);
         searchTips = findViewById(R.id.search_tips);
         tv_history = findViewById(R.id.tv_history);
         clearHistory = findViewById(R.id.clear_history);
@@ -196,7 +201,9 @@ public class SearchActivity extends BaseActivity {
         wordAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
-            	keyword = wordAdapter.getItem(position);
+            	keyword = wordAdapter.getItem(position);              
+                String[] split = keyword.split("\uFEFF");
+                keyword = split[split.length - 1];
                 etSearch.setText(keyword);
                 if(Hawk.get(HawkConfig.FAST_SEARCH_MODE, false)){
                     Bundle bundle = new Bundle();
@@ -262,6 +269,9 @@ public class SearchActivity extends BaseActivity {
             public void onClick(View v) {
                 FastClickCheckUtil.check(v);
                 etSearch.setText("");
+                wordAdapter.setNewData(hots);
+                mGridViewWord.smoothScrollToPosition(0);
+                tHotSearchText.setText("热门搜索");
                 cancel();
             }
         });
@@ -275,7 +285,7 @@ public class SearchActivity extends BaseActivity {
             
             public void afterTextChanged(Editable s) {
                 keyword = s.toString().trim();
-                if (TextUtils.isEmpty(keyword)) {
+                if (TextUtils.isEmpty(keyword)) {                	
                     cancel();
                     tv_history.setVisibility(View.VISIBLE);
                     searchTips.setVisibility(View.VISIBLE);
@@ -328,6 +338,11 @@ public class SearchActivity extends BaseActivity {
                     }
                     if (text.length() > 0) {
                         loadRec(text);
+                    }
+                    if (text.length() == 0) {
+                        wordAdapter.setNewData(hots);
+                        mGridViewWord.smoothScrollToPosition(0);
+                        tHotSearchText.setText("热门搜索");
                     }
                 } else if (pos == 0) {
                     RemoteDialog remoteDialog = new RemoteDialog(mContext);
@@ -424,8 +439,10 @@ public class SearchActivity extends BaseActivity {
                                         .getAsJsonObject("reportData")
                                         .get("keyword_txt").getAsString();
                                 hots.add(keywordTxt.trim());
-                            }
+                            }                            
+                            tHotSearchText.setText("猜你想搜");
                             wordAdapter.setNewData(hots);
+                            mGridViewWord.smoothScrollToPosition(0);
                         } catch (Throwable th) {
                             th.printStackTrace();
                         }
@@ -463,6 +480,10 @@ public class SearchActivity extends BaseActivity {
 
     //load hot search
     private void loadHotSearch() {
+        if (hots.size() != 0) {
+            wordAdapter.setNewData(hots);
+            return;
+        }
         OkGo.<String>get("https://node.video.qq.com/x/api/hot_search")
                 .params("channdlId", "0")
                 .params("_", System.currentTimeMillis())
@@ -470,23 +491,22 @@ public class SearchActivity extends BaseActivity {
                     @Override
                     public void onSuccess(Response<String> response) {
                         try {
-                            ArrayList<String> hots = new ArrayList<>();
                             JsonObject mapResult = JsonParser.parseString(response.body())
                                     .getAsJsonObject()
                                     .get("data").getAsJsonObject()
                                     .get("mapResult").getAsJsonObject();
-                            List<String> groupIndex = Arrays.asList("0", "1", "2", "3", "5");
-                            for (String index : groupIndex) {
-                                JsonArray itemList = mapResult.get(index).getAsJsonObject()
-                                        .get("listInfo").getAsJsonArray();
-                                for (JsonElement ele : itemList) {
-                                    JsonObject obj = (JsonObject) ele;
-                                    String hotKey = obj.get("title").getAsString().trim().replaceAll("<|>|《|》|-", "").split(" ")[0];
-                                    if (!hots.contains(hotKey))
-                                        hots.add(hotKey);
-                                }
+                            List<String> emoji;
+                            if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.N)
+                                emoji = Arrays.asList(" ❶ "," ❷ "," ❸ "," ❹ "," ❺ "," ❻ "," ❼ "," ❽ "," ❾ "," ❿ "," ⑪ "," ⑫ "," ⑬ "," ⑭ "," ⑮ "," ⑯ "," ⑰ "," ⑱ "," ⑲ "," ⑳ ");
+                             else
+                                emoji = Arrays.asList("\uD83E\uDD47","\uD83E\uDD48","\uD83E\uDD49","4\uFE0F⃣","5\uFE0F⃣","6\uFE0F⃣","7\uFE0F⃣","8\uFE0F⃣","9\uFE0F⃣","\uD83D\uDD1F"," ⑪ "," ⑫ "," ⑬ "," ⑭ "," ⑮ "," ⑯ "," ⑰ "," ⑱ "," ⑲ "," ⑳ ");
+                            JsonArray itemList = mapResult.get("0").getAsJsonObject()
+                                    .get("listInfo").getAsJsonArray();
+                            for (int i = 0; i < 10; i++){
+                                JsonObject obj = itemList.get(i).getAsJsonObject();
+                                String hotKey = obj.get("title").getAsString().trim().replaceAll("<|>|《|》|-", "").split(" ")[0];
+                                hots.add(emoji.get(i) + "\uFEFF" + hotKey);
                             }
-
                             wordAdapter.setNewData(hots);
                         } catch (Throwable th) {
                             th.printStackTrace();
