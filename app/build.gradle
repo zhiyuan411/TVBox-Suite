@@ -23,14 +23,12 @@ android {
             }
         }
     }
+
     packagingOptions {
-        resources {
-            excludes += ['META-INF/DEPENDENCIES']
-        }
+        exclude 'META-INF/DEPENDENCIES'
     }
 
-
-    buildTypes {
+    buildTypes {        
         release {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             minifyEnabled true
@@ -41,21 +39,17 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
     }
-
+    
     buildFeatures {
         dataBinding = true
-    }
-    namespace 'com.github.tvbox.osc'
-    lint {
-        abortOnError false
-        checkReleaseBuilds false
     }
 }
 
