@@ -62,7 +62,7 @@ public class FileUtils {
         }
         return null;
     }
-    
+
     public static String readFileToString(String path, String charsetName) {
         // 定义返回结果
         StringBuilder jsonString = new StringBuilder();
@@ -121,11 +121,11 @@ public class FileUtils {
     }
 
     public static String loadModule(String name) {
-        try {        	
+        try {
             if (name.contains("gbk.js")) {
                 name = "gbk.js";
             } else if (name.contains("模板.js")) {
-                name = "模板.js";            
+                name = "模板.js";
             } else if (name.contains("cat.js")) {
                 name = "cat.js";
             }
@@ -212,7 +212,7 @@ public class FileUtils {
             return "";
         }
     }
-    
+
     public static byte[] getCacheByte(String name) {
         try {
             File file = open("B_" + name);
@@ -235,7 +235,7 @@ public class FileUtils {
             e.printStackTrace();
         }
     }
-    
+
     public static void setCacheByte(String name, byte[] data) {
         try {
             writeSimple(byteMerger("//DRPY".getBytes(),Base64.encode(data, Base64.URL_SAFE)), open("B_" + name));
@@ -243,19 +243,19 @@ public class FileUtils {
             e.printStackTrace();
         }
     }
-    
+
     public static byte[] byteMerger(byte[] bt1, byte[] bt2){
         byte[] bt3 = new byte[bt1.length+bt2.length];
         System.arraycopy(bt1, 0, bt3, 0, bt1.length);
         System.arraycopy(bt2, 0, bt3, bt1.length, bt2.length);
         return bt3;
     }
-    
+
     public static String get(String str) {
         return get(str, null);
     }
 
-    public static String get(String str, Map<String, String> headerMap) {    
+    public static String get(String str, Map<String, String> headerMap) {
         try {
             HttpHeaders h = new HttpHeaders();
             Response response = null;
@@ -276,7 +276,7 @@ public class FileUtils {
             return "";
         }
     }
-    
+
     private static final Pattern URLJOIN = Pattern.compile("^http.*\\.(js|txt|json|m3u)$", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
 
     public static File getCacheDir() {
@@ -286,13 +286,18 @@ public class FileUtils {
         return App.getInstance().getExternalCacheDir();
     }
     public static String getExternalCachePath() {
-        return getExternalCacheDir().getAbsolutePath();
+        //部分机器getExternalCacheDir()会返回空
+        File externalCacheDir = getExternalCacheDir();
+        if (externalCacheDir == null){
+            return getCachePath();
+        }
+        return externalCacheDir.getAbsolutePath();
     }
 
     public static String getCachePath() {
         return getCacheDir().getAbsolutePath();
     }
-    
+
     public static void cleanPlayerCache() {
         recursiveDelete(new File(getCachePath() + File.separator + "thunder"));
         recursiveDelete(new File(getExternalCachePath() + File.separator + "ijkcaches"));
