@@ -43,6 +43,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 
 import com.github.tvbox.osc.base.App;
+import com.github.tvbox.osc.util.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -405,18 +406,19 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
      * Sets the data source (file-path or http/rtsp URL) to use.
      *
      * @param path the path of the file, or the http/rtsp URL of the stream you
-     *             want to play
+     * want to play
      * @throws IllegalStateException if it is called in an invalid state
      *
-     *                               <p>
-     *                               When <code>path</code> refers to a local file, the file may
-     *                               actually be opened by a process other than the calling
-     *                               application. This implies that the pathname should be an
-     *                               absolute path (as any other process runs with unspecified
-     *                               current working directory), and that the pathname should
-     *                               reference a world-readable file.
+     * <p>
+     * When <code>path</code> refers to a local file, the file may
+     * actually be opened by a process other than the calling
+     * application. This implies that the pathname should be an
+     * absolute path (as any other process runs with unspecified
+     * current working directory), and that the pathname should
+     * reference a world-readable file.
      */
     private boolean over = false;
+
     @Override
     public void setDataSource(String path)
             throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
@@ -465,7 +467,7 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
     }
 
     public static String xml2ffconcat(String str) {
-        String str2 = App.getInstance().getExternalCacheDir().getPath() + "/" + System.currentTimeMillis() + ".ffconcat";
+        String str2 = FileUtils.getExternalCachePath() + "/" + System.currentTimeMillis() + ".ffconcat";
         try {
             File file = new File(str2);
             if (!file.exists()) {
@@ -484,6 +486,7 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
         }
         return str2;
     }
+
     /**
      * Sets the data source (file-path or http/rtsp URL) to use.
      *

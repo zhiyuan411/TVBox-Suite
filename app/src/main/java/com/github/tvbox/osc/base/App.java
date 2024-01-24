@@ -3,6 +3,7 @@ package com.github.tvbox.osc.base;
 import android.os.Environment;
 
 import androidx.multidex.MultiDexApplication;
+
 import com.github.catvod.crawler.JsLoader;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.callback.EmptyCallback;
@@ -20,6 +21,7 @@ import com.kingja.loadsir.core.LoadSir;
 import com.orhanobut.hawk.Hawk;
 import com.p2p.P2PClass;
 import com.whl.quickjs.android.QuickJSLoader;
+
 import java.io.File;
 
 import io.github.inflationx.calligraphy3.CalligraphyConfig;
@@ -39,7 +41,7 @@ public class App extends MultiDexApplication {
     public static String burl;
     private static String dashData;
     public static ViewPump viewPump = null;
-    
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -93,7 +95,7 @@ public class App extends MultiDexApplication {
     public static P2PClass getp2p() {
         try {
             if (p == null) {
-                p = new P2PClass(instance.getExternalCacheDir().getAbsolutePath());
+                p = new P2PClass(FileUtils.getExternalCachePath());
             }
             return p;
         } catch (Exception e) {
@@ -156,6 +158,7 @@ public class App extends MultiDexApplication {
     public void setDashData(String data) {
         dashData = data;
     }
+
     public String getDashData() {
         return dashData;
     }
