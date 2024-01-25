@@ -181,7 +181,7 @@
                 android:layout_height="@dimen/vs_50"
                 android:gravity="center"
                 android:background="@drawable/shape_user_focus"
-                android:focusable="false"
+                android:focusable="true"
                 android:focusableInTouchMode="false"
                 android:padding="@dimen/vs_5"
                 android:layout_marginRight="@dimen/vs_20"              
