@@ -47,7 +47,8 @@
         <activity
             android:name=".ui.activity.HomeActivity"
             android:screenOrientation="sensorLandscape"
-            android:exported="true">
+            android:exported="true"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -90,7 +91,8 @@
         <activity
             android:name=".ui.activity.FastSearchActivity"
             android:windowSoftInputMode="stateHidden"
-            android:screenOrientation="sensorLandscape" />
+            android:screenOrientation="sensorLandscape" 
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation" />
         <activity
             android:name=".ui.activity.AppsActivity"
             android:screenOrientation="sensorLandscape" />
