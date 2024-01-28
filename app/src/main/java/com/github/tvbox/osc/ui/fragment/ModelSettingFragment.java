@@ -77,6 +77,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
     private TextView tvPlay;
     private TextView tvMediaCodec;
     private TextView tvVideoPurifyText;
+    private TextView tvIjkCachePlay;
 
     // System Section
     private TextView tvLocale;
@@ -128,6 +129,8 @@ public class ModelSettingFragment extends BaseLazyFragment {
         tvMediaCodec.setText(Hawk.get(HawkConfig.IJK_CODEC, ""));
         tvVideoPurifyText = findViewById(R.id.tvVideoPurifyText);
         tvVideoPurifyText.setText(Hawk.get(HawkConfig.VIDEO_PURIFY, true) ? "开启" : "关闭");
+        tvIjkCachePlay = findViewById(R.id.tvIjkCachePlay);
+        tvIjkCachePlay.setText(Hawk.get(HawkConfig.IJK_CACHE_PLAY, false) ? "开启" : "关闭");
         // System Section
         tvLocale = findViewById(R.id.tvLocale);
         tvLocale.setText(getLocaleView(Hawk.get(HawkConfig.HOME_LOCALE, 0)));
@@ -530,6 +533,12 @@ public class ModelSettingFragment extends BaseLazyFragment {
             FastClickCheckUtil.check(v);
             Hawk.put(HawkConfig.VIDEO_PURIFY, !Hawk.get(HawkConfig.VIDEO_PURIFY, true));
             tvVideoPurifyText.setText(Hawk.get(HawkConfig.VIDEO_PURIFY, true) ? "开启" : "关闭");
+        });
+        // ijk player cache -------------------------------------
+        findViewById(R.id.llIjkCachePlay).setOnClickListener(v -> {
+            FastClickCheckUtil.check(v);
+            Hawk.put(HawkConfig.IJK_CACHE_PLAY, !Hawk.get(HawkConfig.IJK_CACHE_PLAY, false));
+            tvIjkCachePlay.setText(Hawk.get(HawkConfig.IJK_CACHE_PLAY, false) ? "开启" : "关闭");
         });
         // 3. SYSTEM Configuration -------------------------------------------------------------- //
         // Select Webview ---------------------------------------------

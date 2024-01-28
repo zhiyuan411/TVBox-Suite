@@ -70,7 +70,7 @@ public class IjkmPlayer extends IjkPlayer {
                     mMediaPlayer.setOption(1, "rtsp_transport", "tcp");
                     mMediaPlayer.setOption(1, "rtsp_flags", "prefer_tcp");
                 } else if (!path.contains(".m3u8") && (path.contains(".mp4") || path.contains(".mkv") || path.contains(".avi"))) {
-//                    if (Hawk.get(HawkConfig.IJK_CACHE_PLAY, false)) {
+                    if (Hawk.get(HawkConfig.IJK_CACHE_PLAY, false)) {
                         String cachePath = FileUtils.getExternalCachePath() + "/ijkcaches/";
                         String cacheMapPath = cachePath;
                         File cacheFile = new File(cachePath);
@@ -84,7 +84,7 @@ public class IjkmPlayer extends IjkPlayer {
                         mMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "auto_save_map", 1);
                         mMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "cache_max_capacity", 60 * 1024 * 1024);
                         path = "ijkio:cache:ffio:" + path;
-//                    }
+                    }
                 }
             }
             setDataSourceHeader(headers);

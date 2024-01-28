@@ -39,6 +39,7 @@ public class HawkConfig {
     public static final String PLAY_TIME_STEP = "play_time_step";
     public static final String PIC_IN_PIC = "pic_in_pic";   // true = on, false = off
     public static final String VIDEO_PURIFY = "video_purify";
+    public static final String IJK_CACHE_PLAY = "ijk_cache_play";
 
     // Other Settings
     public static final String DOH_URL = "doh_url";         // DNS
