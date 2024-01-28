@@ -1269,51 +1269,49 @@ public class PlayActivity extends BaseActivity {
     private String sourceKey;
     private SourceBean sourceBean;
 
-    private void playNext(boolean inProgress) {
+    public void playNext(boolean inProgress) {
         boolean hasNext = true;
         if (mVodInfo == null || mVodInfo.seriesMap.get(mVodInfo.playFlag) == null) {
             hasNext = false;
         } else {
-            if (mVodInfo.reverseSort) {
-                hasNext = mVodInfo.playIndex - 1 >= 0;
-            } else {
-                hasNext = mVodInfo.playIndex + 1 < mVodInfo.seriesMap.get(mVodInfo.playFlag).size();
-            }
+            hasNext = mVodInfo.getplayIndex() + 1 < mVodInfo.seriesMap.get(mVodInfo.playFlag).size();
         }
         if (!hasNext) {
-            Toast.makeText(this, "已经是最后一集了", Toast.LENGTH_SHORT).show();
-            // takagen99: To auto go back to Detail Page after last episode
+            if(mVodInfo.reverseSort){
+                Toast.makeText(this, "已经是第一集了", Toast.LENGTH_SHORT).show();
+            }else {
+                Toast.makeText(this, "已经是最后一集了", Toast.LENGTH_SHORT).show();
+            }
             if (inProgress) {
                 this.finish();
             }
             return;
         }
-        if (mVodInfo.reverseSort) {
-            mVodInfo.playIndex--;
-        } else {
-            mVodInfo.playIndex++;
-        }
+        mVodInfo.playIndex++;
+        mVodInfo.playGroup += mVodInfo.playIndex / mVodInfo.playGroupCount;
+        mVodInfo.playIndex = mVodInfo.playIndex %  mVodInfo.playGroupCount;
         play(false);
     }
 
-    private void playPrevious() {
+    public void playPrevious() {
         boolean hasPre = true;
         if (mVodInfo == null || mVodInfo.seriesMap.get(mVodInfo.playFlag) == null) {
             hasPre = false;
         } else {
-            if (mVodInfo.reverseSort) {
-                hasPre = mVodInfo.playIndex + 1 < mVodInfo.seriesMap.get(mVodInfo.playFlag).size();
-            } else {
-                hasPre = mVodInfo.playIndex - 1 >= 0;
-            }
+            hasPre = mVodInfo.getplayIndex() - 1 >= 0;
         }
         if (!hasPre) {
-            Toast.makeText(this, "已经是第一集了", Toast.LENGTH_SHORT).show();
+            if(mVodInfo.reverseSort){
+                Toast.makeText(this, "已经是最后一集了", Toast.LENGTH_SHORT).show();
+            }else {
+                Toast.makeText(this, "已经是第一集了", Toast.LENGTH_SHORT).show();
+            }
             return;
         }
-        if (mVodInfo.reverseSort) {
-            mVodInfo.playIndex++;
-        } else {
+        if(mVodInfo.playIndex == 0){
+            mVodInfo.playGroup--;
+            mVodInfo.playIndex = mVodInfo.playGroupCount - 1;
+        }else{
             mVodInfo.playIndex--;
         }
         play(false);
@@ -1326,7 +1324,7 @@ public class PlayActivity extends BaseActivity {
             autoRetryFromLoadFoundVideoUrls();
             return true;
         }
-        if (autoRetryCount < 2) {
+        if (autoRetryCount < 1) {
             autoRetryCount++;
             play(false);
             return true;
@@ -1349,8 +1347,8 @@ public class PlayActivity extends BaseActivity {
     }
 
     public void play(boolean reset) {
-        VodInfo.VodSeries vs = mVodInfo.seriesMap.get(mVodInfo.playFlag).get(mVodInfo.playIndex);
-        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_REFRESH, mVodInfo.playIndex));
+        VodInfo.VodSeries vs = mVodInfo.seriesMap.get(mVodInfo.playFlag).get(mVodInfo.getplayIndex());
+        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_REFRESH, mVodInfo.getplayIndex()));
         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_REFRESH_NOTIFY, mVodInfo.name + "&&" + vs.name));
         String playTitleInfo = mVodInfo.name + " : " + vs.name;
         setTip("正在获取播放信息", true, false);
@@ -1359,8 +1357,8 @@ public class PlayActivity extends BaseActivity {
         stopParse();
         initParseLoadFound();
         if (mVideoView != null) mVideoView.release();
-        subtitleCacheKey = mVodInfo.sourceKey + "-" + mVodInfo.id + "-" + mVodInfo.playFlag + "-" + mVodInfo.playIndex + "-" + vs.name + "-subt";
-        progressKey = mVodInfo.sourceKey + mVodInfo.id + mVodInfo.playFlag + mVodInfo.playIndex;
+        subtitleCacheKey = mVodInfo.sourceKey + "-" + mVodInfo.id + "-" + mVodInfo.playFlag + "-" + mVodInfo.getplayIndex() + "-" + vs.name + "-subt";
+        progressKey = mVodInfo.sourceKey + mVodInfo.id + mVodInfo.playFlag + mVodInfo.getplayIndex();
         //重新播放清除现有进度
         if (reset) {
             CacheManager.delete(MD5.string2MD5(progressKey), 0);

@@ -1,5 +1,7 @@
 package com.github.tvbox.osc.bean;
 
+import android.text.TextUtils;
+
 import androidx.annotation.NonNull;
 
 import com.github.tvbox.osc.api.ApiConfig;
@@ -50,7 +52,8 @@ public class VodInfo implements Serializable {
     public String des;// <![CDATA[权来]
     public String playFlag = null;
     public int playIndex = 0;
-
+    public int playGroup = 0;
+    public int playGroupCount = 0;
     public String playNote = "";
     public String sourceKey;
     public String playerCfg = "";
@@ -114,6 +117,41 @@ public class VodInfo implements Serializable {
             Collections.reverse(seriesMap.get(flag));
         }
     }
+    
+    public int getplayIndex() {
+        return this.playGroup * this.playGroupCount + this.playIndex;
+    }
+    
+    public static class VodSeriesFlag implements Serializable {
+
+        public String name;
+        public boolean selected;
+
+        public VodSeriesFlag() {
+
+        }
+
+        public VodSeriesFlag(String name) {
+            this.name = name;
+        }
+    }
+
+    public static class VodSeries implements Serializable {
+
+        public String name;
+        public String url;
+        public boolean selected;
+
+        public VodSeries() {
+        }
+
+        public VodSeries(String name, String url) {
+            this.name = name;
+            this.url = url;
+        }
+    }
+    
+    
 
     @NonNull
     @Override
@@ -157,33 +195,5 @@ public class VodInfo implements Serializable {
         }
         return vodSeries;
     }
-
-    public static class VodSeriesFlag implements Serializable {
-
-        public String name;
-        public boolean selected = false;
-
-        public VodSeriesFlag() {
-
-        }
-
-        public VodSeriesFlag(String name) {
-            this.name = name;
-        }
-    }
-
-    public static class VodSeries implements Serializable {
-
-        public String name;
-        public String url;
-        public boolean selected;
-
-        public VodSeries() {
-        }
-
-        public VodSeries(String name, String url) {
-            this.name = name;
-            this.url = url;
-        }
-    }
+    
 }
