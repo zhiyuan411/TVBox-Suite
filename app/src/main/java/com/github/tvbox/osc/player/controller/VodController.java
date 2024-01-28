@@ -710,7 +710,7 @@ public class VodController extends BaseController {
                     }
                     SelectDialog<Integer> dialog = new SelectDialog<>(mActivity);
                     dialog.setTip(HomeActivity.getRes().getString(R.string.dia_player));
-                    dialog.setAdapter(new SelectDialogAdapter.SelectDialogInterface<Integer>() {
+                    dialog.setAdapter(null, new SelectDialogAdapter.SelectDialogInterface<Integer>() {
                         @Override
                         public void click(Integer value, int pos) {
                             try {

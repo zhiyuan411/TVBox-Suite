@@ -143,6 +143,9 @@
     // Fast Search Page //
     <string name="fs_show_all">All</string>
     <string name="fs_results">Search Results</string>
+    <string name="global_search">global search</string>
+    <string name="search">search</string>
+    <string name="Select_source">Select source</string>
 
     // VOD //
     <string name="vod_audio">Select Audio Track</string>

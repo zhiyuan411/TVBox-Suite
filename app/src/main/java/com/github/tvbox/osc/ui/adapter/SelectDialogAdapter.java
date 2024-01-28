@@ -1,5 +1,6 @@
 package com.github.tvbox.osc.ui.adapter;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +22,7 @@ public class SelectDialogAdapter<T> extends ListAdapter<T, SelectDialogAdapter.S
 
     private boolean muteCheck = false;
 
-    class SelectViewHolder extends RecyclerView.ViewHolder {
+    static class SelectViewHolder extends RecyclerView.ViewHolder {
 
         public SelectViewHolder(@NonNull @NotNull View itemView) {
             super(itemView);
@@ -80,11 +81,11 @@ public class SelectDialogAdapter<T> extends ListAdapter<T, SelectDialogAdapter.S
 
     @Override
     public SelectDialogAdapter.SelectViewHolder onCreateViewHolder(@NonNull @NotNull ViewGroup parent, int viewType) {
-        return new SelectDialogAdapter.SelectViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_dialog_select, parent, false));
+        return new SelectViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_dialog_select, parent, false));
     }
 
     @Override
-    public void onBindViewHolder(@NonNull @NotNull SelectDialogAdapter.SelectViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull @NotNull SelectDialogAdapter.SelectViewHolder holder, @SuppressLint("RecyclerView") int position) {    
         T value = data.get(position);
         String name = dialogInterface.getDisplay(value);
         if (!muteCheck && position == select)

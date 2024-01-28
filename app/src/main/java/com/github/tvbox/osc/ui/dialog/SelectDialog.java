@@ -2,7 +2,6 @@ package com.github.tvbox.osc.ui.dialog;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -17,9 +16,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class SelectDialog<T> extends BaseDialog {
-
-    private boolean muteCheck = false;
-
+	
+	private boolean muteCheck = false;
+	
     public SelectDialog(@NonNull @NotNull Context context) {
         super(context);
         setContentView(R.layout.dialog_select);
@@ -29,7 +28,7 @@ public class SelectDialog<T> extends BaseDialog {
         super(context);
         setContentView(resId);
     }
-
+    
     public void setItemCheckDisplay(boolean shouldShowCheck) {
         muteCheck = !shouldShowCheck;
     }
@@ -42,20 +41,23 @@ public class SelectDialog<T> extends BaseDialog {
     public void setTip(String tip) {
         ((TextView) findViewById(R.id.title)).setText(tip);
     }
-
-    public void setAdapter(SelectDialogAdapter.SelectDialogInterface<T> sourceBeanSelectDialogInterface, DiffUtil.ItemCallback<T> sourceBeanItemCallback, List<T> data, int select) {
+    
+    public void setAdapter(TvRecyclerView tvRecyclerView, SelectDialogAdapter.SelectDialogInterface<T> sourceBeanSelectDialogInterface, DiffUtil.ItemCallback<T> sourceBeanItemCallback, List<T> data, int select) {
         if (select >= data.size() || select < 0) select = 0;//if source update, data item count maybe smaller than before
         final int selectIdx = select;
-        SelectDialogAdapter<T> adapter = new SelectDialogAdapter(sourceBeanSelectDialogInterface, sourceBeanItemCallback, muteCheck);
+        SelectDialogAdapter<T> adapter = new SelectDialogAdapter<>(sourceBeanSelectDialogInterface, sourceBeanItemCallback, muteCheck);
         adapter.setData(data, select);
-        TvRecyclerView tvRecyclerView = ((TvRecyclerView) findViewById(R.id.list));
+        if(tvRecyclerView == null){
+            tvRecyclerView = findViewById(R.id.list);
+        }
         tvRecyclerView.setAdapter(adapter);
         tvRecyclerView.setSelectedPosition(select);
+        TvRecyclerView finalTvRecyclerView = tvRecyclerView;
         tvRecyclerView.post(new Runnable() {
             @Override
             public void run() {
-                tvRecyclerView.scrollToPosition(selectIdx);
-                tvRecyclerView.setSelectionWithSmooth(selectIdx);
+                finalTvRecyclerView.smoothScrollToPosition(selectIdx);
+                finalTvRecyclerView.setSelectionWithSmooth(selectIdx);
             }
         });
     }

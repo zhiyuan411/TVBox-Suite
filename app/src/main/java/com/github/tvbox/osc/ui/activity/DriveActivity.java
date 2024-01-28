@@ -132,7 +132,7 @@ public class DriveActivity extends BaseActivity {
                 dialog.setTip("请选择存盘类型");
                 dialog.setItemCheckDisplay(false);
                 String[] typeNames = StorageDriveType.getTypeNames();
-                dialog.setAdapter(new SelectDialogAdapter.SelectDialogInterface<StorageDriveType.TYPE>() {
+                dialog.setAdapter(null, new SelectDialogAdapter.SelectDialogInterface<StorageDriveType.TYPE>() {
                     @Override
                     public void click(StorageDriveType.TYPE value, int pos) {
                         if (value == StorageDriveType.TYPE.LOCAL) {
@@ -303,7 +303,7 @@ public class DriveActivity extends BaseActivity {
         int sort = Hawk.get(HawkConfig.STORAGE_DRIVE_SORT, 0);
         SelectDialog<String> dialog = new SelectDialog<>(DriveActivity.this);
         dialog.setTip("请选择列表排序方式");
-        dialog.setAdapter(new SelectDialogAdapter.SelectDialogInterface<String>() {
+        dialog.setAdapter(null, new SelectDialogAdapter.SelectDialogInterface<String>() {
             @Override
             public void click(String value, int pos) {
                 sortType = pos;

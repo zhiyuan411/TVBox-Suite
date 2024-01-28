@@ -15,46 +15,65 @@ import java.util.List;
 public class SearchHelper {
 
     public static HashMap<String, String> getSourcesForSearch() {
-        HashMap<String, String> mCheckSources;
-        try {
-        	String api = Hawk.get(HawkConfig.API_URL, HomeActivity.getRes().getString(R.string.app_source));
-            if (api.isEmpty()) return null;
-            HashMap<String, HashMap<String, String>> mCheckSourcesForApi = Hawk.get(HawkConfig.SOURCES_FOR_SEARCH, new HashMap<>());
-            mCheckSources = mCheckSourcesForApi.get(api);
-        } catch (Exception e) {
+        String api = Hawk.get(HawkConfig.API_URL, HomeActivity.getRes().getString(R.string.app_source));
+        if (api.isEmpty()) {
             return null;
         }
-        if (mCheckSources == null || mCheckSources.isEmpty()) mCheckSources = getSources();
+        HashMap < String, String > mCheckSources = new HashMap < > ();
+        try {        	
+            HashMap<String, HashMap<String, String>> mCheckSourcesForApi = Hawk.get(HawkConfig.SOURCES_FOR_SEARCH, new HashMap<>());
+            mCheckSources = mCheckSourcesForApi.get(api);
+        } catch (Exception ignored) {
+            
+        }
+        if (mCheckSources == null || mCheckSources.size() <= 0) {
+            if (mCheckSources == null) {
+                mCheckSources = new HashMap < > ();
+            }
+            for (SourceBean bean: ApiConfig.get()
+                .getSourceBeanList()) {
+                if (!bean.isSearchable()) {
+                    continue;
+                }
+                mCheckSources.put(bean.getKey(), "1");
+            }
+        }
         return mCheckSources;
     }
 
-    public static void putCheckedSources(HashMap<String, String> mCheckSources, boolean isAll) {
+    public static void putCheckedSources(HashMap<String, String> mCheckSources) {
         String api = Hawk.get(HawkConfig.API_URL, HomeActivity.getRes().getString(R.string.app_source));
         if (api.isEmpty()) {
             return;
         }
-        HashMap<String, HashMap<String, String>> mCheckSourcesForApi = Hawk.get(HawkConfig.SOURCES_FOR_SEARCH, null);
-
-        if (isAll) {
-            if (mCheckSourcesForApi == null) return;
-            mCheckSourcesForApi.remove(api);
-        } else {
-            if (mCheckSourcesForApi == null) mCheckSourcesForApi = new HashMap<>();
-            mCheckSourcesForApi.put(api, mCheckSources);
+        HashMap < String, HashMap < String, String >> mCheckSourcesForApi = Hawk.get(HawkConfig.SOURCES_FOR_SEARCH, new HashMap < > ());
+        if (mCheckSourcesForApi == null || mCheckSourcesForApi.isEmpty()) {
+            mCheckSourcesForApi = new HashMap < > ();
         }
-        SearchActivity.setCheckedSourcesForSearch(mCheckSources);
+        mCheckSourcesForApi.put(api, mCheckSources);
         Hawk.put(HawkConfig.SOURCES_FOR_SEARCH, mCheckSourcesForApi);
     }
 
-    public static HashMap<String, String> getSources() {
-        HashMap<String, String> mCheckSources = new HashMap<>();
-        for (SourceBean bean : ApiConfig.get().getSourceBeanList()) {
-            if (!bean.isSearchable()) {
-                continue;
-            }
-            mCheckSources.put(bean.getKey(), "1");
+    public static void putCheckedSource(String siteKey, boolean checked) {
+        String api = Hawk.get(HawkConfig.API_URL, HomeActivity.getRes().getString(R.string.app_source));
+        if (api.isEmpty()) {
+            return;
         }
-        return mCheckSources;
+        HashMap < String, HashMap < String, String >> mCheckSourcesForApi = Hawk.get(HawkConfig.SOURCES_FOR_SEARCH, new HashMap < > ());
+        if (mCheckSourcesForApi == null || mCheckSourcesForApi.isEmpty()) {
+            mCheckSourcesForApi = new HashMap < > ();
+        }
+        if (mCheckSourcesForApi.get(api) == null) {
+            mCheckSourcesForApi.put(api, new HashMap < > ());
+        }
+        if (checked) {
+            mCheckSourcesForApi.get(api).put(siteKey, "1");
+        } else {
+            if (mCheckSourcesForApi.get(api).containsKey(siteKey)) {
+                mCheckSourcesForApi.get(api).remove(siteKey);
+            }
+        }
+        Hawk.put(HawkConfig.SOURCES_FOR_SEARCH, mCheckSourcesForApi);
     }
 
     public static List<String> splitWords(String text) {

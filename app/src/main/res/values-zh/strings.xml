@@ -143,6 +143,9 @@
     // Fast Search Page //
     <string name="fs_show_all">全部显示</string>
     <string name="fs_results">搜索结果</string>
+    <string name="global_search">全局搜索</string>
+    <string name="search">搜索</string>
+    <string name="Select_source">选择搜索源</string>
 
     // VOD //
     <string name="vod_audio">切换音轨</string>

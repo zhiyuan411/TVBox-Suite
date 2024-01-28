@@ -53,6 +53,7 @@ public class HawkConfig {
     public static final String BACKGROUND_PLAY_TYPE = "background_play_type";
     public static final String FAST_SEARCH_MODE = "fast_search_mode";
     public static final String SCREEN_DISPLAY = "screen_display";
+    public static final String SEARCH_FILTER_KEY = "search_filter_key";
 
     // Live Settings
     public static final String LIVE_CHANNEL = "last_live_channel_name";

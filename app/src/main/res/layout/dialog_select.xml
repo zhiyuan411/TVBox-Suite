@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/cl_root"
         android:layout_width="@dimen/vs_480"
         android:layout_height="match_parent"
@@ -33,6 +33,9 @@
             android:textColor="@color/color_FFFFFF"
             android:textSize="@dimen/ts_26"
             android:textStyle="bold"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             tools:text="Select Options" />
 
         <com.owen.tvrecyclerview.widget.TvRecyclerView
@@ -40,11 +43,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            app:layout_constrainedHeight="true"
+            app:layout_constraintHeight_max="@dimen/vs_400"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/title"
             app:tv_horizontalSpacingWithMargins="@dimen/vs_10"
             app:tv_layoutManager="V7LinearLayoutManager"
             app:tv_selectedItemIsCentered="true"
             app:tv_verticalSpacingWithMargins="@dimen/vs_10" />
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </FrameLayout>

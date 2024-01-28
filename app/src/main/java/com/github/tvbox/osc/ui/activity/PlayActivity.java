@@ -421,7 +421,7 @@ public class PlayActivity extends BaseActivity {
         }
         SelectDialog<TrackInfoBean> dialog = new SelectDialog<>(PlayActivity.this);
         dialog.setTip(getString(R.string.vod_sub_sel));
-        dialog.setAdapter(new SelectDialogAdapter.SelectDialogInterface<TrackInfoBean>() {
+        dialog.setAdapter(null, new SelectDialogAdapter.SelectDialogInterface<TrackInfoBean>() {
             @Override
             public void click(TrackInfoBean value, int pos) {
                 mController.mSubtitleView.setVisibility(View.VISIBLE);
@@ -503,7 +503,7 @@ public class PlayActivity extends BaseActivity {
         if (bean.size() < 1) return;
         SelectDialog<TrackInfoBean> dialog = new SelectDialog<>(PlayActivity.this);
         dialog.setTip(getString(R.string.vod_audio));
-        dialog.setAdapter(new SelectDialogAdapter.SelectDialogInterface<TrackInfoBean>() {
+        dialog.setAdapter(null, new SelectDialogAdapter.SelectDialogInterface<TrackInfoBean>() {
             @Override
             public void click(TrackInfoBean value, int pos) {
                 try {
