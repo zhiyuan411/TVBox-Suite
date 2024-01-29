@@ -179,6 +179,7 @@
         android:visibility="gone"
         tools:visibility="visible"
         android:layout_gravity="right"
+        android:background="@drawable/shape_user_pause"
         android:layout_marginRight="@dimen/vs_35"
         android:layout_marginTop="@dimen/vs_8"        
         android:orientation="horizontal">
