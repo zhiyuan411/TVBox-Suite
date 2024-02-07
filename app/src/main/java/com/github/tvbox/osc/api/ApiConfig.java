@@ -512,8 +512,8 @@ public class ApiConfig {
                         hosts.add(host.getAsString());
                     }
                 } else continue;
-                if (obj.has("rule")) {
-                    JsonArray ruleJsonArr = obj.getAsJsonArray("rule");
+                if (obj.has("rule") || obj.has("regex")) {
+                    JsonArray ruleJsonArr = obj.has("regex")?obj.getAsJsonArray("regex"):obj.getAsJsonArray("rule");
                     ArrayList<String> rule = new ArrayList<>();
                     for (JsonElement one : ruleJsonArr) {
                         String oneRule = one.getAsString();

@@ -119,7 +119,7 @@
 
         <com.owen.tvrecyclerview.widget.TvRecyclerView
             android:id="@+id/mChannelGridView"
-            android:layout_width="@dimen/vs_280"
+            android:layout_width="@dimen/vs_340"
             android:layout_height="match_parent"
             android:divider="@null"
             android:fadeScrollbars="false"
