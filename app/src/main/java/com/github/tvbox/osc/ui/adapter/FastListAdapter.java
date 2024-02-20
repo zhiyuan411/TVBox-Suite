@@ -11,12 +11,12 @@ import java.util.ArrayList;
 
 public class FastListAdapter extends BaseQuickAdapter<String, BaseViewHolder> {
     public FastListAdapter() {
-        super(R.layout.item_search_word_hot, new ArrayList<>());
+        super(R.layout.item_fast_search_site, new ArrayList<>());
     }
 
     @Override
     protected void convert(BaseViewHolder helper, String item) {
-        helper.setText(R.id.tvSearchWord, item);
+        helper.setText(R.id.tvSearchSite, item);
     }
 
 
