@@ -2,8 +2,10 @@ package com.github.tvbox.osc.util;
 
 
 import java.lang.reflect.Array;
+import java.text.Collator;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class StringUtils {
@@ -215,5 +217,38 @@ public class StringUtils {
             }
         }
         return result;
+    }
+
+    public static int compare(String s1, String s2) {
+        String[] split1 = splitString(s1);
+        String[] split2 = splitString(s2);
+
+        Collator collator = Collator.getInstance(Locale.CHINA);
+
+        // Compare each segment of the strings
+        for (int i = 0; i < Math.min(split1.length, split2.length); i++) {
+            if (Character.isDigit(split1[i].charAt(0)) && Character.isDigit(split2[i].charAt(0))) {
+                // Both segments are numeric, compare as numbers
+                int num1 = Integer.parseInt(split1[i]);
+                int num2 = Integer.parseInt(split2[i]);
+                int numComparison = Integer.compare(num1, num2);
+                if (numComparison != 0) {
+                    return numComparison;
+                }
+            } else {
+                // Compare as strings or Chinese characters
+                int stringComparison = collator.compare(split1[i], split2[i]);
+                if (stringComparison != 0) {
+                    return stringComparison;
+                }
+            }
+        }
+
+        // Handle case where one string is a prefix of the other
+        return Integer.compare(split1.length, split2.length);
+    }
+
+    private static String[] splitString(String s) {
+        return s.split("(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)");
     }
 }

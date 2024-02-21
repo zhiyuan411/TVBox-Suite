@@ -3,6 +3,7 @@ package com.github.tvbox.osc.viewmodel.drive;
 import androidx.lifecycle.ViewModel;
 
 import com.github.tvbox.osc.bean.DriveFolderFile;
+import com.github.tvbox.osc.util.StringUtils;
 
 import java.text.Collator;
 import java.util.Collections;
@@ -52,16 +53,19 @@ public abstract class AbstractDriveViewModel extends ViewModel {
         public int compare(DriveFolderFile o1, DriveFolderFile o2) {
             switch (sortType) {
                 case 1:
-                    return Collator.getInstance(Locale.CHINESE).compare(o2.name.toUpperCase(Locale.CHINESE), o1.name.toUpperCase(Locale.CHINESE));
+//                    return Collator.getInstance(Locale.CHINESE).compare(o2.name.toUpperCase(Locale.CHINESE), o1.name.toUpperCase(Locale.CHINESE));
+                    return StringUtils.compare(o2.name.toUpperCase(Locale.CHINESE), o1.name.toUpperCase(Locale.CHINESE));
                 case 2:
                     return Long.compare(o1.lastModifiedDate, o2.lastModifiedDate);
                 case 3:
                     return Long.compare(o2.lastModifiedDate, o1.lastModifiedDate);
                 default:
-                    return Collator.getInstance(Locale.CHINESE).compare(o1.name.toUpperCase(Locale.CHINESE), o2.name.toUpperCase(Locale.CHINESE));
+//                    return Collator.getInstance(Locale.CHINESE).compare(o1.name.toUpperCase(Locale.CHINESE), o2.name.toUpperCase(Locale.CHINESE));
+                    return StringUtils.compare(o1.name.toUpperCase(Locale.CHINESE), o2.name.toUpperCase(Locale.CHINESE));
             }
         }
     };
+
 
     public interface LoadDataCallback {
 
@@ -69,4 +73,5 @@ public abstract class AbstractDriveViewModel extends ViewModel {
 
         void fail(String message);
     }
+
 }
