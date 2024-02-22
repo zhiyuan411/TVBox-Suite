@@ -81,11 +81,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -699,20 +697,12 @@ public class DetailActivity extends BaseActivity {
                         arrayList.add(new VodSeriesGroup(name_s + "-" + size));
                     }
                 }
-                Collections.sort(info, sortComparator);
                 uu.add(info);
             }
         } catch (Exception e) {
         }
         return arrayList;
-    }
-
-    private final Comparator<VodInfo.VodSeries> sortComparator = new Comparator<VodInfo.VodSeries>() {
-        @Override
-        public int compare(VodInfo.VodSeries o1, VodInfo.VodSeries o2) {
-            return StringUtils.compare(o1.name.toUpperCase(Locale.CHINESE), o2.name.toUpperCase(Locale.CHINESE));
-        }
-    };
+    }  
 
     private void setTextShow(TextView view, String tag, String info) {
         if (info == null || info.trim().isEmpty()) {
