@@ -2,6 +2,7 @@ package com.github.tvbox.osc.ui.fragment;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,7 +66,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
     private TextView tvApi;
     // Home Section
     private TextView tvHomeApi;
-	private TextView tvHomeDefaultShow;
+    private TextView tvHomeDefaultShow;
     private TextView tvHomeShow;
     private TextView tvHomeIcon;
     private TextView tvHomeRec;
@@ -73,7 +74,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
 
     // Player Section
     private TextView tvShowPreviewText;
-    private TextView tvScale;    
+    private TextView tvScale;
     private TextView tvPlay;
     private TextView tvMediaCodec;
     private TextView tvVideoPurifyText;
@@ -103,7 +104,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
 
     @Override
     protected void init() {
-    	tvFastSearchText = findViewById(R.id.showFastSearchText);
+        tvFastSearchText = findViewById(R.id.showFastSearchText);
         tvFastSearchText.setText(Hawk.get(HawkConfig.FAST_SEARCH_MODE, false) ? "已开启" : "已关闭");
         tvDebugOpen = findViewById(R.id.tvDebugOpen);
         tvDebugOpen.setText(Hawk.get(HawkConfig.DEBUG_OPEN, false) ? "开启" : "关闭");
@@ -122,7 +123,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
         tvShowPreviewText = findViewById(R.id.showPreviewText);
         tvShowPreviewText.setText(Hawk.get(HawkConfig.SHOW_PREVIEW, true) ? "开启" : "关闭");
         tvScale = findViewById(R.id.tvScaleType);
-        tvScale.setText(PlayerHelper.getScaleName(Hawk.get(HawkConfig.PLAY_SCALE, 0)));        
+        tvScale.setText(PlayerHelper.getScaleName(Hawk.get(HawkConfig.PLAY_SCALE, 0)));
         tvPlay = findViewById(R.id.tvPlay);
         tvPlay.setText(PlayerHelper.getPlayerName(Hawk.get(HawkConfig.PLAY_TYPE, 0)));
         tvMediaCodec = findViewById(R.id.tvMediaCodec);
@@ -134,8 +135,12 @@ public class ModelSettingFragment extends BaseLazyFragment {
         // System Section
         tvLocale = findViewById(R.id.tvLocale);
         tvLocale.setText(getLocaleView(Hawk.get(HawkConfig.HOME_LOCALE, 0)));
-        tvTheme = findViewById(R.id.tvTheme);
-        tvTheme.setText(getThemeView(Hawk.get(HawkConfig.THEME_SELECT, 0)));
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tvTheme = findViewById(R.id.tvTheme);
+            tvTheme.setText(getThemeView(Hawk.get(HawkConfig.THEME_SELECT, 0)));
+        }
+
         tvRender = findViewById(R.id.tvRenderType);
         tvRender.setText(PlayerHelper.getRenderName(Hawk.get(HawkConfig.PLAY_RENDER, 0)));
         tvParseWebView = findViewById(R.id.tvParseWebView);
@@ -144,7 +149,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
         tvSearchView.setText(getSearchView(Hawk.get(HawkConfig.SEARCH_VIEW, 0)));
         tvDns = findViewById(R.id.tvDns);
         tvDns.setText(OkGoHelper.dnsHttpsList.get(Hawk.get(HawkConfig.DOH_URL, 0)));
-		tvHomeDefaultShow = findViewById(R.id.tvHomeDefaultShow);
+        tvHomeDefaultShow = findViewById(R.id.tvHomeDefaultShow);
         tvHomeDefaultShow.setText(Hawk.get(HawkConfig.HOME_DEFAULT_SHOW, false) ? "开启" : "关闭");
 
         //takagen99 : Set HomeApi as default
@@ -425,6 +430,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
                     tvBgPlayType.setText(value);
                     Hawk.put(HawkConfig.BACKGROUND_PLAY_TYPE, pos);
                 }
+
                 @Override
                 public String getDisplay(String val) {
                     return val;
@@ -434,13 +440,14 @@ public class ModelSettingFragment extends BaseLazyFragment {
                 public boolean areItemsTheSame(@NonNull @NotNull String oldItem, @NonNull @NotNull String newItem) {
                     return oldItem.equals(newItem);
                 }
+
                 @Override
                 public boolean areContentsTheSame(@NonNull @NotNull String oldItem, @NonNull @NotNull String newItem) {
                     return oldItem.equals(newItem);
                 }
-            }, bgPlayTypes,defaultBgPlayTypePos);
+            }, bgPlayTypes, defaultBgPlayTypePos);
             dialog.show();
-        });        
+        });
         // Select PLAYER Type --------------------------------------------
         findViewById(R.id.llPlay).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -780,56 +787,58 @@ public class ModelSettingFragment extends BaseLazyFragment {
             }
         });
         // Select App Theme Color -------------------------------------
-        findViewById(R.id.llTheme).setOnClickListener(new View.OnClickListener() {
-            private final int chkTheme = Hawk.get(HawkConfig.THEME_SELECT, 0);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            findViewById(R.id.llTheme).setOnClickListener(new View.OnClickListener() {
+                private final int chkTheme = Hawk.get(HawkConfig.THEME_SELECT, 0);
 
-            @Override
-            public void onClick(View v) {
-                FastClickCheckUtil.check(v);
-                int defaultPos = Hawk.get(HawkConfig.THEME_SELECT, 0);
-                ArrayList<Integer> types = new ArrayList<>();
-                types.add(0);
-                types.add(1);
-                types.add(2);
-                types.add(3);
-                types.add(4);
-                types.add(5);
-                types.add(6);
-                SelectDialog<Integer> dialog = new SelectDialog<>(mActivity);
-                dialog.setTip(getString(R.string.dia_theme));
-                dialog.setAdapter(null, new SelectDialogAdapter.SelectDialogInterface<Integer>() {
-                    @Override
-                    public void click(Integer value, int pos) {
-                        Hawk.put(HawkConfig.THEME_SELECT, value);
-                        tvTheme.setText(getThemeView(value));
-                    }
-
-                    @Override
-                    public String getDisplay(Integer val) {
-                        return getThemeView(val);
-                    }
-                }, new DiffUtil.ItemCallback<Integer>() {
-                    @Override
-                    public boolean areItemsTheSame(@NonNull @NotNull Integer oldItem, @NonNull @NotNull Integer newItem) {
-                        return oldItem.intValue() == newItem.intValue();
-                    }
-
-                    @Override
-                    public boolean areContentsTheSame(@NonNull @NotNull Integer oldItem, @NonNull @NotNull Integer newItem) {
-                        return oldItem.intValue() == newItem.intValue();
-                    }
-                }, types, defaultPos);
-                dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                    @Override
-                    public void onDismiss(DialogInterface dialog) {
-                        if (chkTheme != Hawk.get(HawkConfig.THEME_SELECT, 0)) {
-                            reloadActivity();
+                @Override
+                public void onClick(View v) {
+                    FastClickCheckUtil.check(v);
+                    int defaultPos = Hawk.get(HawkConfig.THEME_SELECT, 0);
+                    ArrayList<Integer> types = new ArrayList<>();
+                    types.add(0);
+                    types.add(1);
+                    types.add(2);
+                    types.add(3);
+                    types.add(4);
+                    types.add(5);
+                    types.add(6);
+                    SelectDialog<Integer> dialog = new SelectDialog<>(mActivity);
+                    dialog.setTip(getString(R.string.dia_theme));
+                    dialog.setAdapter(null, new SelectDialogAdapter.SelectDialogInterface<Integer>() {
+                        @Override
+                        public void click(Integer value, int pos) {
+                            Hawk.put(HawkConfig.THEME_SELECT, value);
+                            tvTheme.setText(getThemeView(value));
                         }
-                    }
-                });
-                dialog.show();
-            }
-        });
+
+                        @Override
+                        public String getDisplay(Integer val) {
+                            return getThemeView(val);
+                        }
+                    }, new DiffUtil.ItemCallback<Integer>() {
+                        @Override
+                        public boolean areItemsTheSame(@NonNull @NotNull Integer oldItem, @NonNull @NotNull Integer newItem) {
+                            return oldItem.intValue() == newItem.intValue();
+                        }
+
+                        @Override
+                        public boolean areContentsTheSame(@NonNull @NotNull Integer oldItem, @NonNull @NotNull Integer newItem) {
+                            return oldItem.intValue() == newItem.intValue();
+                        }
+                    }, types, defaultPos);
+                    dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            if (chkTheme != Hawk.get(HawkConfig.THEME_SELECT, 0)) {
+                                reloadActivity();
+                            }
+                        }
+                    });
+                    dialog.show();
+                }
+            });
+        }
         // About App -----------------------------------------------
         findViewById(R.id.llAbout).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -839,8 +848,8 @@ public class ModelSettingFragment extends BaseLazyFragment {
                 dialog.show();
             }
         });
-		
-		findViewById(R.id.llHomeLive).setOnClickListener(new View.OnClickListener() {
+
+        findViewById(R.id.llHomeLive).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 FastClickCheckUtil.check(v);

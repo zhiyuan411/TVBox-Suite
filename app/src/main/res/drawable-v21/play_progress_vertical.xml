@@ -8,10 +8,10 @@
     </item>
     <item android:id="@android:id/progress">
         <clip
-            android:clipOrientation="horizontal"
-            android:gravity="left">
+            android:clipOrientation="vertical"
+            android:gravity="bottom">
             <shape>
-                <solid android:color="@color/color_theme_80" />
+                <solid android:color="?attr/color_theme_80" />
                 <corners android:radius="2.0dip" />
             </shape>
         </clip>
