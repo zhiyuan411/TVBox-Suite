@@ -24,14 +24,14 @@
             android:layout_marginEnd="@dimen/vs_12"
             android:layout_marginRight="@dimen/vs_12"
             android:layout_marginBottom="@dimen/vs_8"
-            android:background="@color/color_theme" />
+            android:background="?attr/color_theme" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="@dimen/vs_50"
             android:drawablePadding="@dimen/vs_10"
             android:gravity="center"
-            android:text="@string/act_hist"
+            android:text="@string/act_fav"
             android:textColor="@android:color/white"
             android:textSize="@dimen/ts_34"
             android:textStyle="bold" />
@@ -51,7 +51,7 @@
             android:focusable="false"
             android:focusableInTouchMode="false"
             android:gravity="center"
-            android:text="@string/act_hist_sel"
+            android:text="@string/act_fav_sel"
             android:textColor="@android:color/white"
             android:textSize="@dimen/ts_24"
             android:visibility="gone" />

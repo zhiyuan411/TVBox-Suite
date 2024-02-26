@@ -333,7 +333,7 @@
                     android:layout_marginLeft="@dimen/vs_20"
                     android:layout_marginTop="@dimen/vs_5"
                     android:layout_marginBottom="@dimen/vs_5"
-                    android:background="@color/color_theme" />
+                    android:background="?attr/color_theme" />
 
                 <TextView
                     android:id="@+id/tv_current_program_time"

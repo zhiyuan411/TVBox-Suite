@@ -351,7 +351,7 @@
             android:paddingRight="@dimen/vs_2"
             android:tag="play_speed_topr"            
             android:text="Speed"
-            android:textColor="@color/color_theme"
+            android:textColor="?attr/color_theme"
             android:textStyle="bold"
             android:textSize="@dimen/ts_22" />
 
