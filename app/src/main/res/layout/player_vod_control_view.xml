@@ -37,7 +37,7 @@
                 android:layout_marginEnd="@dimen/vs_10"
                 android:layout_marginRight="@dimen/vs_10"
                 android:layout_marginBottom="@dimen/vs_4"
-                android:background="@color/color_theme" />
+                android:background="?attr/color_theme" />
 
             <TextView
                 android:id="@+id/tv_title_top"
