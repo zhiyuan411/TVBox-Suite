@@ -28,12 +28,12 @@ android {
         exclude 'META-INF/DEPENDENCIES'
     }
 
-    buildTypes {        
+    buildTypes {
         release {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             minifyEnabled true
             ndk {
-                abiFilters 'armeabi-v7a'                
+                abiFilters 'armeabi-v7a'
             }
         }
     }
@@ -47,9 +47,13 @@ android {
         checkReleaseBuilds false
         abortOnError false
     }
-    
+
     buildFeatures {
         dataBinding = true
+    }
+
+    lint {
+        disable 'UnsafeOptInUsageError'
     }
 }
 
@@ -104,11 +108,12 @@ dependencies {
     implementation "androidx.media3:media3-exoplayer-hls:1.1.1"
     implementation "androidx.media3:media3-exoplayer-rtsp:1.1.1"
     implementation "androidx.media3:media3-datasource-rtmp:1.1.1"
+    implementation 'androidx.media3:media3-common:1.1.1'
 
     implementation "com.aliyun.sdk.android:AliyunPlayer:5.5.1.0-full"
     implementation 'com.alivc.conan:AlivcConan:0.9.5'
     implementation 'xyz.doikki.android.dkplayer:dkplayer-ui:3.3.7'
-    implementation 'xyz.doikki.android.dkplayer:videocache:3.3.7'    
+    implementation 'xyz.doikki.android.dkplayer:videocache:3.3.7'
 
     implementation('org.xwalk:xwalk_shared_library:23.53.589.4') {
         exclude group: 'com.android.support'
