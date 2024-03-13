@@ -2,7 +2,6 @@ package com.github.tvbox.osc.subtitle.widget;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import androidx.annotation.Nullable;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -20,6 +19,9 @@ import com.github.tvbox.osc.subtitle.SubtitleEngine;
 import com.github.tvbox.osc.subtitle.model.Subtitle;
 import com.github.tvbox.osc.util.MD5;
 import com.github.tvbox.osc.util.StringUtils;
+
+
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -43,6 +45,8 @@ public class SimpleSubtitleView extends TextView
     public boolean hasInternal = false;
 
     private TextView backGroundText = null;//用于描边的TextView
+
+    private int backGroundTextColor = Color.BLACK;//用于描边的TextView
 
     public SimpleSubtitleView(final Context context) {
         super(context);
@@ -76,7 +80,7 @@ public class SimpleSubtitleView extends TextView
 
     @Override
     public void onSubtitleChanged(@Nullable final Subtitle subtitle) {
-    	if (StringUtils.isEmpty(subtitle) || subtitle.content == null) {        
+        if (StringUtils.isEmpty(subtitle) || subtitle.content == null) {
             setText(EMPTY_TEXT);
             return;
         }
@@ -84,13 +88,13 @@ public class SimpleSubtitleView extends TextView
         if (text.startsWith("Dialogue:") || text.startsWith("m ")) {
             setText(EMPTY_TEXT);
             return;
-        }    
+        }
         text = text.replaceAll("(?:\\r\\n)", "<br />");
         text = text.replaceAll("(?:\\r)", "<br />");
         text = text.replaceAll("(?:\\n)", "<br />");
         text = text.replaceAll("\\\\N", "<br />");
         text = text.replaceAll("\\{[\\s\\S]*?\\}", "");
-        text = text.replaceAll("^.*?,.*?,.*?,.*?,.*?,.*?,.*?,.*?,.*?,", "");        
+        text = text.replaceAll("^.*?,.*?,.*?,.*?,.*?,.*?,.*?,.*?,.*?,", "");
         setText(Html.fromHtml(text));
     }
 
@@ -172,6 +176,19 @@ public class SimpleSubtitleView extends TextView
     }
 
     @Override
+    public void setShadowLayer(float radius, float dx, float dy, int color) {
+        this.backGroundTextColor = color;
+        super.setShadowLayer(radius, dx, dy, color);
+    }
+
+    public void setBackGroundTextColor(int backGroundTextColor) {
+        if (backGroundTextColor != this.backGroundTextColor) {
+            this.backGroundTextColor = backGroundTextColor;
+            invalidate();
+        }
+    }
+
+    @Override
     public void setLayoutParams(ViewGroup.LayoutParams params) {
         //同步布局参数
         backGroundText.setLayoutParams(params);
@@ -221,13 +238,13 @@ public class SimpleSubtitleView extends TextView
     private void drawBackGroundText() {
         TextPaint tp = backGroundText.getPaint();
         //设置描边宽度
-        tp.setStrokeWidth(10);
+        tp.setStrokeWidth(4);
         //背景描边并填充全部
-        tp.setStyle(Paint.Style.FILL_AND_STROKE);
+        tp.setStyle(Paint.Style.STROKE);
         //设置描边颜色
-        backGroundText.setTextColor(Color.BLACK);
+        backGroundText.setTextColor(backGroundTextColor);
         //将背景的文字对齐方式做同步
         backGroundText.setGravity(getGravity());
     }
-    
+
 }

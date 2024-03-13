@@ -36,6 +36,7 @@ import com.orhanobut.hawk.Hawk;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONObject;
 
@@ -67,7 +68,7 @@ public class SourceViewModel extends ViewModel {
     public MutableLiveData<AbsXml> detailResult;
     public MutableLiveData<JSONObject> playResult;
     private ExecutorService searchExecutorService;
-    
+
     public void initExecutor() {
         if (searchExecutorService != null) {
             searchExecutorService.shutdownNow();
@@ -76,13 +77,13 @@ public class SourceViewModel extends ViewModel {
         }
         searchExecutorService = Executors.newFixedThreadPool(5);
     }
-    
+
     public void execute(Runnable runnable) {
         if (searchExecutorService != null) {
             searchExecutorService.execute(runnable);
         }
     }
-    
+
     public List<Runnable> shutdownNow() {
         return searchExecutorService == null ? new ArrayList<>() : searchExecutorService.shutdownNow();
     }
@@ -457,7 +458,7 @@ public class SourceViewModel extends ViewModel {
     // detailContent
     public void getDetail(String sourceKey, String urlid) {
 
-        if (urlid.startsWith("push://") && ApiConfig.get().getSource("push_agent") != null) {           
+        if (urlid.startsWith("push://") && ApiConfig.get().getSource("push_agent") != null) {
             String pushUrl = urlid.substring(7);
             if (pushUrl.startsWith("b64:")) {
                 try {
@@ -471,9 +472,9 @@ public class SourceViewModel extends ViewModel {
             sourceKey = "push_agent";
             urlid = pushUrl;
         }
-        String id = urlid; 
+        String id = urlid;
         SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
-		if (sourceBean == null) {
+        if (sourceBean == null) {
             detailResult.postValue(null);
             Log.e("sourceBean", "get sourceBean got null, this should not be happended, maybe apiconfig get from http failed and use cache, sourceKey is " + sourceKey);
             return;
@@ -698,92 +699,52 @@ public class SourceViewModel extends ViewModel {
     }
 
     // playerContent
+    //开销会不会太大了 参考 FongMi 写法优化 获取播放地址代码
+    public ExecutorService threadPoolGetPlay = null;
+
     public void getPlay(String sourceKey, String playFlag, String progressKey, String url, String subtitleKey) {
-        SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
-        int type = sourceBean.getType();
-        if (type == 3) {
-            spThreadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    Spider sp = ApiConfig.get().getCSP(sourceBean);                    
-                    try {
-			String json = sp.playerContent(playFlag, url, ApiConfig.get().getVipParseFlags());    
-                        JSONObject result = new JSONObject(json);
-                        result.put("key", url);
-                        result.put("proKey", progressKey);
-                        result.put("subtKey", subtitleKey);
-                        if (!result.has("flag"))
-                            result.put("flag", playFlag);
-                        playResult.postValue(result);
-                    } catch (Throwable th) {
-                        th.printStackTrace();
-                        playResult.postValue(null);
-                    }
-                }
-            });
-        } else if (type == 0 || type == 1) {
-            JSONObject result = new JSONObject();
-            try {
-                result.put("key", url);
+        if (threadPoolGetPlay != null) threadPoolGetPlay.shutdownNow();
+        threadPoolGetPlay = Executors.newFixedThreadPool(2);
+        Callable<JSONObject> callable = () -> {
+            if (Thread.currentThread().isInterrupted()) return null;
+            SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
+            int type = sourceBean.getType();
+            JSONObject result = null;
+            if (type == 3) {
+                Spider sp = ApiConfig.get().getCSP(sourceBean);
+                String json = sp.playerContent(playFlag, url, ApiConfig.get().getVipParseFlags());
+                result = new JSONObject(json);
+            } else if (type == 0 || type == 1) {
+                result = new JSONObject();
                 String playUrl = sourceBean.getPlayerUrl().trim();
-                if (DefaultConfig.isVideoFormat(url) && playUrl.isEmpty()) {
-                    result.put("parse", 0);
-                    result.put("url", url);
-                } else {
-                    result.put("parse", 1);
-                    result.put("url", url);
-                }
-                result.put("playUrl", playUrl);
+                boolean parse = DefaultConfig.isVideoFormat(url) && playUrl.isEmpty();
+                result.put("parse", BooleanUtils.toInteger(!parse));
+                result.put("url", url);
+                //直接就有
+            } else if (type == 4) {
+                okhttp3.Response response = OkGo.<String>get(sourceBean.getApi()).params("play", url).params("flag", playFlag).tag("play").execute();
+                String json = response.body().string();
+                result = new JSONObject(json);
+            }
+            if (result != null) {
+                result.put("key", url);
                 result.put("proKey", progressKey);
                 result.put("subtKey", subtitleKey);
-                result.put("flag", playFlag);
-                playResult.postValue(result);
-            } catch (Throwable th) {
-                th.printStackTrace();
+                if (!result.has("flag"))
+                    result.put("flag", playFlag);
+            }
+            return result;
+        };
+        threadPoolGetPlay.execute(() -> {
+            Future<JSONObject> future = threadPoolGetPlay.submit(callable);
+            try {
+                JSONObject jsonObject = future.get(15, TimeUnit.SECONDS);
+                playResult.postValue(jsonObject);
+            } catch (Throwable e) {
+                e.printStackTrace();
                 playResult.postValue(null);
             }
-        } else if (type == 4) {
-            OkGo.<String>get(sourceBean.getApi())
-                    .params("play", url)
-                    .params("flag", playFlag)
-                    .tag("play")
-                    .execute(new AbsCallback<String>() {
-                        @Override
-                        public String convertResponse(okhttp3.Response response) throws Throwable {
-                            if (response.body() != null) {
-                                return response.body().string();
-                            } else {
-                                throw new IllegalStateException("网络请求错误");
-                            }
-                        }
-
-                        @Override
-                        public void onSuccess(Response<String> response) {
-                            String json = response.body();
-                            LOG.i(json);
-                            try {
-                                JSONObject result = new JSONObject(json);
-                                result.put("key", url);
-                                result.put("proKey", progressKey);
-                                result.put("subtKey", subtitleKey);
-                                if (!result.has("flag"))
-                                    result.put("flag", playFlag);
-                                playResult.postValue(result);
-                            } catch (Throwable th) {
-                                th.printStackTrace();
-                                playResult.postValue(null);
-                            }
-                        }
-
-                        @Override
-                        public void onError(Response<String> response) {
-                            super.onError(response);
-                            playResult.postValue(null);
-                        }
-                    });
-        } else {
-            playResult.postValue(null);
-        }
+        });
     }
 
     private MovieSort.SortFilter getSortFilter(JsonObject obj) {
@@ -896,7 +857,7 @@ public class SourceViewModel extends ViewModel {
             }
         }
     }
-    
+
     private AbsXml checkPush(AbsXml data) {
         if (data.movie != null && data.movie.videoList != null && data.movie.videoList.size() > 0) {
             Movie.Video video = data.movie.videoList.get(0);
@@ -933,7 +894,7 @@ public class SourceViewModel extends ViewModel {
                                         if (sb.getType() == 4) {
                                             OkGo.<String>get(sb.getApi())
                                                     .tag("detail")
-                                                    .params("ac","detail")
+                                                    .params("ac", "detail")
                                                     .params("ids", finalPushUrl)
                                                     .execute(new AbsCallback<String>() {
                                                         @Override
@@ -970,13 +931,14 @@ public class SourceViewModel extends ViewModel {
                                         } else {
                                             try {
                                                 Spider sp = ApiConfig.get().getCSP(sb);
-                                             //   ApiConfig.get().setPlayJarKey(sb.getJar());
+                                                //   ApiConfig.get().setPlayJarKey(sb.getJar());
                                                 List<String> ids = new ArrayList<>();
                                                 ids.add(finalPushUrl);
                                                 String res = sp.detailContent(ids);
                                                 if (!TextUtils.isEmpty(res)) {
                                                     try {
-                                                        AbsJson absJson = new Gson().fromJson(res, new TypeToken<AbsJson>() {}.getType());
+                                                        AbsJson absJson = new Gson().fromJson(res, new TypeToken<AbsJson>() {
+                                                        }.getType());
                                                         resData[0] = absJson.toAbsXml();
                                                         absXml(resData[0], sb.getKey());
                                                     } catch (Exception e) {
@@ -1115,7 +1077,7 @@ public class SourceViewModel extends ViewModel {
                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, data));
             } else if (result != null) {
                 if (result == detailResult) {
-                	data = checkPush(data);
+                    data = checkPush(data);
                     checkThunder(data, 0);
                 } else {
                     result.postValue(data);
@@ -1163,7 +1125,7 @@ public class SourceViewModel extends ViewModel {
                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, data));
             } else if (result != null) {
                 if (result == detailResult) {
-                	data = checkPush(data);
+                    data = checkPush(data);
                     checkThunder(data, 0);
                 } else {
                     result.postValue(data);
@@ -1185,5 +1147,16 @@ public class SourceViewModel extends ViewModel {
     @Override
     protected void onCleared() {
         super.onCleared();
+        closeExecutor(threadPoolGetPlay);
+
+    }
+
+    private void closeExecutor(ExecutorService executorService) {
+        if (executorService != null) {
+            try {
+                executorService.shutdownNow();
+            } catch (Throwable ignored) {
+            }
+        }
     }
 }

@@ -1019,6 +1019,7 @@ public class VodController extends BaseController {
     void initSubtitleInfo() {
         int subtitleTextSize = SubtitleHelper.getTextSize(mActivity);
         mSubtitleView.setTextSize(subtitleTextSize);
+        SubtitleHelper.upTextStyle(mSubtitleView);
     }
 
     @Override

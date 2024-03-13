@@ -259,7 +259,10 @@ public class HomeActivity extends BaseActivity {
         tvWifi.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+                try {
+                    startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+                }catch (Exception ignored){
+                }
             }
         });
         // Button : Search --------------------------------------------

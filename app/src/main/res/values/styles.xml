@@ -131,4 +131,11 @@
         <item name="android:indeterminateBehavior">repeat</item>
         <item name="android:minWidth">1dp</item>
     </style>
+
+    <style name="surfaceType_surface">
+        <item name="surface_type">surface_view</item>
+    </style>
+    <style name="surfaceType_texture">
+        <item name="surface_type">texture_view</item>
+    </style>
 </resources>
