@@ -943,6 +943,9 @@ public class PlayFragment extends BaseLazyFragment {
                                 headers.put(key, hds.getString(key));
                                 if (key.equalsIgnoreCase("user-agent")) {
                                     webUserAgent = hds.getString(key).trim();
+                                } else if (key.equalsIgnoreCase("cookie")) {
+                                    for (String split : hds.getString(key).split(";"))
+                                        CookieManager.getInstance().setCookie(url, split.trim());
                                 }
                             }
                             webHeaderMap = headers;
