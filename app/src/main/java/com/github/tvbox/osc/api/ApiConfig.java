@@ -448,6 +448,7 @@ public class ApiConfig {
                         loadLives(infoJson.get("lives").getAsJsonArray());
                     } else {
                         JsonObject fengMiLives = infoJson.get("lives").getAsJsonArray().get(0).getAsJsonObject();
+                        Hawk.put(HawkConfig.LIVE_PLAYER_TYPE, DefaultConfig.safeJsonInt(fengMiLives, "playerType", -1));
                         String type = fengMiLives.get("type").getAsString();
                         if (type.equals("0")) {
                             String url = fengMiLives.get("url").getAsString();
