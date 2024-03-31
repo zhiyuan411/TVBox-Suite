@@ -27,6 +27,7 @@ import androidx.media3.ui.PlayerView;
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LOG;
+import com.github.tvbox.osc.util.PlayerHelper;
 import com.orhanobut.hawk.Hawk;
 
 import java.util.Locale;
@@ -327,7 +328,7 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
             start();
         } else {
             if (mPlayerEventListener != null) {
-                mPlayerEventListener.onError();
+                mPlayerEventListener.onError(error.errorCode, PlayerHelper.getRootCauseMessage(error));
             }
         }
     }

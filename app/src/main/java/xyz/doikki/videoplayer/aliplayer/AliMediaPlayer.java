@@ -90,11 +90,11 @@ public class AliMediaPlayer extends AbstractPlayer implements Player.Listener {
     private final IPlayer.OnErrorListener onErrorListener = new IPlayer.OnErrorListener() {
         @Override
         public void onError(ErrorInfo errorInfo) {
-            ErrorCode errorCode = errorInfo.getCode(); //错误码。
-            String errorMsg = errorInfo.getMsg(); //错误描述。
+//            ErrorCode errorCode = errorInfo.getCode(); //错误码。
+//            String errorMsg = errorInfo.getMsg(); //错误描述。
             //出错后需要停止掉播放器。
             aliPlayer.stop();
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(errorInfo.getCode().getValue(), errorInfo.getMsg());
         }
     };
     private boolean isAliPlayerStart;

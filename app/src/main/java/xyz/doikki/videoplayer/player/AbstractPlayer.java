@@ -159,7 +159,7 @@ public abstract class AbstractPlayer {
 
     public interface PlayerEventListener {
 
-        void onError();
+        void onError(int code, String msg);
 
         void onCompletion();
 

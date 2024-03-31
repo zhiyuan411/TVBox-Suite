@@ -8,6 +8,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+
+import com.github.tvbox.osc.util.PlayerHelper;
+
 import java.util.Map;
 import xyz.doikki.videoplayer.util.PlayerUtils;
 /**
@@ -45,7 +48,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
         try {
             mMediaPlayer.setDataSource(mAppContext, Uri.parse(path), headers);
         } catch (Exception e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
 
@@ -54,7 +57,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
         try {
             mMediaPlayer.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
         } catch (Exception e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
 
@@ -63,7 +66,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
         try {
             mMediaPlayer.start();
         } catch (IllegalStateException e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
 
@@ -72,7 +75,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
         try {
             mMediaPlayer.pause();
         } catch (IllegalStateException e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
 
@@ -81,7 +84,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
         try {
             mMediaPlayer.stop();
         } catch (IllegalStateException e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
 
@@ -91,7 +94,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
             mIsPreparing = true;
             mMediaPlayer.prepareAsync();
         } catch (IllegalStateException e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
 
@@ -119,7 +122,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
                 mMediaPlayer.seekTo((int) time);
             }
         } catch (IllegalStateException e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
 
@@ -166,7 +169,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
         try {
             mMediaPlayer.setSurface(surface);
         } catch (Exception e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
 
@@ -175,7 +178,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
         try {
             mMediaPlayer.setDisplay(holder);
         } catch (Exception e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
 
@@ -200,7 +203,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
             try {
                 mMediaPlayer.setPlaybackParams(mMediaPlayer.getPlaybackParams().setSpeed(speed));
             } catch (Exception e) {
-                mPlayerEventListener.onError();
+                mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
             }
         }
     }
@@ -227,7 +230,7 @@ public class AndroidMediaPlayer extends AbstractPlayer implements MediaPlayer.On
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
-        mPlayerEventListener.onError();
+        mPlayerEventListener.onError(-1, "未知播放错误");
         return true;
     }
 

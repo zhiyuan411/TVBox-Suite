@@ -182,6 +182,8 @@ public class PlayActivity extends BaseActivity {
                         mHandler.removeMessages(100);
                         setTip("未嗅探到视频", false, true);
                     }
+                } else if (msg.what == 300) {
+                    setTip((String)msg.obj, false, true);
                 }
                 return false;
             }
@@ -309,6 +311,7 @@ public class PlayActivity extends BaseActivity {
 
         });
         mVideoView.setVideoController(mController);
+        mVideoView.setmHandler(mHandler);
     }
 
     //设置字幕

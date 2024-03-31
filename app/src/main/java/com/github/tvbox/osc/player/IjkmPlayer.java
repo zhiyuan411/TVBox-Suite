@@ -9,6 +9,7 @@ import com.github.tvbox.osc.bean.IJKCode;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.MD5;
+import com.github.tvbox.osc.util.PlayerHelper;
 import com.orhanobut.hawk.Hawk;
 
 import java.io.File;
@@ -89,7 +90,7 @@ public class IjkmPlayer extends IjkPlayer {
             }
             setDataSourceHeader(headers);
         } catch (Exception e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
         //mMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "protocol_whitelist", "ijkio,ffio,async,cache,crypto,file,http,https,ijkhttphook,ijkinject,ijklivehook,ijklongurl,ijksegment,ijktcphook,pipe,rtp,tcp,tls,udp,ijkurlhook,data");
         mMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "protocol_whitelist", "ijkio,ffio,async,cache,crypto,file,http,https,ijkhttphook,ijkinject,ijklivehook,ijklongurl,ijksegment,ijktcphook,pipe,rtp,tcp,tls,udp,ijkurlhook,data,concat,subfile,ffconcat");
@@ -116,7 +117,7 @@ public class IjkmPlayer extends IjkPlayer {
         try {
             mMediaPlayer.setDataSource(new RawDataSourceProvider(fd));
         } catch (Exception e) {
-            mPlayerEventListener.onError();
+            mPlayerEventListener.onError(-1, PlayerHelper.getRootCauseMessage(e));
         }
     }
     private void setDataSourceHeader(Map<String, String> headers) {

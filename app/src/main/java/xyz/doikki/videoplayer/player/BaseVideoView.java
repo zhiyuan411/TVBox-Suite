@@ -9,6 +9,8 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Message;
 import android.os.Parcelable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -127,6 +129,8 @@ public class BaseVideoView<P extends AbstractPlayer> extends FrameLayout
      */
     private final int mPlayerBackgroundColor;
 
+    private Handler mHandler;
+
     public BaseVideoView(@NonNull Context context) {
         this(context, null);
     }
@@ -167,6 +171,10 @@ public class BaseVideoView<P extends AbstractPlayer> extends FrameLayout
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT);
         this.addView(mPlayerContainer, params);
+    }
+
+    public void setmHandler(Handler mHandler) {
+        this.mHandler = mHandler;
     }
 
     /**
@@ -559,9 +567,16 @@ public class BaseVideoView<P extends AbstractPlayer> extends FrameLayout
      * 视频播放出错回调
      */
     @Override
-    public void onError() {
+    public void onError(int code, String msg) {
         mPlayerContainer.setKeepScreenOn(false);
         setPlayState(STATE_ERROR);
+
+        if (mHandler != null) {
+            Message sendmsg = Message.obtain();
+            sendmsg.what = 300;
+            sendmsg.obj = msg;
+            mHandler.sendMessage(sendmsg);
+        }
     }
 
     /**
