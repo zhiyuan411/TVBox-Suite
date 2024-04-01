@@ -18,6 +18,8 @@ public interface DataReceiver {
 
     void onEpgReceived(String url);
 
+    void onProxysReceived(String url);
+
     void onPushReceived(String url);
 
     void onMirrorReceived(String id, String sourceKey);

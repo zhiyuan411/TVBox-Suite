@@ -53,6 +53,10 @@ public class InputRequestProcess implements RequestProcess {
                             mDataReceiver.onEpgReceived(params.get("url").trim());
                             break;
                         }
+                        case "proxys": {
+                            mDataReceiver.onProxysReceived(params.get("url").trim());
+                            break;
+                        }
                         case "push": {
                             // 暂未实现
                             mDataReceiver.onPushReceived(params.get("url").trim());

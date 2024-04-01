@@ -187,6 +187,8 @@
 # ExoPlayer
 -keep class com.google.androidx.media3.exoplayer.** { *; }
 -dontwarn com.google.androidx.media3.exoplayer.**
+-keep class androidx.media3.exoplayer.** { *; }
+-dontwarn androidx.media3.exoplayer.**
 
 # sardine webdav
 -keep class com.thegrizzlylabs.sardineandroid.** { *; }
