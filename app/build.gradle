@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId 'com.github.tvbox.osc.tk'
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 29
         versionCode 1
         versionName "1.0.".concat(buildTime())
@@ -102,14 +102,18 @@ dependencies {
     implementation 'org.greenrobot:eventbus:3.3.1'
     implementation 'com.orhanobut:hawk:2.0.1'
     implementation 'net.sourceforge.streamsupport:android-retrofuture:1.7.4'
-    implementation 'androidx.annotation:annotation:1.6.0'
+//    implementation 'androidx.annotation:annotation:1.6.0'
     implementation "androidx.media3:media3-exoplayer:1.1.1"
     implementation "androidx.media3:media3-ui:1.1.1"
+    implementation "androidx.media3:media3-datasource:1.1.1"
     implementation "androidx.media3:media3-exoplayer-dash:1.1.1"
     implementation "androidx.media3:media3-exoplayer-hls:1.1.1"
     implementation "androidx.media3:media3-exoplayer-rtsp:1.1.1"
     implementation "androidx.media3:media3-datasource-rtmp:1.1.1"
     implementation 'androidx.media3:media3-common:1.1.1'
+    implementation "com.github.anilbeesetti.nextlib:nextlib-media3ext:0.5.0" // To add media3 software decoders and extensions
+    //implementation "com.github.anilbeesetti.nextlib:nextlib-mediainfo:0.5.0" // To get media info through ffmpeg
+
 
     implementation "com.aliyun.sdk.android:AliyunPlayer:5.5.2.0-full"
     implementation 'com.alivc.conan:AlivcConan:0.9.5'
