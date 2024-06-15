@@ -2,6 +2,7 @@ package com.github.tvbox.osc.util;
 
 import android.content.Context;
 
+import com.blankj.utilcode.util.ToastUtils;
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.bean.IJKCode;
 import com.github.tvbox.osc.player.EXOmPlayer;
@@ -33,6 +34,7 @@ public class PlayerHelper {
         int scale = Hawk.get(HawkConfig.PLAY_SCALE, 0);
         try {
             playerType = playerCfg.getInt("pl");
+            ToastUtils.showShort( "A _ " + HawkUtils.getVodPlayerPreferredConfigurationFile() + " " +  forcePlayerType  + "  " + playerType + " " +Hawk.get(HawkConfig.PLAY_TYPE, 0));
             //就我遇到的问题是 Exo 在 TextureView 黑屏 调整设置中的渲染模式无法生效
             //renderType = playerCfg.getInt("pr");//该值无法修改，一旦确认该值后续无法进行修改 就是在设置选的 类型无法应用
             ijkCode = playerCfg.getString("ijk");

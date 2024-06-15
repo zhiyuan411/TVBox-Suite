@@ -41,6 +41,11 @@ public class HawkConfig {
     public static final String VIDEO_PURIFY = "video_purify";
     public static final String IJK_CACHE_PLAY = "ijk_cache_play";
 
+    public static final String EXO_RENDERER = "exo_renderer";
+    public static final String EXO_RENDERER_MODE = "exo_renderer_mode";
+    public static final String VOD_PLAYER_PREFERRED = "vod_player_preferred";
+
+
     // Other Settings
     public static final String DOH_URL = "doh_url";         // DNS
     public static final String DEFAULT_PARSE = "parse_default";
