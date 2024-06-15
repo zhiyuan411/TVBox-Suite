@@ -76,11 +76,11 @@ public class HawkUtils {
     public static DefaultRenderersFactory createExoRendererActualValue(Context context) {
         int renderer = getExoRenderer();
         switch (renderer) {
+            case 1:
+                return new NextRenderersFactory(context);
             case 0:
             default:
                 return new DefaultRenderersFactory(context);
-            case 1:
-                return new NextRenderersFactory(context);
         }
     }
 
@@ -101,7 +101,7 @@ public class HawkUtils {
      * @return int
      */
     public static int getExoRendererMode() {
-        return Hawk.get(HawkConfig.EXO_RENDERER_MODE, 0);
+        return Hawk.get(HawkConfig.EXO_RENDERER_MODE, 1);
     }
 
     public static void nextExoRendererMode() {
@@ -122,11 +122,11 @@ public class HawkUtils {
         switch (i) {
             case 0:
                 return DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
+            case 2:
+                return DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF;
             case 1:
             default:
                 return DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER;
-            case 2:
-                return DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF;
         }
     }
 

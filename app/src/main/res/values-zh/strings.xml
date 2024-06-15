@@ -207,7 +207,7 @@
 
     <string-array name="media_content_ExoPlayer">
         <item>渲染器</item>
-        <item>渲染器模式</item>
+<!--        <item>渲染器模式</item>-->
     </string-array>
 
     <string-array name="media_content_ExoPlayer_renderer">

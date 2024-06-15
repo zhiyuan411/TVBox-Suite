@@ -225,7 +225,7 @@
 
     <string-array name="media_content_tag_ExoPlayer">
         <item>ExoRenderer</item>
-        <item>ExoRendererMode</item>
+<!--        <item>ExoRendererMode</item>-->
     </string-array>
 
     <string-array name="media_content_tag_IjkPlayer">
@@ -243,8 +243,8 @@
     <string-array name="media_content_ExoPlayer">
         <!--  渲染器选择  -->
         <item>Renderer</item>
-        <!--首选 扩展渲染器 核心渲染器 关 -->
-        <item>RendererMode</item>
+<!--        &lt;!&ndash;首选 扩展渲染器 核心渲染器 关 &ndash;&gt;-->
+<!--        <item>RendererMode</item>-->
     </string-array>
 
     <string-array name="media_content_IjkPlayer">
