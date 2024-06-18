@@ -61,7 +61,7 @@ public class SelectDialog<T> extends BaseDialog {
         tvRecyclerView.post(new Runnable() {
             @Override
             public void run() {//不清楚会不会存在什么问题
-                if (selectIdx > 10) {
+                if (selectIdx >= 10) {
                     finalTvRecyclerView.smoothScrollToPosition(selectIdx);
                     finalTvRecyclerView.setSelectionWithSmooth(selectIdx);
                 }
