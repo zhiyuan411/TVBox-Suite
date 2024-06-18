@@ -2,9 +2,11 @@ package com.github.tvbox.osc.ui.dialog;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 
 import com.github.tvbox.osc.R;
@@ -52,12 +54,14 @@ public class SelectDialog<T> extends BaseDialog {
         }
         tvRecyclerView.setAdapter(adapter);
         tvRecyclerView.setSelectedPosition(select);
-        tvRecyclerView.setSelection(select);//直接设置选中位置
+        if (select<10){
+            tvRecyclerView.setSelection(select);
+        }
         TvRecyclerView finalTvRecyclerView = tvRecyclerView;
         tvRecyclerView.post(new Runnable() {
             @Override
             public void run() {//不清楚会不会存在什么问题
-                if (finalTvRecyclerView.getSelectedPosition() != selectIdx){
+                if (selectIdx > 10) {
                     finalTvRecyclerView.smoothScrollToPosition(selectIdx);
                     finalTvRecyclerView.setSelectionWithSmooth(selectIdx);
                 }
