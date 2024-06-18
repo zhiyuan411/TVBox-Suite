@@ -64,6 +64,7 @@ public class HawkConfig {
 
     // Live Settings
     public static final String LIVE_CHANNEL = "last_live_channel_name";
+    public static final String LIVE_CHANNEL_GROUP = "last_live_channel_group_name";
     public static final String LIVE_CHANNEL_REVERSE = "live_channel_reverse";
     public static final String LIVE_CROSS_GROUP = "live_cross_group";
     public static final String LIVE_CONNECT_TIMEOUT = "live_connect_timeout";

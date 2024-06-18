@@ -165,4 +165,20 @@ public class HawkUtils {
         String[] array = app.getResources().getStringArray(R.array.media_content_General_VodPlayerPreferred);
         return array[getVodPlayerPreferred()];
     }
+
+    public static String getLastLiveChannelGroup() {
+        return Hawk.get(HawkConfig.LIVE_CHANNEL_GROUP, "");
+    }
+
+    public static void setLastLiveChannelGroup(String group) {
+        Hawk.put(HawkConfig.LIVE_CHANNEL_GROUP, group);
+    }
+
+    public static String getLastLiveChannel() {
+        return Hawk.get(HawkConfig.LIVE_CHANNEL, "");
+    }
+
+    public static void setLastLiveChannel(String channel) {
+        Hawk.put(HawkConfig.LIVE_CHANNEL, channel);
+    }
 }
