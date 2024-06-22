@@ -65,7 +65,7 @@ public class MediaSettingDialog extends BaseDialog {
                     HawkUtils.nextVodPlayerPreferred();
                     break;
             }
-            contentAdapter.notifyItemChanged(i);
+            contentAdapter.refreshNotifyItemChanged(i);
         });
     }
 
