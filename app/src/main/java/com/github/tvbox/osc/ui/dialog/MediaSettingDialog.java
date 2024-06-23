@@ -2,6 +2,7 @@ package com.github.tvbox.osc.ui.dialog;
 
 import android.content.Context;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,6 +15,7 @@ import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.util.HawkUtils;
 import com.github.tvbox.osc.widget.OnItemClickListener;
 import com.github.tvbox.osc.widget.OnItemSelectedListener;
+import com.owen.tvrecyclerview.widget.SimpleOnItemListener;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 
 import org.jetbrains.annotations.NotNull;
@@ -38,11 +40,20 @@ public class MediaSettingDialog extends BaseDialog {
         //左侧数据展示
         MediaSettingTitleAdapter titleAdapter = new MediaSettingTitleAdapter(listTitle);
         listMediaTitle.setAdapter(titleAdapter);
-        listMediaTitle.setOnItemListener((OnItemSelectedListener) (tvRecyclerView, view, i) -> {
-            //重新替换右侧数据
-            contentAdapter.replaceData(getListContent(titleAdapter.getItem(i).tag));
-            listMediaContent.setSelectedPosition(0);
+        listMediaTitle.setOnItemListener(new SimpleOnItemListener() {
+            @Override
+            public void onItemSelected(TvRecyclerView parent, View itemView, int position) {
+                //重新替换右侧数据
+                contentAdapter.replaceData(getListContent(titleAdapter.getItem(position).tag));
+                listMediaContent.setSelectedPosition(0);
+            }
+
+            @Override
+            public void onItemClick(TvRecyclerView parent, View itemView, int position) {
+                this.onItemSelected(parent, itemView, position);
+            }
         });
+
 
         listMediaContent.setOnItemListener((OnItemClickListener) (tvRecyclerView, view, i) -> {
             //处理点击事件
