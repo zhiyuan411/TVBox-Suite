@@ -51,6 +51,7 @@ public class MediaSettingDialog extends BaseDialog {
             @Override
             public void onItemClick(TvRecyclerView parent, View itemView, int position) {
                 this.onItemSelected(parent, itemView, position);
+                itemView.requestFocus();
             }
         });
 
