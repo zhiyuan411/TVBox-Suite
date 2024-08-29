@@ -36,6 +36,7 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
+import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.base.BaseActivity;
 import com.github.tvbox.osc.base.BaseLazyFragment;
 import com.github.tvbox.osc.bean.AbsSortXml;
@@ -133,6 +134,7 @@ public class HomeActivity extends BaseActivity {
 
         EventBus.getDefault().register(this);
         ControlManager.get().startServer();
+        App.startWebserver();
         initView();
         initViewModel();
         useCacheConfig = false;
