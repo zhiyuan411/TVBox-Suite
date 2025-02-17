@@ -720,6 +720,7 @@ public class SourceViewModel extends ViewModel {
                 boolean parse = DefaultConfig.isVideoFormat(url) && playUrl.isEmpty();
                 result.put("parse", BooleanUtils.toInteger(!parse));
                 result.put("url", url);
+                result.put("playUrl", playUrl);
                 //直接就有
             } else if (type == 4) {
                 okhttp3.Response response = OkGo.<String>get(sourceBean.getApi()).params("play", url).params("flag", playFlag).tag("play").execute();
