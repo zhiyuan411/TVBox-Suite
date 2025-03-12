@@ -97,9 +97,7 @@ public class JarLoader {
     }*/
 
     private boolean loadClassLoader(String jar, String key) {
-        if (classLoaders.containsKey(key)) {
-            return true;
-        }
+
         final String TAG = "JarLoader";
         final File jarFile = new File(jar);
         final AtomicBoolean success = new AtomicBoolean(false);
@@ -261,7 +259,8 @@ public class JarLoader {
         }
     }
     private DexClassLoader loadJarInternal(String jar, String md5, String key) {
-
+        if (classLoaders.contains(key))
+            return classLoaders.get(key);
         File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + key + ".jar");
         if (!md5.isEmpty()) {
             if (cache.exists() && MD5.getFileMd5(cache).equalsIgnoreCase(md5)) {
