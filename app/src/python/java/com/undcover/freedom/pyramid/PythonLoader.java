@@ -25,6 +25,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import okhttp3.Call;
 import okhttp3.Response;
@@ -120,26 +126,39 @@ public class PythonLoader {
             PyLog.d(key + " :缓存加载成功！");
             return spiders.get(key);
         }
+
+        // 使用ExecutorService来管理线程
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<?> future = null;
         try {
             PythonSpider sp = new PythonSpider(key, cache);
-            Thread initThread = new Thread(() -> {
+
+            // 提交初始化任务
+            future = executor.submit(() -> {
                 try {
                     sp.init(app, url);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
-            initThread.start();
-            initThread.join(12_000);
-            if (initThread.isAlive()) {
-                PyLog.e("echo-init方法执行超时超时");
-                initThread.interrupt();
-                return new SpiderNull();
-            }
+
+            // 等待线程完成，最多10秒
+            future.get(10, TimeUnit.SECONDS);
+
+            // 任务成功，缓存并返回
             spiders.put(key, sp);
             return sp;
-        } catch (Throwable th) {
-            PyLog.e(th.toString());
+        } catch (TimeoutException e) {
+            PyLog.e("echo-init方法执行超时");
+            // 超时了，不做中断，返回空的Spider
+        } catch (ExecutionException | InterruptedException e) {
+            PyLog.e("echo-init:ExecutionException|InterruptedException");
+        } finally {
+            // 关闭线程池
+            if (future != null && !future.isDone()) {
+                future.cancel(true);  // 取消任务
+            }
+            executor.shutdown();  // 关闭线程池
         }
         return new SpiderNull();
     }
