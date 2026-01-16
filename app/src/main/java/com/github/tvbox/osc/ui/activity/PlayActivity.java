@@ -1406,6 +1406,8 @@ public class PlayActivity extends BaseActivity {
         String playTitleInfo = mVodInfo.name + " : " + vs.name;
         setTip("正在获取播放信息", true, false);
         mController.setTitle(playTitleInfo);
+        RemoteServer.vodName = mVodInfo.name;
+        RemoteServer.artist = vs.name;
 
         stopParse();
         initParseLoadFound();
