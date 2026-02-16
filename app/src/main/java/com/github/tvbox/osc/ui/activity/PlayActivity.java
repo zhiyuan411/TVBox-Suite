@@ -300,14 +300,10 @@ public class PlayActivity extends BaseActivity {
                         }
                     }
                 }
-                if (mVodInfo.reverseSort) {
-                    PlayActivity.this.playPrevious();
-                } else {
-                    String preProgressKey = progressKey;
-                    PlayActivity.this.playNext(rmProgress);
-                    if (rmProgress && preProgressKey != null)
-                        CacheManager.delete(MD5.string2MD5(preProgressKey), 0);
-                }
+                String preProgressKey = progressKey;
+                PlayActivity.this.playNext(rmProgress);
+                if (rmProgress && preProgressKey != null)
+                    CacheManager.delete(MD5.string2MD5(preProgressKey), 0);
             }
 
             @Override
@@ -321,11 +317,7 @@ public class PlayActivity extends BaseActivity {
                         }
                     }
                 }
-                if (mVodInfo.reverseSort) {
-                    PlayActivity.this.playNext(false);
-                } else {
-                    PlayActivity.this.playPrevious();
-                }
+                PlayActivity.this.playPrevious();
             }
 
             @Override
