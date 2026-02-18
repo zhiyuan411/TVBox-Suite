@@ -17,6 +17,8 @@ INPUT_FILE_PATH = "input.txt"
 OUTPUT_FILE_PATH = "output.txt"
 # ================= [新增] 定义默认m3u输出文件名 =================
 DEFAULT_OUTPUT_M3U_FILE = "output-m3u.txt"
+# ================= [新增] 定义默认txt输出文件名 =================
+DEFAULT_OUTPUT_TXT_FILE = "output-txt.txt"
 # ================= [新增] 定义默认覆盖文件名 =================
 DEFAULT_OVERRIDE_FILE = "override.json"
 
@@ -533,18 +535,21 @@ def parse_txt_content(content):
                 comma_index = line.find(',')
                 if comma_index != -1:
                     channel_name = line[:comma_index].strip()
-                    channel_url = line[comma_index+1:].strip()
+                    channel_urls_str = line[comma_index+1:].strip()
                     
-                    if channel_name and channel_url:
-                        # 去除URL中可能存在的反引号
-                        # channel_url = channel_url.replace('`', '').strip()
-                        if current_group not in groups:
-                            groups[current_group] = {}
-                        
-                        if channel_name not in groups[current_group]:
-                            groups[current_group][channel_name] = []
-                        
-                        groups[current_group][channel_name].append(channel_url)
+                    if channel_name and channel_urls_str:
+                        # 按 # 分割多个 URL
+                        for url in channel_urls_str.split('#'):
+                            url = url.strip()
+                            if url and (url.startswith('http') or url.startswith('rtsp') or url.startswith('rtmp')):
+                                if current_group not in groups:
+                                    groups[current_group] = {}
+                                
+                                if channel_name not in groups[current_group]:
+                                    groups[current_group][channel_name] = []
+                                
+                                if url not in groups[current_group][channel_name]:
+                                    groups[current_group][channel_name].append(url)
         
         # 转换为group格式
         result = []
@@ -685,6 +690,63 @@ def write_m3u_to_file(m3u_content, file_path):
     except Exception as e:
         print(f"Error writing M3U file {file_path}: {str(e)}")
 
+
+def lives_to_txt(lives):
+    """
+    将 lives 数组转换为 TXT 格式
+    :param lives: lives 数组
+    :return: TXT 格式的字符串
+    """
+    txt_lines = []
+    
+    for group_item in lives:
+        if not isinstance(group_item, dict):
+            continue
+        
+        group_name = group_item.get('group', '未分组')
+        channels = group_item.get('channels', [])
+        
+        # 添加分组定义
+        txt_lines.append(f"{group_name},#genre#")
+        
+        # 添加频道定义
+        for channel_item in channels:
+            if not isinstance(channel_item, dict):
+                continue
+            
+            channel_name = channel_item.get('name', '未命名')
+            urls = channel_item.get('urls', [])
+            
+            # 将多个 URL 用 # 连接
+            if urls:
+                # 对每个 URL 中的 # 进行 URL encode 编码替换
+                encoded_urls = []
+                for url in urls:
+                    # 只对 # 进行编码，保留其他字符
+                    encoded_url = url.replace('#', '%23')
+                    encoded_urls.append(encoded_url)
+                urls_str = '#'.join(encoded_urls)
+                txt_lines.append(f"{channel_name},{urls_str}")
+        
+        # 添加空行分隔不同分组
+        txt_lines.append('')
+    
+    return '\n'.join(txt_lines)
+
+
+def write_txt_to_file(txt_content, file_path):
+    """
+    将 txt 内容写入文件
+    :param txt_content: txt 格式的内容
+    :param file_path: 文件路径
+    """
+    try:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(txt_content)
+        print(f"TXT content written to: {file_path}")
+    except Exception as e:
+        print(f"Error writing TXT file {file_path}: {str(e)}")
+
 def merge_lives_groups(lives):
     """
     合并 lives 数组中的重复分组和频道
@@ -800,14 +862,35 @@ def merge_lives_groups(lives):
             if url not in group_channel_map[single_drama_group][channel_name]:
                 group_channel_map[single_drama_group][channel_name].append(url)
     
-    # 6. 按照包括的频道数量排序分组，分组内按照频道名顺向排序
+    # 6. 按照自定义规则排序分组，分组内按照频道名顺向排序
     # 转换为标准格式并排序
     merged_lives = []
     
-    # 先按照分组包含的频道数量排序分组
-    sorted_groups = sorted(group_channel_map.items(), key=lambda x: len(x[1]), reverse=True)
+    # 计算每个分组的统计信息，用于排序
+    group_stats = []
+    for group_name, channels in group_channel_map.items():
+        if not channels:
+            continue
+        channel_count = len(channels)
+        url_count = sum(len(urls) for urls in channels.values())
+        # 计算比值
+        ratio = url_count / channel_count if channel_count > 0 else 0
+        group_stats.append((group_name, channels, channel_count, url_count, ratio))
     
-    for group_name, channels in sorted_groups:
+    # 自定义排序规则
+    def custom_sort_key(item):
+        group_name, channels, channel_count, url_count, ratio = item
+        if channel_count > 10:
+            # 频道数>10：排在前面区域，按URL数/频道数的比值从大到小排序，相同时按频道数降序
+            return (0, -ratio, -channel_count, group_name)
+        else:
+            # 频道数<=10：排在后面区域，按频道数从多到少排序
+            return (1, -channel_count, 0.0, group_name)
+    
+    # 按自定义规则排序
+    sorted_groups = sorted(group_stats, key=custom_sort_key)
+    
+    for group_name, channels, channel_count, url_count, ratio in sorted_groups:
         # 跳过空分组
         if not channels:
             continue
@@ -829,11 +912,12 @@ def merge_lives_groups(lives):
     
     return merged_lives
 
-def validate_lives(lives, output_m3u_path=None):
+def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
     """
     验证并清理 lives 数组
     :param lives: lives 数组
     :param output_m3u_path: m3u 输出文件路径
+    :param output_txt_path: txt 输出文件路径
     :return: 验证后的 lives 数组
     """
     if not isinstance(lives, list):
@@ -865,6 +949,11 @@ def validate_lives(lives, output_m3u_path=None):
     if output_m3u_path:
         m3u_content = lives_to_m3u(merged_lives)
         write_m3u_to_file(m3u_content, output_m3u_path)
+    
+    # 转换为txt格式并输出
+    if output_txt_path:
+        txt_content = lives_to_txt(merged_lives)
+        write_txt_to_file(txt_content, output_txt_path)
     
     print(f"[Validate] lives 验证完成：共处理 {len(lives)} 个元素，生成 {len(merged_lives)} 个有效group元素")
     return merged_lives
@@ -1002,6 +1091,7 @@ if __name__ == "__main__":
     current_time = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     output_file_path = current_time + "-" + OUTPUT_FILE_PATH
     output_m3u_path = current_time + "-" + DEFAULT_OUTPUT_M3U_FILE
+    output_txt_path = current_time + "-" + DEFAULT_OUTPUT_TXT_FILE
 
     if len(sys.argv) > 1:
         input_file_path = sys.argv[1]
@@ -1009,6 +1099,8 @@ if __name__ == "__main__":
         output_file_path = sys.argv[2]
     if len(sys.argv) > 3:
         output_m3u_path = sys.argv[3]
+    if len(sys.argv) > 4:
+        output_txt_path = sys.argv[4]
 
     # 1. 处理输入，获取原始数据
     raw_data_map, valid_sources, invalid_sources = process_input_file(input_file_path)
@@ -1122,7 +1214,7 @@ if __name__ == "__main__":
         print("\n" + "="*30)
         print("Validating lives array")
         print("="*30)
-        final_merged_dict['lives'] = validate_lives(final_merged_dict['lives'], output_m3u_path)
+        final_merged_dict['lives'] = validate_lives(final_merged_dict['lives'], output_m3u_path, output_txt_path)
         
         # 检查 override 文件是否存在顶层 lives 字段
         if override_data and 'lives' in override_data:
