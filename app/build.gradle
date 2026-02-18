@@ -188,3 +188,10 @@ dependencies {
         }
     }
 }
+
+// 添加 Java 工具链配置，指定使用 JDK 17
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
