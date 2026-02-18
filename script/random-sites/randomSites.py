@@ -107,10 +107,10 @@ def process_tv_json(tv_json_path, whitelist, blacklist):
 
 if __name__ == "__main__":
     access_log_path = '/var/log/nginx/access.log'
-    counts_file_path = '/home/ecs-user/tvbox-random-sites/tv-counts.txt'
-    whitelist_path = '/home/ecs-user/tvbox-random-sites/whitelist.txt'
-    blacklist_path = '/home/ecs-user/tvbox-random-sites/blacklist.txt'
-    tv_json_path = '/var/www/html/private/tv.json'
+    counts_file_path = './tv-counts.txt'
+    whitelist_path = './whitelist.txt'
+    blacklist_path = './blacklist.txt'
+    tv_json_path = '../../web/tv.json'
 
     tv_json_count = count_tv_json_occurrences(access_log_path)
     compare_and_update_count(tv_json_count, counts_file_path)
