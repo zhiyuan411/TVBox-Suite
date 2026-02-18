@@ -1,3 +1,10 @@
+# ========== 项目专属无用文件 ==========
+/LTDecodeSpace
+/adb.exe
+/LTDecodeNew3.exe
+script/random-sites/tv-counts.txt
+
+
 # ========== 系统/通用临时文件 ==========
 # Windows
 Thumbs.db
@@ -87,11 +94,6 @@ lint/
 output-metadata.json
 crashlytics-build.properties
 fabric.properties
-
-# ========== 项目专属无用文件（你的原有项） ==========
-/LTDecodeSpace
-/adb.exe
-/LTDecodeNew3.exe
 
 # ========== 可选忽略项（按需注释/开启） ==========
 # Room 数据库 schema（若不需要版本控制则开启）
