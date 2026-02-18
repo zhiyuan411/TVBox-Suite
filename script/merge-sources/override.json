@@ -1,0 +1,10 @@
+{
+  "spider":"http://39.107.52.162/private/xbspider.jar;md5;f2d196f8d411313f00000f24e257b6e6",
+  "lives": [
+    {
+      "type": "0",
+      "url": "http://39.107.52.162/private/tv.m3u",
+      "epg": "http://39.107.52.162/private/epg/?ch={name}&date={date}"
+    }
+  ]
+}
