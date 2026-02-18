@@ -58,6 +58,7 @@ proguard/
 
 # ========== IDE 配置（IntelliJ/Android Studio） ==========
 .idea/
+.vscode/
 *.iml
 *.iws
 *.ipr

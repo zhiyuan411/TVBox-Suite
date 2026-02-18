@@ -437,7 +437,9 @@ public class FastSearchActivity extends BaseActivity {
                     try {
                         sourceViewModel.getSearch(key, searchTitle);
                     } catch (Exception e) {
-
+                        e.printStackTrace();
+                        // 发送空结果事件，确保计数器正确减少
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                     }
                 }
             });
