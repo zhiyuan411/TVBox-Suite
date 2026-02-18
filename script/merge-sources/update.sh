@@ -27,7 +27,7 @@ trap 'rm -f "$LOCK_FILE"; echo "==== 锁文件已清理 ===="' EXIT
 # tvbox源
 #./mergeSources.1.0.py input.txt tv.1.0.json
 #./mergeSources.2.0.py input.txt tv.json
-./mergeSources.3.0.py input.txt tv.json tv.m3u
+./mergeSources.3.0.py input.txt ../../web/tv.json ../../web/tv.m3u
 
 # 去除结果中的api属性的无效url
 #./filterBadApiUrls.sh
@@ -57,6 +57,6 @@ trap 'rm -f "$LOCK_FILE"; echo "==== 锁文件已清理 ===="' EXIT
 sed -i -e 's@[^"]*https://raw.githubusercontent.com@https://rawgithubusercontent.cnfaq.cn@' -e 's@"jiexiUrl"@"playUrl"@' ./tv*.json
 
 # 立刻进行一次更新
-/home/ecs-user/tvbox-random-sites/randomSites.py
+../random-sites/randomSites.py
 
 echo "==== 更新任务执行完毕 ===="

@@ -947,13 +947,14 @@ if __name__ == "__main__":
 
     # 利用 Pathlib 处理文件名
     p = Path(input_file_path)
+    p2 = Path(output_file_path)
     filename = p.name
-    single_file_path = p.parent / f"{filename}.single"
-    multi_file_path = p.parent / f"{filename}.multi"
+    single_file_path = p2.parent / f"{filename}.single"
+    multi_file_path = p2.parent / f"{filename}.multi"
     
     # 定义新生成的文件名
     tmp_valid_path = p.parent / f"tmp.{filename}.valid-json"
-    invalid_history_path = p.parent / f"{filename}.invalid-json-history"
+    invalid_history_path = p2.parent / f"{filename}.invalid-json-history"
     
     # 提前读取无效历史文件，用于后续过滤
     invalid_history_set = set()
