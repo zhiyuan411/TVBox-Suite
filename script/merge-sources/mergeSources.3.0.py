@@ -735,25 +735,93 @@ def merge_lives_groups(lives):
         best_channel = get_most_frequent(channel_stats)
         url_to_best_match[url] = (best_group, best_channel)
     
-    # 3. 构建分组-频道-URL 的结构
-    group_channel_map = {}
-    for url, (group, channel) in url_to_best_match.items():
-        if group not in group_channel_map:
-            group_channel_map[group] = {}
-        if channel not in group_channel_map[group]:
-            group_channel_map[group][channel] = []
-        if url not in group_channel_map[group][channel]:
-            group_channel_map[group][channel].append(url)
+    # 3. 按照频道聚合统计分组次数，合并频道并归入次数最多的分组
+    channel_to_group_stats = {}
+    channel_to_urls = {}
     
-    # 4. 转换为标准格式
-    merged_lives = []
+    for url, (group, channel) in url_to_best_match.items():
+        # 统计频道的分组次数
+        if channel not in channel_to_group_stats:
+            channel_to_group_stats[channel] = {}
+        channel_to_group_stats[channel][group] = channel_to_group_stats[channel].get(group, 0) + 1
+        
+        # 收集频道的所有 URL
+        if channel not in channel_to_urls:
+            channel_to_urls[channel] = []
+        if url not in channel_to_urls[channel]:
+            channel_to_urls[channel].append(url)
+    
+    # 为每个频道选择出现次数最多的分组
+    channel_to_best_group = {}
+    for channel, group_stats in channel_to_group_stats.items():
+        best_group = get_most_frequent(group_stats)
+        channel_to_best_group[channel] = best_group
+    
+    # 4. 构建分组-频道-URL 的结构
+    group_channel_map = {}
+    for channel, best_group in channel_to_best_group.items():
+        urls = channel_to_urls[channel]
+        if best_group not in group_channel_map:
+            group_channel_map[best_group] = {}
+        if channel not in group_channel_map[best_group]:
+            group_channel_map[best_group][channel] = []
+        # 合并所有 URL
+        for url in urls:
+            if url not in group_channel_map[best_group][channel]:
+                group_channel_map[best_group][channel].append(url)
+    
+    # 5. 如果分组下只有1个频道，且分组和频道名相同的，则将这些都合并到一个分组中，分组名"单剧"，频道名使用原频道名
+    single_drama_group = "单剧"
+    group_channel_map[single_drama_group] = {}
+    
+    # 收集需要移动的频道
+    channels_to_move = []
     for group_name, channels in group_channel_map.items():
+        if group_name == single_drama_group:
+            continue
+        if len(channels) == 1:
+            channel_name = list(channels.keys())[0]
+            if group_name == channel_name:
+                channels_to_move.append((channel_name, channels[channel_name]))
+    
+    # 移动频道到"单剧"分组
+    for channel_name, urls in channels_to_move:
+        # 从原分组中移除
+        for group_name, channels in list(group_channel_map.items()):
+            if channel_name in channels:
+                del channels[channel_name]
+                # 如果分组为空，则删除分组
+                if not channels:
+                    del group_channel_map[group_name]
+        # 添加到"单剧"分组
+        if channel_name not in group_channel_map[single_drama_group]:
+            group_channel_map[single_drama_group][channel_name] = []
+        for url in urls:
+            if url not in group_channel_map[single_drama_group][channel_name]:
+                group_channel_map[single_drama_group][channel_name].append(url)
+    
+    # 6. 按照包括的频道数量排序分组，分组内按照频道名顺向排序
+    # 转换为标准格式并排序
+    merged_lives = []
+    
+    # 先按照分组包含的频道数量排序分组
+    sorted_groups = sorted(group_channel_map.items(), key=lambda x: len(x[1]), reverse=True)
+    
+    for group_name, channels in sorted_groups:
+        # 跳过空分组
+        if not channels:
+            continue
+        
+        # 按照频道名顺向排序
+        sorted_channels = sorted(channels.items(), key=lambda x: x[0])
+        
         merged_channels = []
-        for channel_name, urls in channels.items():
+        for channel_name, urls in sorted_channels:
             merged_channels.append({
                 'name': channel_name,
                 'urls': urls
             })
+        
         merged_lives.append({
             'group': group_name,
             'channels': merged_channels
