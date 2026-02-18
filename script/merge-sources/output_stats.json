@@ -1,0 +1,2467 @@
+{
+  "total_groups": 492,
+  "total_channels": 51111,
+  "total_urls": 62389,
+  "group_stats": [
+    {
+      "group_name": "卫视频道",
+      "channel_count": 43,
+      "url_count": 1653
+    },
+    {
+      "group_name": "📺央视频道",
+      "channel_count": 20,
+      "url_count": 443
+    },
+    {
+      "group_name": "☘️广东频道",
+      "channel_count": 13,
+      "url_count": 210
+    },
+    {
+      "group_name": "央视频道",
+      "channel_count": 74,
+      "url_count": 796
+    },
+    {
+      "group_name": "☘️上海频道",
+      "channel_count": 24,
+      "url_count": 249
+    },
+    {
+      "group_name": "🏀体育频道",
+      "channel_count": 11,
+      "url_count": 105
+    },
+    {
+      "group_name": "🏛经典剧场",
+      "channel_count": 13,
+      "url_count": 117
+    },
+    {
+      "group_name": "🎬电影频道",
+      "channel_count": 20,
+      "url_count": 165
+    },
+    {
+      "group_name": "☘️湖南频道",
+      "channel_count": 17,
+      "url_count": 133
+    },
+    {
+      "group_name": "🪁动画频道",
+      "channel_count": 14,
+      "url_count": 102
+    },
+    {
+      "group_name": "☘️黑龙江频道",
+      "channel_count": 12,
+      "url_count": 67
+    },
+    {
+      "group_name": "湾湾节点",
+      "channel_count": 82,
+      "url_count": 455
+    },
+    {
+      "group_name": "☘️福建频道",
+      "channel_count": 13,
+      "url_count": 66
+    },
+    {
+      "group_name": "☘️浙江频道",
+      "channel_count": 67,
+      "url_count": 336
+    },
+    {
+      "group_name": "☘️江苏频道",
+      "channel_count": 63,
+      "url_count": 311
+    },
+    {
+      "group_name": "数字频道",
+      "channel_count": 14,
+      "url_count": 67
+    },
+    {
+      "group_name": "☘️广西频道",
+      "channel_count": 12,
+      "url_count": 51
+    },
+    {
+      "group_name": "☘️山东频道",
+      "channel_count": 14,
+      "url_count": 59
+    },
+    {
+      "group_name": "☘️河北频道",
+      "channel_count": 17,
+      "url_count": 65
+    },
+    {
+      "group_name": "☘️吉林频道",
+      "channel_count": 14,
+      "url_count": 52
+    },
+    {
+      "group_name": "☘️湖北频道",
+      "channel_count": 17,
+      "url_count": 62
+    },
+    {
+      "group_name": "☘️河南频道",
+      "channel_count": 34,
+      "url_count": 119
+    },
+    {
+      "group_name": "黑龙江",
+      "channel_count": 70,
+      "url_count": 233
+    },
+    {
+      "group_name": "广东",
+      "channel_count": 34,
+      "url_count": 107
+    },
+    {
+      "group_name": "黑龙江地区",
+      "channel_count": 12,
+      "url_count": 36
+    },
+    {
+      "group_name": "☘️四川频道",
+      "channel_count": 26,
+      "url_count": 75
+    },
+    {
+      "group_name": "ğŸŒŠæ¸¯Â·æ¾³Â·å�°",
+      "channel_count": 16,
+      "url_count": 41
+    },
+    {
+      "group_name": "河南地区",
+      "channel_count": 60,
+      "url_count": 152
+    },
+    {
+      "group_name": "电视剧",
+      "channel_count": 22,
+      "url_count": 54
+    },
+    {
+      "group_name": "☘️山西频道",
+      "channel_count": 14,
+      "url_count": 34
+    },
+    {
+      "group_name": "☘️安徽频道",
+      "channel_count": 25,
+      "url_count": 59
+    },
+    {
+      "group_name": "大杂烩",
+      "channel_count": 16,
+      "url_count": 35
+    },
+    {
+      "group_name": "未分组",
+      "channel_count": 30,
+      "url_count": 62
+    },
+    {
+      "group_name": "港澳台",
+      "channel_count": 30,
+      "url_count": 61
+    },
+    {
+      "group_name": "其他频道",
+      "channel_count": 12,
+      "url_count": 23
+    },
+    {
+      "group_name": "高清央卫-勿扫码",
+      "channel_count": 13,
+      "url_count": 23
+    },
+    {
+      "group_name": "🇨🇳影音剧场",
+      "channel_count": 17,
+      "url_count": 30
+    },
+    {
+      "group_name": "☘️新疆频道",
+      "channel_count": 12,
+      "url_count": 21
+    },
+    {
+      "group_name": "甘肃地区",
+      "channel_count": 22,
+      "url_count": 38
+    },
+    {
+      "group_name": "☘️云南频道",
+      "channel_count": 11,
+      "url_count": 19
+    },
+    {
+      "group_name": "央视台",
+      "channel_count": 14,
+      "url_count": 24
+    },
+    {
+      "group_name": "辽宁",
+      "channel_count": 21,
+      "url_count": 35
+    },
+    {
+      "group_name": "浙江",
+      "channel_count": 19,
+      "url_count": 31
+    },
+    {
+      "group_name": "河南",
+      "channel_count": 47,
+      "url_count": 75
+    },
+    {
+      "group_name": "云南地区",
+      "channel_count": 16,
+      "url_count": 25
+    },
+    {
+      "group_name": "IPV6",
+      "channel_count": 28,
+      "url_count": 42
+    },
+    {
+      "group_name": "陈百强",
+      "channel_count": 73,
+      "url_count": 109
+    },
+    {
+      "group_name": "👠丨广场舞mv",
+      "channel_count": 295,
+      "url_count": 438
+    },
+    {
+      "group_name": "🇨🇳｜分享直播1",
+      "channel_count": 42,
+      "url_count": 62
+    },
+    {
+      "group_name": "阿肆",
+      "channel_count": 66,
+      "url_count": 97
+    },
+    {
+      "group_name": "湖南地区",
+      "channel_count": 28,
+      "url_count": 41
+    },
+    {
+      "group_name": "河北",
+      "channel_count": 80,
+      "url_count": 117
+    },
+    {
+      "group_name": "☘️甘肃频道",
+      "channel_count": 13,
+      "url_count": 19
+    },
+    {
+      "group_name": "福建",
+      "channel_count": 11,
+      "url_count": 16
+    },
+    {
+      "group_name": "张国荣",
+      "channel_count": 163,
+      "url_count": 236
+    },
+    {
+      "group_name": "金志文",
+      "channel_count": 72,
+      "url_count": 104
+    },
+    {
+      "group_name": "山西",
+      "channel_count": 30,
+      "url_count": 43
+    },
+    {
+      "group_name": "历年春晚",
+      "channel_count": 49,
+      "url_count": 70
+    },
+    {
+      "group_name": "邓紫棋",
+      "channel_count": 107,
+      "url_count": 152
+    },
+    {
+      "group_name": "🛰丨分享四川",
+      "channel_count": 49,
+      "url_count": 68
+    },
+    {
+      "group_name": "🇨🇳丨分享浙江",
+      "channel_count": 19,
+      "url_count": 26
+    },
+    {
+      "group_name": "邓丽君",
+      "channel_count": 314,
+      "url_count": 429
+    },
+    {
+      "group_name": "Family",
+      "channel_count": 22,
+      "url_count": 30
+    },
+    {
+      "group_name": "BEYOND",
+      "channel_count": 108,
+      "url_count": 147
+    },
+    {
+      "group_name": "数字台",
+      "channel_count": 67,
+      "url_count": 91
+    },
+    {
+      "group_name": "吉林",
+      "channel_count": 166,
+      "url_count": 225
+    },
+    {
+      "group_name": "胡彦斌",
+      "channel_count": 144,
+      "url_count": 195
+    },
+    {
+      "group_name": "费玉清",
+      "channel_count": 206,
+      "url_count": 276
+    },
+    {
+      "group_name": "动力火车",
+      "channel_count": 108,
+      "url_count": 142
+    },
+    {
+      "group_name": "Undefined",
+      "channel_count": 3818,
+      "url_count": 5019
+    },
+    {
+      "group_name": "光良",
+      "channel_count": 150,
+      "url_count": 193
+    },
+    {
+      "group_name": "Animation",
+      "channel_count": 18,
+      "url_count": 23
+    },
+    {
+      "group_name": "🔥丨港澳国际",
+      "channel_count": 216,
+      "url_count": 275
+    },
+    {
+      "group_name": "风云试看港澳频道",
+      "channel_count": 11,
+      "url_count": 14
+    },
+    {
+      "group_name": "陈慧娴",
+      "channel_count": 142,
+      "url_count": 180
+    },
+    {
+      "group_name": "广西",
+      "channel_count": 15,
+      "url_count": 19
+    },
+    {
+      "group_name": "刀郎",
+      "channel_count": 200,
+      "url_count": 252
+    },
+    {
+      "group_name": "影视",
+      "channel_count": 70,
+      "url_count": 88
+    },
+    {
+      "group_name": "黑豹乐队",
+      "channel_count": 35,
+      "url_count": 44
+    },
+    {
+      "group_name": "梁静茹",
+      "channel_count": 170,
+      "url_count": 213
+    },
+    {
+      "group_name": "阿杜",
+      "channel_count": 199,
+      "url_count": 249
+    },
+    {
+      "group_name": "zonghe",
+      "channel_count": 463,
+      "url_count": 579
+    },
+    {
+      "group_name": "韩宝仪",
+      "channel_count": 84,
+      "url_count": 105
+    },
+    {
+      "group_name": "郭兰英",
+      "channel_count": 48,
+      "url_count": 60
+    },
+    {
+      "group_name": "风云试看台湾频道",
+      "channel_count": 16,
+      "url_count": 20
+    },
+    {
+      "group_name": "江西",
+      "channel_count": 12,
+      "url_count": 15
+    },
+    {
+      "group_name": "李荣浩",
+      "channel_count": 53,
+      "url_count": 66
+    },
+    {
+      "group_name": "地方台",
+      "channel_count": 25,
+      "url_count": 31
+    },
+    {
+      "group_name": "阿郎",
+      "channel_count": 122,
+      "url_count": 151
+    },
+    {
+      "group_name": "容祖儿",
+      "channel_count": 367,
+      "url_count": 452
+    },
+    {
+      "group_name": "伍佰",
+      "channel_count": 211,
+      "url_count": 258
+    },
+    {
+      "group_name": "电影",
+      "channel_count": 63,
+      "url_count": 77
+    },
+    {
+      "group_name": "任然",
+      "channel_count": 27,
+      "url_count": 33
+    },
+    {
+      "group_name": "陈绮贞",
+      "channel_count": 59,
+      "url_count": 72
+    },
+    {
+      "group_name": "金玟岐",
+      "channel_count": 100,
+      "url_count": 122
+    },
+    {
+      "group_name": "林俊杰",
+      "channel_count": 221,
+      "url_count": 269
+    },
+    {
+      "group_name": "凤凰传奇",
+      "channel_count": 106,
+      "url_count": 129
+    },
+    {
+      "group_name": "陈珊妮",
+      "channel_count": 47,
+      "url_count": 57
+    },
+    {
+      "group_name": "🏀丨体育频道",
+      "channel_count": 64,
+      "url_count": 77
+    },
+    {
+      "group_name": "💃丨MTV现代",
+      "channel_count": 214,
+      "url_count": 257
+    },
+    {
+      "group_name": "蔡依林",
+      "channel_count": 294,
+      "url_count": 353
+    },
+    {
+      "group_name": "💝丨分享央卫1",
+      "channel_count": 35,
+      "url_count": 42
+    },
+    {
+      "group_name": "李宇春",
+      "channel_count": 256,
+      "url_count": 306
+    },
+    {
+      "group_name": "陈奕迅",
+      "channel_count": 464,
+      "url_count": 551
+    },
+    {
+      "group_name": "安徽",
+      "channel_count": 16,
+      "url_count": 19
+    },
+    {
+      "group_name": "韩红",
+      "channel_count": 147,
+      "url_count": 174
+    },
+    {
+      "group_name": "Comedy",
+      "channel_count": 49,
+      "url_count": 58
+    },
+    {
+      "group_name": "刘若英",
+      "channel_count": 121,
+      "url_count": 142
+    },
+    {
+      "group_name": "蓝心羽",
+      "channel_count": 191,
+      "url_count": 224
+    },
+    {
+      "group_name": "林宥嘉",
+      "channel_count": 245,
+      "url_count": 286
+    },
+    {
+      "group_name": "七叔",
+      "channel_count": 49,
+      "url_count": 57
+    },
+    {
+      "group_name": "方大同",
+      "channel_count": 49,
+      "url_count": 57
+    },
+    {
+      "group_name": "李宗盛",
+      "channel_count": 43,
+      "url_count": 50
+    },
+    {
+      "group_name": "霍尊",
+      "channel_count": 187,
+      "url_count": 217
+    },
+    {
+      "group_name": "郭富城",
+      "channel_count": 303,
+      "url_count": 351
+    },
+    {
+      "group_name": "程响",
+      "channel_count": 285,
+      "url_count": 328
+    },
+    {
+      "group_name": "老狼",
+      "channel_count": 266,
+      "url_count": 306
+    },
+    {
+      "group_name": "Documentary",
+      "channel_count": 80,
+      "url_count": 92
+    },
+    {
+      "group_name": "毛阿敏",
+      "channel_count": 67,
+      "url_count": 77
+    },
+    {
+      "group_name": "🍱丨乡村美食",
+      "channel_count": 177,
+      "url_count": 203
+    },
+    {
+      "group_name": "小虎队",
+      "channel_count": 21,
+      "url_count": 24
+    },
+    {
+      "group_name": "队长",
+      "channel_count": 204,
+      "url_count": 233
+    },
+    {
+      "group_name": "TFBOYS",
+      "channel_count": 29,
+      "url_count": 33
+    },
+    {
+      "group_name": "毛不易",
+      "channel_count": 29,
+      "url_count": 33
+    },
+    {
+      "group_name": "李克勤",
+      "channel_count": 249,
+      "url_count": 283
+    },
+    {
+      "group_name": "那英",
+      "channel_count": 112,
+      "url_count": 127
+    },
+    {
+      "group_name": "刘德华",
+      "channel_count": 539,
+      "url_count": 608
+    },
+    {
+      "group_name": "齐秦",
+      "channel_count": 159,
+      "url_count": 179
+    },
+    {
+      "group_name": "郭顶",
+      "channel_count": 40,
+      "url_count": 45
+    },
+    {
+      "group_name": "Cooking",
+      "channel_count": 24,
+      "url_count": 27
+    },
+    {
+      "group_name": "â€¢Bç«™ã€Œæ¸¸æˆ�ã€�",
+      "channel_count": 16,
+      "url_count": 18
+    },
+    {
+      "group_name": "孙楠",
+      "channel_count": 174,
+      "url_count": 195
+    },
+    {
+      "group_name": "萧敬腾",
+      "channel_count": 75,
+      "url_count": 84
+    },
+    {
+      "group_name": "白小白",
+      "channel_count": 25,
+      "url_count": 28
+    },
+    {
+      "group_name": "花儿乐队",
+      "channel_count": 43,
+      "url_count": 48
+    },
+    {
+      "group_name": "国际台",
+      "channel_count": 26,
+      "url_count": 29
+    },
+    {
+      "group_name": "古巨基",
+      "channel_count": 235,
+      "url_count": 262
+    },
+    {
+      "group_name": "孙燕姿",
+      "channel_count": 159,
+      "url_count": 177
+    },
+    {
+      "group_name": "贵州",
+      "channel_count": 36,
+      "url_count": 40
+    },
+    {
+      "group_name": "毛宁",
+      "channel_count": 74,
+      "url_count": 82
+    },
+    {
+      "group_name": "莫文蔚",
+      "channel_count": 177,
+      "url_count": 196
+    },
+    {
+      "group_name": "梁咏琪",
+      "channel_count": 218,
+      "url_count": 241
+    },
+    {
+      "group_name": "张碧晨",
+      "channel_count": 118,
+      "url_count": 130
+    },
+    {
+      "group_name": "罗大佑",
+      "channel_count": 90,
+      "url_count": 99
+    },
+    {
+      "group_name": "生活杂谈",
+      "channel_count": 30,
+      "url_count": 33
+    },
+    {
+      "group_name": "田震",
+      "channel_count": 201,
+      "url_count": 221
+    },
+    {
+      "group_name": "林忆莲",
+      "channel_count": 454,
+      "url_count": 499
+    },
+    {
+      "group_name": "刘至佳",
+      "channel_count": 111,
+      "url_count": 122
+    },
+    {
+      "group_name": "Series",
+      "channel_count": 112,
+      "url_count": 123
+    },
+    {
+      "group_name": "湖南",
+      "channel_count": 21,
+      "url_count": 23
+    },
+    {
+      "group_name": "汪峰",
+      "channel_count": 380,
+      "url_count": 416
+    },
+    {
+      "group_name": "歌星金曲",
+      "channel_count": 140,
+      "url_count": 153
+    },
+    {
+      "group_name": "Weather",
+      "channel_count": 11,
+      "url_count": 12
+    },
+    {
+      "group_name": "咪咕体育v4",
+      "channel_count": 511,
+      "url_count": 556
+    },
+    {
+      "group_name": "信乐团",
+      "channel_count": 69,
+      "url_count": 75
+    },
+    {
+      "group_name": "💋丨VIP频道2_xjvip",
+      "channel_count": 152,
+      "url_count": 165
+    },
+    {
+      "group_name": "Lifestyle",
+      "channel_count": 72,
+      "url_count": 78
+    },
+    {
+      "group_name": "S.H.E",
+      "channel_count": 145,
+      "url_count": 157
+    },
+    {
+      "group_name": "陈玉建",
+      "channel_count": 195,
+      "url_count": 211
+    },
+    {
+      "group_name": "苏打绿",
+      "channel_count": 88,
+      "url_count": 95
+    },
+    {
+      "group_name": "林志炫",
+      "channel_count": 453,
+      "url_count": 488
+    },
+    {
+      "group_name": "â€¢è™�ç‰™ã€Œå¨±ä¹�ã€�",
+      "channel_count": 13,
+      "url_count": 14
+    },
+    {
+      "group_name": "🇨🇳组播线路",
+      "channel_count": 40,
+      "url_count": 43
+    },
+    {
+      "group_name": "Kids",
+      "channel_count": 136,
+      "url_count": 146
+    },
+    {
+      "group_name": "甘肃",
+      "channel_count": 14,
+      "url_count": 15
+    },
+    {
+      "group_name": "老于",
+      "channel_count": 407,
+      "url_count": 435
+    },
+    {
+      "group_name": "李玉刚",
+      "channel_count": 45,
+      "url_count": 48
+    },
+    {
+      "group_name": "王力宏",
+      "channel_count": 152,
+      "url_count": 162
+    },
+    {
+      "group_name": "李玟",
+      "channel_count": 874,
+      "url_count": 931
+    },
+    {
+      "group_name": "手工绘画",
+      "channel_count": 62,
+      "url_count": 66
+    },
+    {
+      "group_name": "Outdoor",
+      "channel_count": 31,
+      "url_count": 33
+    },
+    {
+      "group_name": "曲肖冰",
+      "channel_count": 16,
+      "url_count": 17
+    },
+    {
+      "group_name": "梅艳芳",
+      "channel_count": 145,
+      "url_count": 154
+    },
+    {
+      "group_name": "王杰",
+      "channel_count": 307,
+      "url_count": 326
+    },
+    {
+      "group_name": "齐豫",
+      "channel_count": 157,
+      "url_count": 166
+    },
+    {
+      "group_name": "五月天",
+      "channel_count": 148,
+      "url_count": 156
+    },
+    {
+      "group_name": "孙悦",
+      "channel_count": 338,
+      "url_count": 356
+    },
+    {
+      "group_name": "邓寓君",
+      "channel_count": 20,
+      "url_count": 21
+    },
+    {
+      "group_name": "王艺霖",
+      "channel_count": 122,
+      "url_count": 128
+    },
+    {
+      "group_name": "杨宗纬",
+      "channel_count": 61,
+      "url_count": 64
+    },
+    {
+      "group_name": "王若琳",
+      "channel_count": 41,
+      "url_count": 43
+    },
+    {
+      "group_name": "庞龙",
+      "channel_count": 247,
+      "url_count": 259
+    },
+    {
+      "group_name": "DJ音乐",
+      "channel_count": 169,
+      "url_count": 177
+    },
+    {
+      "group_name": "Movies",
+      "channel_count": 306,
+      "url_count": 320
+    },
+    {
+      "group_name": "💝丨分享央卫",
+      "channel_count": 22,
+      "url_count": 23
+    },
+    {
+      "group_name": "杨坤",
+      "channel_count": 89,
+      "url_count": 93
+    },
+    {
+      "group_name": "薛之谦",
+      "channel_count": 90,
+      "url_count": 94
+    },
+    {
+      "group_name": "谭咏鳞",
+      "channel_count": 341,
+      "url_count": 356
+    },
+    {
+      "group_name": "王心凌",
+      "channel_count": 115,
+      "url_count": 120
+    },
+    {
+      "group_name": "任贤齐",
+      "channel_count": 209,
+      "url_count": 218
+    },
+    {
+      "group_name": "汪苏泷",
+      "channel_count": 93,
+      "url_count": 97
+    },
+    {
+      "group_name": "吴亦凡",
+      "channel_count": 118,
+      "url_count": 123
+    },
+    {
+      "group_name": "张惠妹",
+      "channel_count": 261,
+      "url_count": 272
+    },
+    {
+      "group_name": "朴树",
+      "channel_count": 51,
+      "url_count": 53
+    },
+    {
+      "group_name": "周杰伦",
+      "channel_count": 181,
+      "url_count": 188
+    },
+    {
+      "group_name": "许飞",
+      "channel_count": 159,
+      "url_count": 165
+    },
+    {
+      "group_name": "山东",
+      "channel_count": 246,
+      "url_count": 255
+    },
+    {
+      "group_name": "一起看",
+      "channel_count": 933,
+      "url_count": 967
+    },
+    {
+      "group_name": "许巍",
+      "channel_count": 83,
+      "url_count": 86
+    },
+    {
+      "group_name": "赵雷",
+      "channel_count": 254,
+      "url_count": 263
+    },
+    {
+      "group_name": "Business",
+      "channel_count": 58,
+      "url_count": 60
+    },
+    {
+      "group_name": "叶倩文",
+      "channel_count": 118,
+      "url_count": 122
+    },
+    {
+      "group_name": "张信哲",
+      "channel_count": 268,
+      "url_count": 276
+    },
+    {
+      "group_name": "羽泉",
+      "channel_count": 201,
+      "url_count": 207
+    },
+    {
+      "group_name": "原创IP",
+      "channel_count": 816,
+      "url_count": 840
+    },
+    {
+      "group_name": "张靓颖",
+      "channel_count": 238,
+      "url_count": 245
+    },
+    {
+      "group_name": "张涵韵",
+      "channel_count": 76,
+      "url_count": 78
+    },
+    {
+      "group_name": "许嵩",
+      "channel_count": 186,
+      "url_count": 190
+    },
+    {
+      "group_name": "张杰",
+      "channel_count": 292,
+      "url_count": 298
+    },
+    {
+      "group_name": "张韶涵",
+      "channel_count": 101,
+      "url_count": 103
+    },
+    {
+      "group_name": "周华健",
+      "channel_count": 206,
+      "url_count": 210
+    },
+    {
+      "group_name": "纪录片频道",
+      "channel_count": 363,
+      "url_count": 370
+    },
+    {
+      "group_name": "张宇",
+      "channel_count": 564,
+      "url_count": 574
+    },
+    {
+      "group_name": "💋丨VIP频道_xjvip",
+      "channel_count": 285,
+      "url_count": 290
+    },
+    {
+      "group_name": "萧亚轩",
+      "channel_count": 197,
+      "url_count": 200
+    },
+    {
+      "group_name": "谢霆锋",
+      "channel_count": 202,
+      "url_count": 205
+    },
+    {
+      "group_name": "周深",
+      "channel_count": 70,
+      "url_count": 71
+    },
+    {
+      "group_name": "庾澄庆",
+      "channel_count": 71,
+      "url_count": 72
+    },
+    {
+      "group_name": "杨丞琳",
+      "channel_count": 77,
+      "url_count": 78
+    },
+    {
+      "group_name": "庄心妍",
+      "channel_count": 630,
+      "url_count": 638
+    },
+    {
+      "group_name": "单剧",
+      "channel_count": 158,
+      "url_count": 160
+    },
+    {
+      "group_name": "原创",
+      "channel_count": 319,
+      "url_count": 323
+    },
+    {
+      "group_name": "直播中国",
+      "channel_count": 87,
+      "url_count": 88
+    },
+    {
+      "group_name": "Culture",
+      "channel_count": 105,
+      "url_count": 106
+    },
+    {
+      "group_name": "周传雄",
+      "channel_count": 127,
+      "url_count": 128
+    },
+    {
+      "group_name": "Entertainment",
+      "channel_count": 532,
+      "url_count": 536
+    },
+    {
+      "group_name": "â€¢è™�ç‰™ã€Œå½±è§†ã€�",
+      "channel_count": 134,
+      "url_count": 135
+    },
+    {
+      "group_name": "Religious",
+      "channel_count": 643,
+      "url_count": 647
+    },
+    {
+      "group_name": "尹正",
+      "channel_count": 216,
+      "url_count": 217
+    },
+    {
+      "group_name": "Sports",
+      "channel_count": 238,
+      "url_count": 239
+    },
+    {
+      "group_name": "General",
+      "channel_count": 2216,
+      "url_count": 2225
+    },
+    {
+      "group_name": "Music",
+      "channel_count": 554,
+      "url_count": 556
+    },
+    {
+      "group_name": "卓依婷",
+      "channel_count": 315,
+      "url_count": 316
+    },
+    {
+      "group_name": "News",
+      "channel_count": 798,
+      "url_count": 799
+    },
+    {
+      "group_name": "MV",
+      "channel_count": 8952,
+      "url_count": 8952
+    },
+    {
+      "group_name": "💖丨分享地方",
+      "channel_count": 593,
+      "url_count": 593
+    },
+    {
+      "group_name": "🤹🏼动画杂烩",
+      "channel_count": 297,
+      "url_count": 297
+    },
+    {
+      "group_name": "🎼歌舞欣赏",
+      "channel_count": 182,
+      "url_count": 182
+    },
+    {
+      "group_name": "Legislative",
+      "channel_count": 174,
+      "url_count": 174
+    },
+    {
+      "group_name": "📺动画剧集",
+      "channel_count": 154,
+      "url_count": 154
+    },
+    {
+      "group_name": "Education",
+      "channel_count": 132,
+      "url_count": 132
+    },
+    {
+      "group_name": "小阿七",
+      "channel_count": 106,
+      "url_count": 106
+    },
+    {
+      "group_name": "郑智化",
+      "channel_count": 87,
+      "url_count": 87
+    },
+    {
+      "group_name": "Shop",
+      "channel_count": 78,
+      "url_count": 78
+    },
+    {
+      "group_name": "📛丨MTV怀旧",
+      "channel_count": 62,
+      "url_count": 62
+    },
+    {
+      "group_name": "📛丨音乐DJ",
+      "channel_count": 62,
+      "url_count": 62
+    },
+    {
+      "group_name": "体育-今天",
+      "channel_count": 58,
+      "url_count": 58
+    },
+    {
+      "group_name": "â€¢æ–—é±¼ã€Œæ¸¸æˆ�ã€�",
+      "channel_count": 56,
+      "url_count": 56
+    },
+    {
+      "group_name": "🐷猪猪侠",
+      "channel_count": 56,
+      "url_count": 56
+    },
+    {
+      "group_name": "â€¢æ¸¸æˆ�ã€Œèµ›äº‹ã€�",
+      "channel_count": 55,
+      "url_count": 55
+    },
+    {
+      "group_name": "体育-昨天",
+      "channel_count": 54,
+      "url_count": 54
+    },
+    {
+      "group_name": "🐻熊熊乐园",
+      "channel_count": 52,
+      "url_count": 52
+    },
+    {
+      "group_name": "咪视界bc",
+      "channel_count": 44,
+      "url_count": 44
+    },
+    {
+      "group_name": "💃劲舞💃",
+      "channel_count": 41,
+      "url_count": 41
+    },
+    {
+      "group_name": "张雨生",
+      "channel_count": 40,
+      "url_count": 40
+    },
+    {
+      "group_name": "游戏",
+      "channel_count": 39,
+      "url_count": 39
+    },
+    {
+      "group_name": "萌宠",
+      "channel_count": 36,
+      "url_count": 36
+    },
+    {
+      "group_name": "Classic",
+      "channel_count": 32,
+      "url_count": 32
+    },
+    {
+      "group_name": "â€¢è™�ç‰™ã€Œæ¸¸æˆ�ã€�",
+      "channel_count": 32,
+      "url_count": 32
+    },
+    {
+      "group_name": "体育-明天",
+      "channel_count": 31,
+      "url_count": 31
+    },
+    {
+      "group_name": "Travel",
+      "channel_count": 30,
+      "url_count": 30
+    },
+    {
+      "group_name": "💖丨裸眼3D",
+      "channel_count": 26,
+      "url_count": 26
+    },
+    {
+      "group_name": "电子榨菜",
+      "channel_count": 22,
+      "url_count": 22
+    },
+    {
+      "group_name": "General;Public",
+      "channel_count": 21,
+      "url_count": 21
+    },
+    {
+      "group_name": "冰茶体育",
+      "channel_count": 19,
+      "url_count": 19
+    },
+    {
+      "group_name": "General;News",
+      "channel_count": 17,
+      "url_count": 17
+    },
+    {
+      "group_name": "Animation;Kids",
+      "channel_count": 16,
+      "url_count": 16
+    },
+    {
+      "group_name": "汪佩蓉",
+      "channel_count": 15,
+      "url_count": 15
+    },
+    {
+      "group_name": "户外",
+      "channel_count": 14,
+      "url_count": 14
+    },
+    {
+      "group_name": "情感杂谈",
+      "channel_count": 13,
+      "url_count": 13
+    },
+    {
+      "group_name": "李字春",
+      "channel_count": 13,
+      "url_count": 13
+    },
+    {
+      "group_name": "â€¢è™�ç‰™ã€Œå…¶ä»–ã€�",
+      "channel_count": 12,
+      "url_count": 12
+    },
+    {
+      "group_name": "Auto",
+      "channel_count": 11,
+      "url_count": 11
+    },
+    {
+      "group_name": "â€¢Bç«™ã€Œå¨±ä¹�ã€�",
+      "channel_count": 11,
+      "url_count": 11
+    },
+    {
+      "group_name": "沉浸体验",
+      "channel_count": 11,
+      "url_count": 11
+    },
+    {
+      "group_name": "王忻辰",
+      "channel_count": 11,
+      "url_count": 11
+    },
+    {
+      "group_name": "☘️北京频道",
+      "channel_count": 10,
+      "url_count": 48
+    },
+    {
+      "group_name": "☘️青海频道",
+      "channel_count": 10,
+      "url_count": 52
+    },
+    {
+      "group_name": "游戏赛事",
+      "channel_count": 10,
+      "url_count": 12
+    },
+    {
+      "group_name": "陕西",
+      "channel_count": 10,
+      "url_count": 13
+    },
+    {
+      "group_name": "Culture;Education",
+      "channel_count": 9,
+      "url_count": 9
+    },
+    {
+      "group_name": "Education;Kids",
+      "channel_count": 9,
+      "url_count": 9
+    },
+    {
+      "group_name": "Movies;Series",
+      "channel_count": 9,
+      "url_count": 9
+    },
+    {
+      "group_name": "News;Public",
+      "channel_count": 9,
+      "url_count": 9
+    },
+    {
+      "group_name": "â€¢SOOPã€Œå¨±ä¹�ã€�",
+      "channel_count": 9,
+      "url_count": 9
+    },
+    {
+      "group_name": "â€¢æ–—é±¼ã€Œå¨±ä¹�ã€�",
+      "channel_count": 9,
+      "url_count": 9
+    },
+    {
+      "group_name": "新疆",
+      "channel_count": 9,
+      "url_count": 9
+    },
+    {
+      "group_name": "江苏",
+      "channel_count": 9,
+      "url_count": 15
+    },
+    {
+      "group_name": "湖北",
+      "channel_count": 9,
+      "url_count": 12
+    },
+    {
+      "group_name": "💰央视付费频道",
+      "channel_count": 9,
+      "url_count": 28
+    },
+    {
+      "group_name": "Culture;News",
+      "channel_count": 8,
+      "url_count": 8
+    },
+    {
+      "group_name": "Science",
+      "channel_count": 8,
+      "url_count": 16
+    },
+    {
+      "group_name": "â€¢æ­ªæ­ªã€Œå¨±ä¹�ã€�",
+      "channel_count": 8,
+      "url_count": 8
+    },
+    {
+      "group_name": "â€¢æŠ–éŸ³ã€Œå¨±ä¹�ã€�",
+      "channel_count": 8,
+      "url_count": 9
+    },
+    {
+      "group_name": "佛光普照",
+      "channel_count": 8,
+      "url_count": 11
+    },
+    {
+      "group_name": "小乐哥",
+      "channel_count": 8,
+      "url_count": 8
+    },
+    {
+      "group_name": "少儿频道",
+      "channel_count": 8,
+      "url_count": 8
+    },
+    {
+      "group_name": "江苏综合",
+      "channel_count": 8,
+      "url_count": 17
+    },
+    {
+      "group_name": "粤语频道",
+      "channel_count": 8,
+      "url_count": 11
+    },
+    {
+      "group_name": "Family;Movies",
+      "channel_count": 7,
+      "url_count": 7
+    },
+    {
+      "group_name": "☘️重庆频道",
+      "channel_count": 7,
+      "url_count": 16
+    },
+    {
+      "group_name": "单依纯",
+      "channel_count": 7,
+      "url_count": 7
+    },
+    {
+      "group_name": "唐朝乐队",
+      "channel_count": 7,
+      "url_count": 7
+    },
+    {
+      "group_name": "宋亚轩",
+      "channel_count": 7,
+      "url_count": 7
+    },
+    {
+      "group_name": "易烊千玺",
+      "channel_count": 7,
+      "url_count": 7
+    },
+    {
+      "group_name": "港·澳·台",
+      "channel_count": 7,
+      "url_count": 65
+    },
+    {
+      "group_name": "綜合其他",
+      "channel_count": 7,
+      "url_count": 10
+    },
+    {
+      "group_name": "🇨🇳河南地方",
+      "channel_count": 7,
+      "url_count": 7
+    },
+    {
+      "group_name": "4K8K频道",
+      "channel_count": 6,
+      "url_count": 12
+    },
+    {
+      "group_name": "Business;News",
+      "channel_count": 6,
+      "url_count": 6
+    },
+    {
+      "group_name": "Entertainment;Music",
+      "channel_count": 6,
+      "url_count": 6
+    },
+    {
+      "group_name": "Entertainment;News",
+      "channel_count": 6,
+      "url_count": 6
+    },
+    {
+      "group_name": "☘️内蒙古频道",
+      "channel_count": 6,
+      "url_count": 11
+    },
+    {
+      "group_name": "☘️辽宁频道",
+      "channel_count": 6,
+      "url_count": 28
+    },
+    {
+      "group_name": "地方频道",
+      "channel_count": 6,
+      "url_count": 8
+    },
+    {
+      "group_name": "央视",
+      "channel_count": 6,
+      "url_count": 62
+    },
+    {
+      "group_name": "运动体育",
+      "channel_count": 6,
+      "url_count": 6
+    },
+    {
+      "group_name": "🇨🇳IPV4线路",
+      "channel_count": 6,
+      "url_count": 19
+    },
+    {
+      "group_name": "💝丨分享全球",
+      "channel_count": 6,
+      "url_count": 10
+    },
+    {
+      "group_name": "Classic;Movies",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "General;Religious",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "Kids;Religious",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "Music;Religious",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "Relax",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "â˜˜ï¸�æµ·å�—é¢‘é�“",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "â€¢Bç«™ã€Œå½±è§†ã€�",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "â€¢Bç«™ã€Œå…¶ä»–ã€�",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "â€¢æŠ–éŸ³ã€Œå…¶ä»–ã€�",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "☘️海南频道",
+      "channel_count": 5,
+      "url_count": 44
+    },
+    {
+      "group_name": "☘️陕西频道",
+      "channel_count": 5,
+      "url_count": 31
+    },
+    {
+      "group_name": "卫视",
+      "channel_count": 5,
+      "url_count": 28
+    },
+    {
+      "group_name": "宁夏",
+      "channel_count": 5,
+      "url_count": 11
+    },
+    {
+      "group_name": "山东综合",
+      "channel_count": 5,
+      "url_count": 10
+    },
+    {
+      "group_name": "新聞財經",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "浙江综合",
+      "channel_count": 5,
+      "url_count": 9
+    },
+    {
+      "group_name": "风云试看体育频道",
+      "channel_count": 5,
+      "url_count": 5
+    },
+    {
+      "group_name": "🎵音乐频道",
+      "channel_count": 5,
+      "url_count": 26
+    },
+    {
+      "group_name": "Culture;Documentary",
+      "channel_count": 4,
+      "url_count": 4
+    },
+    {
+      "group_name": "Culture;Religious",
+      "channel_count": 4,
+      "url_count": 4
+    },
+    {
+      "group_name": "â€¢Twitchã€Œæ¸¸æˆ�ã€�",
+      "channel_count": 4,
+      "url_count": 4
+    },
+    {
+      "group_name": "â€¢æ–—é±¼ã€Œå½±è§†ã€�",
+      "channel_count": 4,
+      "url_count": 4
+    },
+    {
+      "group_name": "â€¢æ–—é±¼ã€Œå…¶ä»–ã€�",
+      "channel_count": 4,
+      "url_count": 4
+    },
+    {
+      "group_name": "宋岳庭",
+      "channel_count": 4,
+      "url_count": 4
+    },
+    {
+      "group_name": "王小帅",
+      "channel_count": 4,
+      "url_count": 5
+    },
+    {
+      "group_name": "Culture;General",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "Culture;Music",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "Culture;Public",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "Documentary;News",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "Education;Science",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "Entertainment;Family;General",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "Outdoor;Travel",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "SHE",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "â€¢Twitchã€Œå¨±ä¹�ã€�",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "☘️宁夏频道",
+      "channel_count": 3,
+      "url_count": 11
+    },
+    {
+      "group_name": "上海",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "云南",
+      "channel_count": 3,
+      "url_count": 4
+    },
+    {
+      "group_name": "广东地区",
+      "channel_count": 3,
+      "url_count": 8
+    },
+    {
+      "group_name": "浙江地区",
+      "channel_count": 3,
+      "url_count": 6
+    },
+    {
+      "group_name": "浙江频道",
+      "channel_count": 3,
+      "url_count": 41
+    },
+    {
+      "group_name": "纪录频道",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "美食",
+      "channel_count": 3,
+      "url_count": 3
+    },
+    {
+      "group_name": "🇨🇳｜历年春晚",
+      "channel_count": 3,
+      "url_count": 5
+    },
+    {
+      "group_name": "🎮游戏频道",
+      "channel_count": 3,
+      "url_count": 12
+    },
+    {
+      "group_name": "📡卫视频道",
+      "channel_count": 3,
+      "url_count": 74
+    },
+    {
+      "group_name": "4K",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "4K频道",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Animation;Kids;Religious",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Classic;Music",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Comedy;Kids",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Documentary;Series",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Education;Entertainment",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Education;Outdoor",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Entertainment;Family",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Entertainment;General",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Entertainment;General;News",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Entertainment;Kids",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Entertainment;Sports",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Family;General",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "General;Music",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Kids;Public",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Music;News",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "News;Sports",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "News;Weather",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Public;Sports",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "â€¢æº«é¦¨ã€Œæ��ç¤ºã€�",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "â€¢æŠ–éŸ³ã€Œæ¸¸æˆ�ã€�",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "ğŸ“¡å�«è§†é¢‘é�“",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "☘️天津频道",
+      "channel_count": 2,
+      "url_count": 3
+    },
+    {
+      "group_name": "☘️贵州频道",
+      "channel_count": 2,
+      "url_count": 5
+    },
+    {
+      "group_name": "内蒙古",
+      "channel_count": 2,
+      "url_count": 5
+    },
+    {
+      "group_name": "卫视台",
+      "channel_count": 2,
+      "url_count": 209
+    },
+    {
+      "group_name": "广东频道",
+      "channel_count": 2,
+      "url_count": 10
+    },
+    {
+      "group_name": "影视轮播",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "更新时间",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "江苏地区",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "王贰浪",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "美女赏析",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "超清频道",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "音阙诗听",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "🕘️更新时间",
+      "channel_count": 2,
+      "url_count": 2
+    },
+    {
+      "group_name": "Animation;Classic",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Animation;Classic;Entertainment;Family;Movies",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Animation;Entertainment",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Animation;Family;Kids",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Animation;General",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Animation;General;Kids",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Animation;Kids;Music",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Animation;Kids;Public",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Auto;Entertainment",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Auto;Outdoor;Sports",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Auto;Series",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Auto;Travel",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Business;Culture;Lifestyle",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Business;Series",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Classic;Comedy;Public;Series",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Classic;Kids",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Classic;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Classic;Series",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Comedy;Family;Movies",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Comedy;Movies",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Comedy;Movies;Series",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Comedy;Movies;Series;Sports",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Comedy;Public",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Cooking;Lifestyle",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Cooking;Shop",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Education;Entertainment",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Education;Lifestyle",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Education;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Entertainment",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Entertainment;Music",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Entertainment;Music;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Entertainment;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Family",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;General;Music;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Kids",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Lifestyle",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Sports",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Culture;Travel",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Documentary;Education",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Documentary;Education;Outdoor;Relax",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Documentary;Education;Science",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Documentary;Entertainment",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Education;Entertainment;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Education;General",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Education;Lifestyle",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Education;Lifestyle;Science",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Education;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Education;Religious",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Entertainment;Family;General;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Entertainment;General;Series",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Entertainment;Interactive",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Entertainment;Lifestyle;Music",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Entertainment;Movies",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Entertainment;Series",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Entertainment;Travel",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Family;General;Movies",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Family;Kids",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Family;Religious",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "General;Legislative",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "General;Lifestyle;Music;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "General;Music;Public",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "General;Series",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "General;Sports",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Kids;Lifestyle",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Kids;Movies",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Kids;Science",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Kids;Sports",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Legislative;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Lifestyle;Relax",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Lifestyle;Shop",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Movies;Music",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Movies;News",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Movies;Religious",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Music;News;Religious",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Music;Sports",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "News;Science",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Outdoor;Shop",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Public;Weather",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "Relax;Travel",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "儿童",
+      "channel_count": 1,
+      "url_count": 2
+    },
+    {
+      "group_name": "儿童频道",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "列表更新时间",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "告五人",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "时尚",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "春晚频道",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "歐飛點播",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "王靖雯",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "电影频道",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "记录",
+      "channel_count": 1,
+      "url_count": 3
+    },
+    {
+      "group_name": "陕西地区",
+      "channel_count": 1,
+      "url_count": 1
+    },
+    {
+      "group_name": "🇨🇳丨分享中國",
+      "channel_count": 1,
+      "url_count": 2
+    },
+    {
+      "group_name": "📢 系统公告",
+      "channel_count": 1,
+      "url_count": 1
+    }
+  ]
+}
