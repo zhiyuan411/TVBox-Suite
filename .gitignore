@@ -43,8 +43,10 @@ bin/
 gen/
 out/
 build/
-*/build/          # 匹配所有模块的 build 目录（app/pyramid/quickjs 等）
-.gradle/          # Gradle 本地缓存
+# 匹配所有模块的 build 目录（app/pyramid/quickjs 等）
+*/build/
+# Gradle 本地缓存
+.gradle/
 gradle-app.setting
 
 # 本地配置（SDK 路径等，环境专属）
@@ -61,19 +63,27 @@ proguard/
 *.ipr
 out/
 cmake-build-*/
-*.jks             # 密钥库文件（绝对不能提交）
+# 密钥库文件（绝对不能提交）
+*.jks
 *.keystore
-*.properties      # 自定义的本地属性文件（非项目通用）
+# 自定义的本地属性文件（非项目通用）
+*.properties
 
 # ========== 调试/日志/临时文件 ==========
 *.log
-*.hprof           # Android 内存分析文件
-captures/         # 截图/录屏
-.navigation/      # 导航编辑器临时文件
-.cxx/             # C/C++ 构建目录
+# Android 内存分析文件
+*.hprof
+# 截图/录屏
+captures/
+# 导航编辑器临时文件
+.navigation/
+# C/C++ 构建目录
+.cxx/
 .externalNativeBuild/
-lint/             # lint 检查产物
-output-metadata.json  # 构建输出元数据
+# lint 检查产物
+lint/
+# 构建输出元数据
+output-metadata.json
 crashlytics-build.properties
 fabric.properties
 
