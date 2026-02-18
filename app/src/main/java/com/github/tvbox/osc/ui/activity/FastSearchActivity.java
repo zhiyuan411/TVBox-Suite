@@ -472,37 +472,111 @@ public class FastSearchActivity extends BaseActivity {
     }
 
     private void searchData(AbsXml absXml) {
-        String lastSourceKey = "";
+        try {
+            String lastSourceKey = "";
 
-        if (absXml != null && absXml.movie != null && absXml.movie.videoList != null && absXml.movie.videoList.size() > 0) {
-            List<Movie.Video> data = new ArrayList<>();
-            for (Movie.Video video : absXml.movie.videoList) {
-                data.add(video);
-                if (!resultVods.containsKey(video.sourceKey)) {
-                    resultVods.put(video.sourceKey, new ArrayList<Movie.Video>());
+            if (absXml != null && absXml.movie != null && absXml.movie.videoList != null && absXml.movie.videoList.size() > 0) {
+                try {
+                    List<Movie.Video> data = new ArrayList<>();
+                    for (Movie.Video video : absXml.movie.videoList) {
+                        try {
+                            if (video != null) {
+                                data.add(video);
+                                try {
+                                    if (resultVods != null && video.sourceKey != null) {
+                                        if (!resultVods.containsKey(video.sourceKey)) {
+                                            resultVods.put(video.sourceKey, new ArrayList<Movie.Video>());
+                                        }
+                                        resultVods.get(video.sourceKey).add(video);
+                                        if (video.sourceKey != lastSourceKey) {
+                                            try {
+                                                lastSourceKey = this.addWordAdapterIfNeed(video.sourceKey);
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                                // 添加源名称到过滤器异常，继续执行
+                                            }
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    // 结果存储异常，继续执行
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            // 单个视频处理异常，跳过该视频
+                        }
+                    }
+
+                    if (!data.isEmpty() && searchAdapter != null) {
+                        try {
+                            if (searchAdapter.getData().size() > 0) {
+                                searchAdapter.addData(data);
+                            } else {
+                                try {
+                                    showSuccess();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                if (!isFilterMode && mGridView != null) {
+                                    mGridView.setVisibility(View.VISIBLE);
+                                }
+                                searchAdapter.setNewData(data);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            // 适配器操作异常，继续执行
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    // 数据处理异常，继续执行
                 }
-                resultVods.get(video.sourceKey).add(video);
-                if (video.sourceKey != lastSourceKey) {
-                    lastSourceKey = this.addWordAdapterIfNeed(video.sourceKey);
+            }
+
+            try {
+                int count = allRunCount.decrementAndGet();
+                if (count <= 0) {
+                    try {
+                        if (searchAdapter != null && searchAdapter.getData().size() <= 0) {
+                            try {
+                                showEmpty();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        try {
+                            cancel();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        // 搜索完成处理异常，继续执行
+                    }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                // 计数器操作异常，继续执行
             }
-
-            if (searchAdapter.getData().size() > 0) {
-                searchAdapter.addData(data);
-            } else {
-                showSuccess();
-                if (!isFilterMode)
-                    mGridView.setVisibility(View.VISIBLE);
-                searchAdapter.setNewData(data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 整体异常，确保流程不中断
+            try {
+                int count = allRunCount.decrementAndGet();
+                if (count <= 0) {
+                    try {
+                        if (searchAdapter != null && searchAdapter.getData().size() <= 0) {
+                            showEmpty();
+                        }
+                        cancel();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
-        }
-
-        int count = allRunCount.decrementAndGet();
-        if (count <= 0) {
-            if (searchAdapter.getData().size() <= 0) {
-                showEmpty();
-            }
-            cancel();
         }
     }
 

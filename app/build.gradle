@@ -54,12 +54,6 @@ android {
             //通用版本
             dimension = "brand"
         }
-
-        hisense {
-            //海信的
-            applicationId 'com.github.hisense.osc.tk'
-            dimension = "brand"
-        }
         normal {
             dimension = "mode"
             minSdkVersion 21

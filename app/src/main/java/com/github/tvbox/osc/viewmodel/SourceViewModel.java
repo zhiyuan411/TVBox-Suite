@@ -598,165 +598,508 @@ public class SourceViewModel extends ViewModel {
 
     // searchContent
     public void getSearch(String sourceKey, String wd) {
-        SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
-        int type = sourceBean.getType();
-        if (type == 3) {
-            try {
-                Spider sp = ApiConfig.get().getCSP(sourceBean);
-                String search = sp.searchContent(wd, false);
-                if (!TextUtils.isEmpty(search)) {
-                    json(searchResult, search, sourceBean.getKey());
-                } else {
-                    json(searchResult, "", sourceBean.getKey());
+        try {
+            SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
+            if (sourceBean == null) {
+                try {
+                    EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Throwable th) {
-                th.printStackTrace();
-                json(searchResult, "", sourceBean.getKey());
+                return;
             }
-        } else if (type == 0 || type == 1) {
-            OkGo.<String>get(sourceBean.getApi())
-                    .params("wd", wd)
-                    .params(type == 1 ? "ac" : null, type == 1 ? "detail" : null)
-                    .tag("search")
-                    .execute(new AbsCallback<String>() {
-                        @Override
-                        public String convertResponse(okhttp3.Response response) throws Throwable {
-                            if (response.body() != null) {
-                                return response.body().string();
+            int type = sourceBean.getType();
+            if (type == 3) {
+                try {
+                    Spider sp = ApiConfig.get().getCSP(sourceBean);
+                    if (sp != null) {
+                        String search = sp.searchContent(wd, false);
+                        try {
+                            if (!TextUtils.isEmpty(search)) {
+                                json(searchResult, search, sourceBean.getKey());
                             } else {
-                                throw new IllegalStateException("网络请求错误");
+                                json(searchResult, "", sourceBean.getKey());
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            try {
+                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
                             }
                         }
-
-                        @Override
-                        public void onSuccess(Response<String> response) {
-                            if (type == 0) {
-                                String xml = response.body();
-                                xml(searchResult, xml, sourceBean.getKey());
-                            } else {
-                                String json = response.body();
-                                json(searchResult, json, sourceBean.getKey());
-                            }
-                        }
-
-                        @Override
-                        public void onError(Response<String> response) {
-                            super.onError(response);
-                            // searchResult.postValue(null);
+                    } else {
+                        try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                    });
-        } else if (type == 4) {
-            OkGo.<String>get(sourceBean.getApi())
-                    .params("wd", wd)
-                    .params("ac", "detail")
-                    .params("quick", "false")
-                    .tag("search")
-                    .execute(new AbsCallback<String>() {
-                        @Override
-                        public String convertResponse(okhttp3.Response response) throws Throwable {
-                            if (response.body() != null) {
-                                return response.body().string();
-                            } else {
-                                throw new IllegalStateException("网络请求错误");
-                            }
-                        }
-
-                        @Override
-                        public void onSuccess(Response<String> response) {
-                            String json = response.body();
-                            LOG.i(json);
-                            json(searchResult, json, sourceBean.getKey());
-                        }
-
-                        @Override
-                        public void onError(Response<String> response) {
-                            super.onError(response);
-                            // searchResult.postValue(null);
+                    }
+                } catch (Throwable th) {
+                    th.printStackTrace();
+                    try {
+                        json(searchResult, "", sourceBean.getKey());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
                         }
-                    });
-        } else {
-            searchResult.postValue(null);
+                    }
+                }
+            } else if (type == 0 || type == 1) {
+                try {
+                    String apiUrl = sourceBean.getApi();
+                    if (!TextUtils.isEmpty(apiUrl)) {
+                        OkGo.<String>get(apiUrl)
+                                .params("wd", wd)
+                                .params(type == 1 ? "ac" : null, type == 1 ? "detail" : null)
+                                .tag("search")
+                                .execute(new AbsCallback<String>() {
+                                    @Override
+                                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                                        try {
+                                            if (response.body() != null) {
+                                                return response.body().string();
+                                            } else {
+                                                throw new IllegalStateException("网络请求错误");
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            throw e;
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onSuccess(Response<String> response) {
+                                        try {
+                                            if (response != null && response.body() != null) {
+                                                if (type == 0) {
+                                                    String xml = response.body();
+                                                    try {
+                                                        xml(searchResult, xml, sourceBean.getKey());
+                                                    } catch (Exception e) {
+                                                        e.printStackTrace();
+                                                        try {
+                                                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                                        } catch (Exception ex) {
+                                                            ex.printStackTrace();
+                                                        }
+                                                    }
+                                                } else {
+                                                    String json = response.body();
+                                                    try {
+                                                        json(searchResult, json, sourceBean.getKey());
+                                                    } catch (Exception e) {
+                                                        e.printStackTrace();
+                                                        try {
+                                                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                                        } catch (Exception ex) {
+                                                            ex.printStackTrace();
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                try {
+                                                    EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            try {
+                                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                            } catch (Exception ex) {
+                                                ex.printStackTrace();
+                                            }
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onError(Response<String> response) {
+                                        try {
+                                            super.onError(response);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        try {
+                                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                });
+                    } else {
+                        try {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } else if (type == 4) {
+                try {
+                    String apiUrl = sourceBean.getApi();
+                    if (!TextUtils.isEmpty(apiUrl)) {
+                        OkGo.<String>get(apiUrl)
+                                .params("wd", wd)
+                                .params("ac", "detail")
+                                .params("quick", "false")
+                                .tag("search")
+                                .execute(new AbsCallback<String>() {
+                                    @Override
+                                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                                        try {
+                                            if (response.body() != null) {
+                                                return response.body().string();
+                                            } else {
+                                                throw new IllegalStateException("网络请求错误");
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            throw e;
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onSuccess(Response<String> response) {
+                                        try {
+                                            if (response != null && response.body() != null) {
+                                                String json = response.body();
+                                                LOG.i(json);
+                                                try {
+                                                    json(searchResult, json, sourceBean.getKey());
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                    try {
+                                                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                                    } catch (Exception ex) {
+                                                        ex.printStackTrace();
+                                                    }
+                                                }
+                                            } else {
+                                                try {
+                                                    EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            try {
+                                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                            } catch (Exception ex) {
+                                                ex.printStackTrace();
+                                            }
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onError(Response<String> response) {
+                                        try {
+                                            super.onError(response);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        try {
+                                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                });
+                    } else {
+                        try {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } else {
+                try {
+                    searchResult.postValue(null);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            try {
+                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
     // searchContent
     public void getQuickSearch(String sourceKey, String wd) {
-        SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
-        int type = sourceBean.getType();
-        if (type == 3) {
-            try {
-                Spider sp = ApiConfig.get().getCSP(sourceBean);
-                json(quickSearchResult, sp.searchContent(wd, true), sourceBean.getKey());
-            } catch (Throwable th) {
-                th.printStackTrace();
+        try {
+            SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
+            if (sourceBean == null) {
+                try {
+                    EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return;
             }
-        } else if (type == 0 || type == 1) {
-            OkGo.<String>get(sourceBean.getApi())
-                    .params("wd", wd)
-                    .params(type == 1 ? "ac" : null, type == 1 ? "detail" : null)
-                    .tag("quick_search")
-                    .execute(new AbsCallback<String>() {
-                        @Override
-                        public String convertResponse(okhttp3.Response response) throws Throwable {
-                            if (response.body() != null) {
-                                return response.body().string();
-                            } else {
-                                throw new IllegalStateException("网络请求错误");
+            int type = sourceBean.getType();
+            if (type == 3) {
+                try {
+                    Spider sp = ApiConfig.get().getCSP(sourceBean);
+                    if (sp != null) {
+                        String search = sp.searchContent(wd, true);
+                        try {
+                            json(quickSearchResult, search, sourceBean.getKey());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            try {
+                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
                             }
                         }
-
-                        @Override
-                        public void onSuccess(Response<String> response) {
-                            if (type == 0) {
-                                String xml = response.body();
-                                xml(quickSearchResult, xml, sourceBean.getKey());
-                            } else {
-                                String json = response.body();
-                                json(quickSearchResult, json, sourceBean.getKey());
-                            }
-                        }
-
-                        @Override
-                        public void onError(Response<String> response) {
-                            super.onError(response);
-                            // quickSearchResult.postValue(null);
+                    } else {
+                        try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                    });
-        } else if (type == 4) {
-            OkGo.<String>get(sourceBean.getApi())
-                    .params("wd", wd)
-                    .params("ac", "detail")
-                    .params("quick", "true")
-                    .tag("search")
-                    .execute(new AbsCallback<String>() {
-                        @Override
-                        public String convertResponse(okhttp3.Response response) throws Throwable {
-                            if (response.body() != null) {
-                                return response.body().string();
-                            } else {
-                                throw new IllegalStateException("网络请求错误");
-                            }
-                        }
+                    }
+                } catch (Throwable th) {
+                    th.printStackTrace();
+                    try {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else if (type == 0 || type == 1) {
+                try {
+                    String apiUrl = sourceBean.getApi();
+                    if (!TextUtils.isEmpty(apiUrl)) {
+                        OkGo.<String>get(apiUrl)
+                                .params("wd", wd)
+                                .params(type == 1 ? "ac" : null, type == 1 ? "detail" : null)
+                                .tag("quick_search")
+                                .execute(new AbsCallback<String>() {
+                                    @Override
+                                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                                        try {
+                                            if (response.body() != null) {
+                                                return response.body().string();
+                                            } else {
+                                                throw new IllegalStateException("网络请求错误");
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            throw e;
+                                        }
+                                    }
 
-                        @Override
-                        public void onSuccess(Response<String> response) {
-                            String json = response.body();
-                            LOG.i(json);
-                            json(quickSearchResult, json, sourceBean.getKey());
-                        }
+                                    @Override
+                                    public void onSuccess(Response<String> response) {
+                                        try {
+                                            if (response != null && response.body() != null) {
+                                                if (type == 0) {
+                                                    String xml = response.body();
+                                                    try {
+                                                        xml(quickSearchResult, xml, sourceBean.getKey());
+                                                    } catch (Exception e) {
+                                                        e.printStackTrace();
+                                                        try {
+                                                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                                                        } catch (Exception ex) {
+                                                            ex.printStackTrace();
+                                                        }
+                                                    }
+                                                } else {
+                                                    String json = response.body();
+                                                    try {
+                                                        json(quickSearchResult, json, sourceBean.getKey());
+                                                    } catch (Exception e) {
+                                                        e.printStackTrace();
+                                                        try {
+                                                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                                                        } catch (Exception ex) {
+                                                            ex.printStackTrace();
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                try {
+                                                    EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            try {
+                                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                                            } catch (Exception ex) {
+                                                ex.printStackTrace();
+                                            }
+                                        }
+                                    }
 
-                        @Override
-                        public void onError(Response<String> response) {
-                            super.onError(response);
-                            // searchResult.postValue(null);
-                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                                    @Override
+                                    public void onError(Response<String> response) {
+                                        try {
+                                            super.onError(response);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        try {
+                                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                });
+                    } else {
+                        try {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                    });
-        } else {
-            quickSearchResult.postValue(null);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } else if (type == 4) {
+                try {
+                    String apiUrl = sourceBean.getApi();
+                    if (!TextUtils.isEmpty(apiUrl)) {
+                        OkGo.<String>get(apiUrl)
+                                .params("wd", wd)
+                                .params("ac", "detail")
+                                .params("quick", "true")
+                                .tag("search")
+                                .execute(new AbsCallback<String>() {
+                                    @Override
+                                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                                        try {
+                                            if (response.body() != null) {
+                                                return response.body().string();
+                                            } else {
+                                                throw new IllegalStateException("网络请求错误");
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            throw e;
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onSuccess(Response<String> response) {
+                                        try {
+                                            if (response != null && response.body() != null) {
+                                                String json = response.body();
+                                                LOG.i(json);
+                                                try {
+                                                    json(quickSearchResult, json, sourceBean.getKey());
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                    try {
+                                                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                                                    } catch (Exception ex) {
+                                                        ex.printStackTrace();
+                                                    }
+                                                }
+                                            } else {
+                                                try {
+                                                    EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            try {
+                                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                                            } catch (Exception ex) {
+                                                ex.printStackTrace();
+                                            }
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onError(Response<String> response) {
+                                        try {
+                                            super.onError(response);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        try {
+                                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                });
+                    } else {
+                        try {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } else {
+                try {
+                    quickSearchResult.postValue(null);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            try {
+                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -1217,47 +1560,129 @@ public class SourceViewModel extends ViewModel {
 
     private AbsXml json(MutableLiveData<AbsXml> result, String json, String sourceKey) {
         try {
-            // 测试数据
-            /*json = "{\n" +
-                    "\t\"list\": [{\n" +
-                    "\t\t\"vod_id\": \"137133\",\n" +
-                    "\t\t\"vod_name\": \"磁力测试\",\n" +
-                    "\t\t\"vod_pic\": \"https:/img9.doubanio.com/view/photo/s_ratio_poster/public/p2656327176.webp\",\n" +
-                    "\t\t\"type_name\": \"剧情 / 爱情 / 古装\",\n" +
-                    "\t\t\"vod_year\": \"2022\",\n" +
-                    "\t\t\"vod_area\": \"中国大陆\",\n" +
-                    "\t\t\"vod_remarks\": \"40集全\",\n" +
-                    "\t\t\"vod_actor\": \"刘亦菲\",\n" +
-                    "\t\t\"vod_director\": \"杨阳\",\n" +
-                    "\t\t\"vod_content\": \"　　在钱塘开茶铺的赵盼儿（刘亦菲 饰）惊闻未婚夫、新科探花欧阳旭（徐海乔 饰）要另娶当朝高官之女，不甘命运的她誓要上京讨个公道。在途中她遇到了出自权门但生性正直的皇城司指挥顾千帆（陈晓 饰），并卷入江南一场大案，两人不打不相识从而结缘。赵盼儿凭借智慧解救了被骗婚而惨遭虐待的“江南第一琵琶高手”宋引章（林允 饰）与被苛刻家人逼得离家出走的豪爽厨娘孙三娘（柳岩 饰），三位姐妹从此结伴同行，终抵汴京，见识世间繁华。为了不被另攀高枝的欧阳旭从东京赶走，赵盼儿与宋引章、孙三娘一起历经艰辛，将小小茶坊一步步发展为汴京最大的酒楼，揭露了负心人的真面目，收获了各自的真挚感情和人生感悟，也为无数平凡女子推开了一扇平等救赎之门。\",\n" +
-                    "\t\t\"vod_play_from\": \"磁力测试\",\n" +
-                    "\t\t\"vod_play_url\": \"0$magnet:?xt=urn:btih:9e9358b946c427962533472efdd2efd9e9e38c67&dn=%e9%98%b3%e5%85%89%e7%94%b5%e5%bd%b1www.ygdy8.com.%e7%83%ad%e8%a1%80.2022.BD.1080P.%e9%9f%a9%e8%af%ad%e4%b8%ad%e8%8b%b1%e5%8f%8c%e5%ad%97.mkv&tr=udp%3a%2f%2ftracker.opentrackr.org%3a1337%2fannounce&tr=udp%3a%2f%2fexodus.desync.com%3a6969%2fannounce\"\n" +
-                    "\t}]\n" +
-                    "}";*/
-            AbsJson absJson = gson.fromJson(json, new TypeToken<AbsJson>() {
-            }.getType());
-            AbsXml data = absJson.toAbsXml();
-            absXml(data, sourceKey);
-            if (searchResult == result) {
-                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, data));
-            } else if (quickSearchResult == result) {
-                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, data));
-            } else if (result != null) {
-                if (result == detailResult) {
-                    data = checkPush(data);
-                    checkThunder(data, 0);
-                } else {
-                    result.postValue(data);
+            if (TextUtils.isEmpty(json)) {
+                try {
+                    if (searchResult == result) {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                    } else if (quickSearchResult == result) {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                    } else if (result != null) {
+                        result.postValue(null);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
+                return null;
             }
-            return data;
+            try {
+                AbsJson absJson = gson.fromJson(json, new TypeToken<AbsJson>() {
+                }.getType());
+                if (absJson == null) {
+                    try {
+                        if (searchResult == result) {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } else if (quickSearchResult == result) {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                        } else if (result != null) {
+                            result.postValue(null);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                }
+                try {
+                    AbsXml data = absJson.toAbsXml();
+                    if (data == null) {
+                        try {
+                            if (searchResult == result) {
+                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                            } else if (quickSearchResult == result) {
+                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                            } else if (result != null) {
+                                result.postValue(null);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        return null;
+                    }
+                    try {
+                        absXml(data, sourceKey);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        // absXml处理异常，继续执行
+                    }
+                    try {
+                        if (searchResult == result) {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, data));
+                        } else if (quickSearchResult == result) {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, data));
+                        } else if (result != null) {
+                            if (result == detailResult) {
+                                try {
+                                    data = checkPush(data);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    // checkPush异常，继续执行
+                                }
+                                try {
+                                    checkThunder(data, 0);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    // checkThunder异常，继续执行
+                                }
+                            } else {
+                                result.postValue(data);
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        // 事件发送或结果处理异常，继续执行
+                    }
+                    return data;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        if (searchResult == result) {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } else if (quickSearchResult == result) {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                        } else if (result != null) {
+                            result.postValue(null);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                    return null;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                try {
+                    if (searchResult == result) {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                    } else if (quickSearchResult == result) {
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                    } else if (result != null) {
+                        result.postValue(null);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                return null;
+            }
         } catch (Exception e) {
-            if (searchResult == result) {
-                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
-            } else if (quickSearchResult == result) {
-                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
-            } else if (result != null) {
-                result.postValue(null);
+            e.printStackTrace();
+            try {
+                if (searchResult == result) {
+                    EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                } else if (quickSearchResult == result) {
+                    EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
+                } else if (result != null) {
+                    result.postValue(null);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
             return null;
         }
@@ -1267,6 +1692,7 @@ public class SourceViewModel extends ViewModel {
     protected void onCleared() {
         super.onCleared();
         closeExecutor(threadPoolGetPlay);
+        closeExecutor(searchExecutorService);
 
     }
 
