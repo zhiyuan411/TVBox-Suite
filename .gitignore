@@ -3,7 +3,8 @@
 /adb.exe
 /LTDecodeNew3.exe
 script/random-sites/tv-counts.txt
-
+script/merge-sources/web-task.log
+script/merge-sources/web-task-error.log
 
 # ========== 系统/通用临时文件 ==========
 # Windows
