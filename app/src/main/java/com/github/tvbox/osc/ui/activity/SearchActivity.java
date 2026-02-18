@@ -781,29 +781,103 @@ public class SearchActivity extends BaseActivity {
     }
 
     private void searchData(AbsXml absXml) {
-        if (absXml != null && absXml.movie != null && absXml.movie.videoList != null && absXml.movie.videoList.size() > 0) {
-            List<Movie.Video> data = new ArrayList<>();
-            for (Movie.Video video : absXml.movie.videoList) {
-                data.add(video);
+        try {
+            if (absXml != null && absXml.movie != null && absXml.movie.videoList != null && absXml.movie.videoList.size() > 0) {
+                try {
+                    List<Movie.Video> data = new ArrayList<>();
+                    for (Movie.Video video : absXml.movie.videoList) {
+                        try {
+                            if (video != null) {
+                                data.add(video);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            // 单个视频处理异常，跳过该视频
+                        }
+                    }
+                    if (!data.isEmpty() && searchAdapter != null) {
+                        try {
+                            if (searchAdapter.getData().size() > 0) {
+                                searchAdapter.addData(data);
+                            } else {
+                                try {
+                                    showSuccess();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                searchAdapter.setNewData(data);
+                                try {
+                                    if (tv_history != null) {
+                                        tv_history.setVisibility(View.GONE);
+                                    }
+                                    if (searchTips != null) {
+                                        searchTips.setVisibility(View.GONE);
+                                    }
+                                    if (llWord != null) {
+                                        llWord.setVisibility(View.GONE);
+                                    }
+                                    if (mGridView != null) {
+                                        mGridView.setVisibility(View.VISIBLE);
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    // UI组件操作异常，继续执行
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            // 适配器操作异常，继续执行
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    // 数据处理异常，继续执行
+                }
             }
-            if (searchAdapter.getData().size() > 0) {
-                searchAdapter.addData(data);
-            } else {
-                showSuccess();
-                searchAdapter.setNewData(data);
-                tv_history.setVisibility(View.GONE);
-                searchTips.setVisibility(View.GONE);
-                llWord.setVisibility(View.GONE);
-                mGridView.setVisibility(View.VISIBLE);
-            }
-        }
 
-        int count = allRunCount.decrementAndGet();
-        if (count <= 0) {
-            if (searchAdapter.getData().size() <= 0) {
-                showEmpty();
+            try {
+                int count = allRunCount.decrementAndGet();
+                if (count <= 0) {
+                    try {
+                        if (searchAdapter != null && searchAdapter.getData().size() <= 0) {
+                            try {
+                                showEmpty();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        try {
+                            cancel();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        // 搜索完成处理异常，继续执行
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                // 计数器操作异常，继续执行
             }
-            cancel();
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 整体异常，确保流程不中断
+            try {
+                int count = allRunCount.decrementAndGet();
+                if (count <= 0) {
+                    try {
+                        if (searchAdapter != null && searchAdapter.getData().size() <= 0) {
+                            showEmpty();
+                        }
+                        cancel();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
