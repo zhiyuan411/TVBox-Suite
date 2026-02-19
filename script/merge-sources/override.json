@@ -3,7 +3,7 @@
   "lives": [
     {
       "type": "0",
-      "url": "http://39.107.52.162/private/tv.m3u",
+      "url": "http://39.107.52.162/private/tv.txt",
       "epg": "http://39.107.52.162/private/epg/?ch={name}&date={date}"
     }
   ]
