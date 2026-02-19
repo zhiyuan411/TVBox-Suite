@@ -33,6 +33,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 
 public class JsSpider extends Spider {
@@ -67,9 +69,28 @@ public class JsSpider extends Spider {
     private Object call(String func, Object... args) {
 //        return executor.submit((FunCall.call(jsObject, func, args))).get();
         try {
-            return submit(() -> Async.run(jsObject, func, args).get()).get();  // 等待 executor 线程完成 JS 调用
-        } catch (InterruptedException | ExecutionException e) {
+            if (jsObject == null) {
+                LOG.i("JSObject 为 null，无法调用函数: " + func);
+                return null;
+            }
+            return submit(() -> {
+                try {
+                    // 设置JS执行超时时间
+                    Future<Object> future = Async.run(jsObject, func, args);
+                    return future.get(30, TimeUnit.SECONDS); // 30秒超时
+                } catch (TimeoutException e) {
+                    LOG.i("JS 函数执行超时: " + func);
+                    return null;
+                } catch (Exception e) {
+                    LOG.i("JS 函数执行异常: " + func + "，错误: " + e.getMessage());
+                    return null;
+                }
+            }).get(35, TimeUnit.SECONDS);  // 等待 executor 线程完成 JS 调用，额外5秒缓冲
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
             LOG.i("Executor 提交或等待失败"+ e);
+            return null;
+        } catch (Exception e) {
+            LOG.i("调用函数时发生异常: " + e.getMessage());
             return null;
         }
     }
@@ -188,10 +209,31 @@ public class JsSpider extends Spider {
 
     @Override
     public void destroy() {
-        submit(() -> {
-            executor.shutdownNow();
-            ctx.destroy();
-        });
+        try {
+            submit(() -> {
+                try {
+                    executor.shutdownNow();
+                } catch (Exception e) {
+                    LOG.i("关闭 executor 异常: " + e.getMessage());
+                }
+                try {
+                    if (ctx != null) {
+                        ctx.destroy();
+                    }
+                } catch (Exception e) {
+                    LOG.i("销毁 ctx 异常: " + e.getMessage());
+                }
+                try {
+                    if (jsObject != null) {
+                        jsObject.release();
+                    }
+                } catch (Exception e) {
+                    LOG.i("释放 jsObject 异常: " + e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            LOG.i("执行 destroy 异常: " + e.getMessage());
+        }
     }
 
     private static final String SPIDER_STRING_CODE = "import * as spider from '%s'\n\n" +
@@ -205,37 +247,79 @@ public class JsSpider extends Spider {
             "    }\n" +
             "}";
     private void initializeJS() throws Exception {
-        submit(() -> {
-            if (ctx == null) createCtx();
-            if (dex != null) createDex();
+        try {
+            submit(() -> {
+                try {
+                    if (ctx == null) createCtx();
+                    if (dex != null) createDex();
 
-            String content = FileUtils.loadModule(api);            
-            if (TextUtils.isEmpty(content)) {return null;}
-            
-            if(content.startsWith("//bb")){
-                cat = true;
-                byte[] b = Base64.decode(content.replace("//bb",""), 0);
-                ctx.execute(byteFF(b), key + ".js");
-                ctx.evaluateModule(String.format(SPIDER_STRING_CODE, key + ".js") + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
-                //ctx.execute(byteFF(b), key + ".js","__jsEvalReturn");
-                //ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;");
-            } else {
-                if (content.contains("__JS_SPIDER__")) {
-                    content = content.replaceAll("__JS_SPIDER__\\s*=", "export default ");
+                    String content = FileUtils.loadModule(api);            
+                    if (TextUtils.isEmpty(content)) {
+                        LOG.i("模块内容为空: " + api);
+                        return null;
+                    }
+                    
+                    // 内容和格式校验
+                    if (!isValidJSContent(content)) {
+                        LOG.i("模块内容无效: " + api);
+                        return null;
+                    }
+                    
+                    // 尝试加载和执行JS代码
+                    boolean loadSuccess = false;
+                    if(content.startsWith("//bb")){
+                        cat = true;
+                        try {
+                            byte[] b = Base64.decode(content.replace("//bb",""), 0);
+                            ctx.execute(byteFF(b), key + ".js");
+                            ctx.evaluateModule(String.format(SPIDER_STRING_CODE, key + ".js") + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
+                            loadSuccess = true;
+                        } catch (Exception e) {
+                            LOG.i("处理 bb 格式内容异常: " + e.getMessage());
+                        }
+                    } else {
+                        try {
+                            if (content.contains("__JS_SPIDER__")) {
+                                content = content.replaceAll("__JS_SPIDER__\\s*=", "export default ");
+                            }
+                            String moduleExtName = "default";
+                            if (content.contains("__jsEvalReturn") && !content.contains("export default")) {
+                                moduleExtName = "__jsEvalReturn";
+                                cat = true;
+                            }
+                            ctx.evaluateModule(content, api);
+                            ctx.evaluateModule(String.format(SPIDER_STRING_CODE, api) + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
+                            loadSuccess = true;
+                        } catch (Exception e) {
+                            LOG.i("处理模块内容异常: " + e.getMessage());
+                        }
+                    }
+                    
+                    // 只有加载成功后才尝试获取JSObject
+                    if (loadSuccess) {
+                        try {
+                            jsObject = (JSObject) ctx.get(ctx.getGlobalObject(), key);
+                            if (jsObject == null) {
+                                LOG.i("无法获取 JSObject: " + key);
+                            }
+                        } catch (Exception e) {
+                            LOG.i("获取 JSObject 异常: " + e.getMessage());
+                        }
+                    }
+                    return null;
+                } catch (Exception e) {
+                    LOG.i("初始化 JS 环境异常: " + e.getMessage());
+                    return null;
+                } finally {
+                    // 确保即使发生异常，也能保持系统稳定
+                    LOG.i("JS 初始化完成: " + api);
                 }
-                String moduleExtName = "default";
-                if (content.contains("__jsEvalReturn") && !content.contains("export default")) {
-                    moduleExtName = "__jsEvalReturn";
-                    cat = true;
-                }
-                ctx.evaluateModule(content, api);
-                ctx.evaluateModule(String.format(SPIDER_STRING_CODE, api) + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
-                //ctx.evaluateModule(content, api, moduleExtName);
-                //ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;");                
-            }
-            jsObject = (JSObject) ctx.get(ctx.getGlobalObject(), key);
-            return null;
-        }).get();
+            }).get(60, TimeUnit.SECONDS); // 60秒超时
+        } catch (TimeoutException e) {
+            LOG.i("JS 初始化超时: " + api);
+        } catch (Exception e) {
+            LOG.i("初始化 JS 时发生异常: " + e.getMessage());
+        }
     }
 
     public static byte[] byteFF(byte[] bytes) {
@@ -253,7 +337,7 @@ public class JsSpider extends Spider {
                 String ss = FileUtils.loadModule(moduleName);
                 if (TextUtils.isEmpty(ss)) {
                     LOG.i("echo-getModuleBytecode empty :"+ moduleName);
-                    return ctx.compileModule("", moduleName);
+                    return null;
                 }
                 if(ss.startsWith("//DRPY")){
                     return Base64.decode(ss.replace("//DRPY",""), Base64.URL_SAFE);
@@ -352,26 +436,40 @@ public class JsSpider extends Spider {
     }
 
     private Object[] proxy1(Map<String, String> params) {
-        JSObject object = new JSUtils<String>().toObj(ctx, params);
-        JSONArray array = ((JSArray) jsObject.getJSFunction("proxy").call(object)).toJsonArray();
-        boolean headerAvailable = array.length() > 3 && array.opt(3) != null;
-        Object[] result = new Object[4];
-        result[0] = array.opt(0);
-        result[1] = array.opt(1);
-        result[2] = getStream(array.opt(2));
-        result[3] = headerAvailable ? getHeader(array.opt(3)) : null;
-        if (array.length() > 4) {
-            try {
-                if ( array.optInt(4) == 1) {
-                    String content = array.optString(2);
-                    if (content.contains("base64,")) content = content.substring(content.indexOf("base64,") + 7);
-                    result[2] = new ByteArrayInputStream(Base64.decode(content, Base64.DEFAULT));
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+        try {
+            if (jsObject == null || ctx == null) {
+                LOG.i("JSObject 或 ctx 为 null，无法执行 proxy1");
+                return new Object[0];
             }
+            JSObject object = new JSUtils<String>().toObj(ctx, params);
+            Object proxyResult = jsObject.getJSFunction("proxy").call(object);
+            if (proxyResult == null) {
+                LOG.i("proxy 函数返回 null");
+                return new Object[0];
+            }
+            JSONArray array = ((JSArray) proxyResult).toJsonArray();
+            boolean headerAvailable = array.length() > 3 && array.opt(3) != null;
+            Object[] result = new Object[4];
+            result[0] = array.opt(0);
+            result[1] = array.opt(1);
+            result[2] = getStream(array.opt(2));
+            result[3] = headerAvailable ? getHeader(array.opt(3)) : null;
+            if (array.length() > 4) {
+                try {
+                    if ( array.optInt(4) == 1) {
+                        String content = array.optString(2);
+                        if (content.contains("base64,")) content = content.substring(content.indexOf("base64,") + 7);
+                        result[2] = new ByteArrayInputStream(Base64.decode(content, Base64.DEFAULT));
+                    }
+                } catch (Exception e) {
+                    LOG.i("处理 base64 内容异常: " + e.getMessage());
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            LOG.i("执行 proxy1 异常: " + e.getMessage());
+            return new Object[0];
         }
-        return result;
     }
 
     private Map<String, String> getHeader(Object headerRaw) {
@@ -404,23 +502,67 @@ public class JsSpider extends Spider {
     }
     
     private Object[] proxy2(Map<String, String> params) throws Exception {
-        String url = params.get("url");
-        String header = params.get("header");
-        JSArray array = submit(() -> new JSUtils<String>().toArray(ctx, Arrays.asList(url.split("/")))).get();
-        Object object = submit(() -> ctx.parse(header)).get();
-        String json = (String) call("proxy", array, object);
-        Res res = Res.objectFrom(json);
-        String contentType = res.getContentType();
-        if (TextUtils.isEmpty(contentType)) contentType = "application/octet-stream";
-        Object[] result = new Object[3];
-        result[0] = 200;
-        result[1] = contentType;
-        if (res.getBuffer() == 2) {
-            result[2] = new ByteArrayInputStream(Base64.decode(res.getContent(), Base64.DEFAULT));
-        } else {
-            result[2] = new ByteArrayInputStream(res.getContent().getBytes());
+        try {
+            if (ctx == null) {
+                LOG.i("ctx 为 null，无法执行 proxy2");
+                return new Object[0];
+            }
+            String url = params.get("url");
+            String header = params.get("header");
+            if (TextUtils.isEmpty(url)) {
+                LOG.i("url 为空，无法执行 proxy2");
+                return new Object[0];
+            }
+            JSArray array = submit((Callable<JSArray>) () -> {
+                try {
+                    return new JSUtils<String>().toArray(ctx, Arrays.asList(url.split("/")));
+                } catch (Exception e) {
+                    LOG.i("创建 JSArray 异常: " + e.getMessage());
+                    return null;
+                }
+            }).get();
+            if (array == null) {
+                LOG.i("JSArray 为 null，无法执行 proxy2");
+                return new Object[0];
+            }
+            Object object = submit((Callable<Object>) () -> {
+                try {
+                    return ctx.parse(header);
+                } catch (Exception e) {
+                    LOG.i("解析 header 异常: " + e.getMessage());
+                    return null;
+                }
+            }).get();
+            String json = (String) call("proxy", array, object);
+            if (TextUtils.isEmpty(json)) {
+                LOG.i("proxy 函数返回空，无法执行 proxy2");
+                return new Object[0];
+            }
+            Res res = Res.objectFrom(json);
+            if (res == null) {
+                LOG.i("无法解析 Res 对象，无法执行 proxy2");
+                return new Object[0];
+            }
+            String contentType = res.getContentType();
+            if (TextUtils.isEmpty(contentType)) contentType = "application/octet-stream";
+            Object[] result = new Object[3];
+            result[0] = 200;
+            result[1] = contentType;
+            try {
+                if (res.getBuffer() == 2) {
+                    result[2] = new ByteArrayInputStream(Base64.decode(res.getContent(), Base64.DEFAULT));
+                } else {
+                    result[2] = new ByteArrayInputStream(res.getContent().getBytes());
+                }
+            } catch (Exception e) {
+                LOG.i("处理内容异常: " + e.getMessage());
+                result[2] = new ByteArrayInputStream(new byte[0]);
+            }
+            return result;
+        } catch (Exception e) {
+            LOG.i("执行 proxy2 异常: " + e.getMessage());
+            return new Object[0];
         }
-        return result;
     }
 
    /* private Object[] proxy2(Map<String, String> params) throws Exception {
@@ -445,6 +587,50 @@ public class JsSpider extends Spider {
             return new ByteArrayInputStream(bytes);
         } else {
             return new ByteArrayInputStream(o.toString().getBytes());
+        }
+    }
+    
+    /**
+     * 校验JS内容的有效性
+     * @param content JS内容
+     * @return 是否有效
+     */
+    private boolean isValidJSContent(String content) {
+        try {
+            // 检查内容长度
+            if (content.length() > 10 * 1024 * 1024) { // 限制10MB
+                LOG.i("JS内容过大");
+                return false;
+            }
+            
+            // 检查是否包含可能导致崩溃的恶意代码
+            if (content.contains("while(true)")) {
+                LOG.i("JS内容包含无限循环");
+                return false;
+            }
+            
+            // 检查是否包含基本的JS语法结构
+            if (content.contains("function") || content.contains("=>") || content.contains("export") || content.contains("var") || content.contains("let") || content.contains("const")) {
+                return true;
+            }
+            
+            // 检查是否为base64编码的内容
+            if (content.startsWith("//bb") || content.startsWith("//DRPY")) {
+                return true;
+            }
+            
+            // 检查是否为有效的JSON
+            try {
+                new JSONObject(content);
+                return true;
+            } catch (JSONException e) {
+                // 不是JSON，继续检查
+            }
+            
+            return false;
+        } catch (Exception e) {
+            LOG.i("校验JS内容异常: " + e.getMessage());
+            return false;
         }
     }
 }
