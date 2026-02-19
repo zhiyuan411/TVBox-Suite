@@ -35,7 +35,7 @@ android {
         }
     }
 
-    flavorDimensions += ["abi", "brand", "mode"]
+    flavorDimensions += ["abi", "mode"]
     productFlavors {
         armeabi {
             dimension = "abi"
@@ -50,10 +50,6 @@ android {
             }
         }
 
-        generic  {
-            //通用版本
-            dimension = "brand"
-        }
         normal {
             dimension = "mode"
             minSdkVersion 21

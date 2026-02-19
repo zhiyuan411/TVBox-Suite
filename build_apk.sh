@@ -74,40 +74,40 @@ if [ -d "$OUTPUT_DIR" ]; then
     # 复制文件并强制覆盖目标
     echo -e "\n4. 复制 APK 文件到 web 目录..."
     
-    # 复制 arm64GenericNormal 产物到 web/tvbox.apk
-    ARM64_JAVA_APK="$OUTPUT_DIR/arm64GenericNormal/debug/TVBox_debug-arm64-generic-java.apk"
+    # 复制 arm64Normal 产物到 web/tvbox2.apk
+    ARM64_JAVA_APK="$OUTPUT_DIR/arm64Normal/debug/TVBox_debug-arm64-java.apk"
     if [ -f "$ARM64_JAVA_APK" ]; then
-        cp -f "$ARM64_JAVA_APK" "$WEB_DIR/tvbox.apk"
-        echo "已复制 arm64GenericNormal 产物到 web/tvbox.apk"
+        cp -f "$ARM64_JAVA_APK" "$WEB_DIR/tvbox2.apk"
+        echo "已复制 arm64Normal 产物到 web/tvbox2.apk"
     else
-        echo "警告: arm64GenericNormal 产物不存在"
+        echo "警告: arm64Normal 产物不存在"
     fi
     
-    # 复制 armeabiGenericNormal 产物到 web/tvbox-old.apk
-    ARMEABI_JAVA_APK="$OUTPUT_DIR/armeabiGenericNormal/debug/TVBox_debug-armeabi-generic-java.apk"
+    # 复制 armeabiNormal 产物到 web/tvbox-old2.apk
+    ARMEABI_JAVA_APK="$OUTPUT_DIR/armeabiNormal/debug/TVBox_debug-armeabi-java.apk"
     if [ -f "$ARMEABI_JAVA_APK" ]; then
-        cp -f "$ARMEABI_JAVA_APK" "$WEB_DIR/tvbox-old.apk"
-        echo "已复制 armeabiGenericNormal 产物到 web/tvbox-old.apk"
+        cp -f "$ARMEABI_JAVA_APK" "$WEB_DIR/tvbox-old2.apk"
+        echo "已复制 armeabiNormal 产物到 web/tvbox-old2.apk"
     else
-        echo "警告: armeabiGenericNormal 产物不存在"
+        echo "警告: armeabiNormal 产物不存在"
     fi
     
-    # 复制 arm64GenericPython 产物到 web/tvbox-py.apk
-    ARM64_PYTHON_APK="$OUTPUT_DIR/arm64GenericPython/debug/TVBox_debug-arm64-generic-python.apk"
+    # 复制 arm64Python 产物到 web/tvbox.apk
+    ARM64_PYTHON_APK="$OUTPUT_DIR/arm64Python/debug/TVBox_debug-arm64-python.apk"
     if [ -f "$ARM64_PYTHON_APK" ]; then
-        cp -f "$ARM64_PYTHON_APK" "$WEB_DIR/tvbox-py.apk"
-        echo "已复制 arm64GenericPython 产物到 web/tvbox-py.apk"
+        cp -f "$ARM64_PYTHON_APK" "$WEB_DIR/tvbox.apk"
+        echo "已复制 arm64Python 产物到 web/tvbox.apk"
     else
-        echo "警告: arm64GenericPython 产物不存在"
+        echo "警告: arm64Python 产物不存在"
     fi
     
-    # 复制 armeabiGenericPython 产物到 web/tvbox-py-old.apk
-    ARMEABI_PYTHON_APK="$OUTPUT_DIR/armeabiGenericPython/debug/TVBox_debug-armeabi-generic-python.apk"
+    # 复制 armeabiPython 产物到 web/tvbox-old.apk
+    ARMEABI_PYTHON_APK="$OUTPUT_DIR/armeabiPython/debug/TVBox_debug-armeabi-python.apk"
     if [ -f "$ARMEABI_PYTHON_APK" ]; then
-        cp -f "$ARMEABI_PYTHON_APK" "$WEB_DIR/tvbox-py-old.apk"
-        echo "已复制 armeabiGenericPython 产物到 web/tvbox-py-old.apk"
+        cp -f "$ARMEABI_PYTHON_APK" "$WEB_DIR/tvbox-old.apk"
+        echo "已复制 armeabiPython 产物到 web/tvbox-old.apk"
     else
-        echo "警告: armeabiGenericPython 产物不存在"
+        echo "警告: armeabiPython 产物不存在"
     fi
     
     echo -e "\n5. 操作完成!"
