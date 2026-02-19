@@ -1,0 +1,2 @@
+# 每30分钟尝试去更新一下tvbox.json文件的网站顺序
+*/30 * * * * cd ~/TVBox-Suite/script/random-sites/ && ./randomSites.py  >> /var/log/randomSites.log
