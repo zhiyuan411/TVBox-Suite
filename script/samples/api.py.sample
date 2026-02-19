@@ -150,6 +150,61 @@ def trigger_update():
     except Exception as e:
         return jsonify({"code": 500, "msg": f"Failed to start task: {str(e)}"}), 500
 
+
+@app.route('/add.do', methods=['GET'])
+def add_to_list():
+    # 定义白名单和黑名单文件路径
+    whitelist_path = '/home/ecs-user/TVBox-Suite/script/random-sites/whitelist.txt'
+    blacklist_path = '/home/ecs-user/TVBox-Suite/script/random-sites/blacklist.txt'
+    
+    # 初始化返回消息
+    response_messages = []
+
+    for param, value in request.args.items():
+        if not value:
+            return '<h1 style="color: red;">缺少必要参数。</h1>', 400
+
+        try:
+
+            # 检查值是否已经存在于相应的文件中
+            file_path = None
+            message_prefix = ""
+
+            if param in ['w', 'white', 'whitelist']:
+                file_path = whitelist_path
+                message_prefix = "白名单"
+            elif param in ['b', 'black', 'blacklist']:
+                file_path = blacklist_path
+                message_prefix = "黑名单"
+            else:
+                return f'<h1 style="color: red;">无效参数: {param}</h1>', 400
+
+            # 检查值是否已经存在
+            value_exists = False
+            try:
+                with open(file_path, 'r') as file:
+                    value_exists = any(line.strip() == value for line in file)
+            except FileNotFoundError:
+                pass  # 文件不存在时，默认值不存在
+
+            if value_exists:
+                response_messages.append(f'<h1 style="color: green;">"{value}" 已经存在于 {message_prefix} 中。</h1>')
+            else:
+                with open(file_path, 'a') as f:
+                    f.write(f"{value}\n")
+                response_messages.append(f'<h1 style="color: green;">已添加 "{value}" 到 {message_prefix}。</h1>')
+
+        except Exception as e:
+            return f'<h1 style="color: red;">处理参数 "{param}" 时发生错误: {e}</h1>', 500
+
+    # 如果没有任何有效的参数被处理，则返回错误信息
+    if not response_messages:
+        return '<h1 style="color: red;">没有提供有效参数。</h1>', 400
+
+    # 返回所有成功处理的消息
+    return "\n".join(response_messages), 200
+
+ 
  
 if __name__ == '__main__':
     # app.secret_key = 'your-secret-key-here'
