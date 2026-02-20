@@ -870,7 +870,7 @@ def merge_lives_groups(lives):
     # 3. 按照频道聚合统计分组次数，合并频道并归入次数最多的分组
     channel_to_group_stats = {}
     channel_to_urls = {}
-    excluded_channels = {}  # 存储应排除聚合的频道 {channel_name: {group: group_name, urls: [url1, url2, ...]}}
+    excluded_channels = []  # 存储应排除聚合的频道 [{'channel': channel_name, 'group': group_name, 'urls': [url1, url2, ...]}]
     
     for url, (group, channel) in url_to_best_match.items():
         # 检查是否应排除在聚合之外
@@ -878,10 +878,20 @@ def merge_lives_groups(lives):
         
         if should_exclude:
             # 对于应排除聚合的频道，单独保存
-            if channel not in excluded_channels:
-                excluded_channels[channel] = {'group': group, 'urls': []}
-            if url not in excluded_channels[channel]['urls']:
-                excluded_channels[channel]['urls'].append(url)
+            # 查找是否已存在相同频道和分组的记录
+            existing_record = None
+            for record in excluded_channels:
+                if record['channel'] == channel and record['group'] == group:
+                    existing_record = record
+                    break
+            
+            if existing_record:
+                # 如果已存在，添加 URL
+                if url not in existing_record['urls']:
+                    existing_record['urls'].append(url)
+            else:
+                # 如果不存在，创建新记录
+                excluded_channels.append({'channel': channel, 'group': group, 'urls': [url]})
         else:
             # 统计频道的分组次数
             if channel not in channel_to_group_stats:
@@ -900,17 +910,11 @@ def merge_lives_groups(lives):
         best_group = get_most_frequent(group_stats)
         channel_to_best_group[channel] = best_group
     
-    # 合并应排除聚合的频道
-    for channel, data in excluded_channels.items():
-        channel_to_best_group[channel] = data['group']
-        if channel not in channel_to_urls:
-            channel_to_urls[channel] = []
-        for url in data['urls']:
-            if url not in channel_to_urls[channel]:
-                channel_to_urls[channel].append(url)
+    # 不需要在这里合并应排除聚合的频道，因为它们会在步骤 4 中单独处理
     
     # 4. 构建分组-频道-URL 的结构
     group_channel_map = {}
+    # 处理不应排除聚合的频道
     for channel, best_group in channel_to_best_group.items():
         urls = channel_to_urls[channel]
         if best_group not in group_channel_map:
@@ -921,6 +925,21 @@ def merge_lives_groups(lives):
         for url in urls:
             if url not in group_channel_map[best_group][channel]:
                 group_channel_map[best_group][channel].append(url)
+    
+    # 处理应排除聚合的频道，保持原分组
+    for record in excluded_channels:
+        channel = record['channel']
+        group = record['group']
+        urls = record['urls']
+        
+        if group not in group_channel_map:
+            group_channel_map[group] = {}
+        if channel not in group_channel_map[group]:
+            group_channel_map[group][channel] = []
+        # 合并所有 URL
+        for url in urls:
+            if url not in group_channel_map[group][channel]:
+                group_channel_map[group][channel].append(url)
     
     # 5. 如果分组下只有1个频道，且分组和频道名相同的，则将这些都合并到一个分组中，分组名"单剧"，频道名使用原频道名
     single_drama_group = "单剧"
