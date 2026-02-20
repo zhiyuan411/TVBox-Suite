@@ -58,7 +58,7 @@ CHANNEL_NAME_CLEAN_KEYWORDS = ['-']
 GROUP_NAME_CLEAN_KEYWORDS = ['频道', '丨', '｜', '·', '-', '_', ';', '.', '📺', '☘️'
 , '🏀', '🏛', '🎬', '🪁', '🇨🇳', '👠', '💋', '💃', '💝', '💖', '🍱', '🛰', '🔥', '🤹🏼'
 , '🎼', '📛', '🐷', '🐻', '💰', '🎵', '🎮', '📡', '🕘️', '📢', '🎞', '🌊', '🇭🇰', '🇹🇼'
-, '🇰🇷', '🎰', '🇯🇵', '📻', '🇺🇸', '🙏', '🌏', '🖥', '📽', '🔥', '🐬', '💰']
+, '🇰🇷', '🎰', '🇯🇵', '📻', '🇺🇸', '🙏', '🌏', '🖥', '📽', '🔥', '🐬', '💰', '🆕']
 
 def remove_comments_from_string(input_string):
     input_string = re.sub(r'^[ ]*//[^\n]*', '', input_string, flags=re.MULTILINE)
@@ -840,15 +840,10 @@ def merge_lives_groups(lives):
                 continue
             
             original_channel_name = channel_item.get('name', '未命名')
+            # 清洗频道名（对所有情况都生效）
+            cleaned_channel_name = clean_string(original_channel_name, CHANNEL_NAME_CLEAN_KEYWORDS)
             # 检查是否应排除在聚合之外
-            if should_exclude_from_aggregation(original_channel_name):
-                # 对于排除聚合的频道，使用原始分组
-                cleaned_channel_name = original_channel_name
-                use_original_group = True
-            else:
-                # 清洗频道名
-                cleaned_channel_name = clean_string(original_channel_name, CHANNEL_NAME_CLEAN_KEYWORDS)
-                use_original_group = False
+            exclude_from_aggregation = should_exclude_from_aggregation(original_channel_name)
             
             urls = channel_item.get('urls', [])
             
@@ -859,18 +854,17 @@ def merge_lives_groups(lives):
                 # 更新分组统计
                 if url not in url_to_group_stats:
                     url_to_group_stats[url] = {}
-                # 对于排除聚合的频道，使用原始分组名
-                group_name_to_use = original_group_name if use_original_group else cleaned_group_name
-                url_to_group_stats[url][group_name_to_use] = url_to_group_stats[url].get(group_name_to_use, 0) + 1
+                # 对所有情况都使用清洗后的分组名
+                url_to_group_stats[url][cleaned_group_name] = url_to_group_stats[url].get(cleaned_group_name, 0) + 1
                 
                 # 更新频道统计
                 if url not in url_to_channel_stats:
                     url_to_channel_stats[url] = {}
                 url_to_channel_stats[url][cleaned_channel_name] = url_to_channel_stats[url].get(cleaned_channel_name, 0) + 1
                 
-                # 记录原始分组（用于排除聚合的频道）
-                if use_original_group:
-                    url_to_original_group[url] = original_group_name
+                # 记录是否排除聚合（用于后续处理）
+                if exclude_from_aggregation:
+                    url_to_original_group[url] = cleaned_group_name
     
     # 2. 为每个 URL 选择出现次数最多的分组和频道
     url_to_best_match = {}
@@ -878,7 +872,7 @@ def merge_lives_groups(lives):
         best_group = get_most_frequent(group_stats)
         channel_stats = url_to_channel_stats.get(url, {})
         best_channel = get_most_frequent(channel_stats)
-        # 对于排除聚合的频道，使用原始分组
+        # 对于排除聚合的频道，使用清洗后的分组
         if url in url_to_original_group:
             best_group = url_to_original_group[url]
         url_to_best_match[url] = (best_group, best_channel)
