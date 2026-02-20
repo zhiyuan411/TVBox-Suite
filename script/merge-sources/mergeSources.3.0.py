@@ -823,7 +823,6 @@ def merge_lives_groups(lives):
     # 1. 按 URL 聚合并统计次数
     url_to_group_stats = {}  # URL -> {分组名: 出现次数}
     url_to_channel_stats = {}  # URL -> {频道名: 出现次数}
-    url_to_original_group = {}  # URL -> 原始分组（用于排除聚合的频道）
     
     for group_item in lives:
         if not isinstance(group_item, dict):
@@ -842,8 +841,6 @@ def merge_lives_groups(lives):
             original_channel_name = channel_item.get('name', '未命名')
             # 清洗频道名（对所有情况都生效）
             cleaned_channel_name = clean_string(original_channel_name, CHANNEL_NAME_CLEAN_KEYWORDS)
-            # 检查是否应排除在聚合之外
-            exclude_from_aggregation = should_exclude_from_aggregation(original_channel_name)
             
             urls = channel_item.get('urls', [])
             
@@ -861,10 +858,6 @@ def merge_lives_groups(lives):
                 if url not in url_to_channel_stats:
                     url_to_channel_stats[url] = {}
                 url_to_channel_stats[url][cleaned_channel_name] = url_to_channel_stats[url].get(cleaned_channel_name, 0) + 1
-                
-                # 记录是否排除聚合（用于后续处理）
-                if exclude_from_aggregation:
-                    url_to_original_group[url] = cleaned_group_name
     
     # 2. 为每个 URL 选择出现次数最多的分组和频道
     url_to_best_match = {}
@@ -872,32 +865,49 @@ def merge_lives_groups(lives):
         best_group = get_most_frequent(group_stats)
         channel_stats = url_to_channel_stats.get(url, {})
         best_channel = get_most_frequent(channel_stats)
-        # 对于排除聚合的频道，使用清洗后的分组
-        if url in url_to_original_group:
-            best_group = url_to_original_group[url]
         url_to_best_match[url] = (best_group, best_channel)
     
     # 3. 按照频道聚合统计分组次数，合并频道并归入次数最多的分组
     channel_to_group_stats = {}
     channel_to_urls = {}
+    excluded_channels = {}  # 存储应排除聚合的频道 {channel_name: {group: group_name, urls: [url1, url2, ...]}}
     
     for url, (group, channel) in url_to_best_match.items():
-        # 统计频道的分组次数
-        if channel not in channel_to_group_stats:
-            channel_to_group_stats[channel] = {}
-        channel_to_group_stats[channel][group] = channel_to_group_stats[channel].get(group, 0) + 1
+        # 检查是否应排除在聚合之外
+        should_exclude = should_exclude_from_aggregation(channel)
         
-        # 收集频道的所有 URL
-        if channel not in channel_to_urls:
-            channel_to_urls[channel] = []
-        if url not in channel_to_urls[channel]:
-            channel_to_urls[channel].append(url)
+        if should_exclude:
+            # 对于应排除聚合的频道，单独保存
+            if channel not in excluded_channels:
+                excluded_channels[channel] = {'group': group, 'urls': []}
+            if url not in excluded_channels[channel]['urls']:
+                excluded_channels[channel]['urls'].append(url)
+        else:
+            # 统计频道的分组次数
+            if channel not in channel_to_group_stats:
+                channel_to_group_stats[channel] = {}
+            channel_to_group_stats[channel][group] = channel_to_group_stats[channel].get(group, 0) + 1
+            
+            # 收集频道的所有 URL
+            if channel not in channel_to_urls:
+                channel_to_urls[channel] = []
+            if url not in channel_to_urls[channel]:
+                channel_to_urls[channel].append(url)
     
     # 为每个频道选择出现次数最多的分组
     channel_to_best_group = {}
     for channel, group_stats in channel_to_group_stats.items():
         best_group = get_most_frequent(group_stats)
         channel_to_best_group[channel] = best_group
+    
+    # 合并应排除聚合的频道
+    for channel, data in excluded_channels.items():
+        channel_to_best_group[channel] = data['group']
+        if channel not in channel_to_urls:
+            channel_to_urls[channel] = []
+        for url in data['urls']:
+            if url not in channel_to_urls[channel]:
+                channel_to_urls[channel].append(url)
     
     # 4. 构建分组-频道-URL 的结构
     group_channel_map = {}
