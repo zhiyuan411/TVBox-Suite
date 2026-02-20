@@ -48,6 +48,15 @@ SITES_REQUIRED_FIELDS = ['key', 'name', 'api', 'type']
 # 定义用于判断单仓/多仓的特征字段列表
 SINGLE_CANG_FIELDS = {'video', 'spider', 'sites', 'iptv', 'channel', 'analyze', 'lives', 'parses'}
 
+# 定义频道聚合排除关键字
+CHANNEL_AGGREGATION_EXCLUDE_KEYWORDS = ['第']
+
+# 定义频道名清洗关键字
+CHANNEL_NAME_CLEAN_KEYWORDS = ['-']
+
+# 定义分组名清洗关键字
+GROUP_NAME_CLEAN_KEYWORDS = ['频道', '丨', '｜', '·', '-', '_', ';', '.', '📺', '☘️', '🏀', '🏛', '🎬', '🪁', '🇨🇳', '👠', '💋', '💃', '💝', '💖', '🍱', '🛰', '🔥', '🤹🏼', '🎼', '📛', '🐷', '🐻', '💰', '🎵', '🎮', '📡', '🕘️', '📢']
+
 def remove_comments_from_string(input_string):
     input_string = re.sub(r'^[ ]*//[^\n]*', '', input_string, flags=re.MULTILINE)
     input_string = re.sub(r'^[ ]*#[^\n]*', '', input_string, flags=re.MULTILINE)
@@ -747,6 +756,57 @@ def write_txt_to_file(txt_content, file_path):
     except Exception as e:
         print(f"Error writing TXT file {file_path}: {str(e)}")
 
+def clean_string(s, keywords):
+    """
+    清理字符串，移除指定关键字
+    :param s: 原始字符串
+    :param keywords: 要移除的关键字列表
+    :return: 清理后的字符串
+    """
+    if not isinstance(s, str):
+        return s
+    cleaned = s
+    for keyword in keywords:
+        cleaned = cleaned.replace(keyword, '')
+    cleaned = cleaned.strip()
+    return cleaned if cleaned else '未命名'
+
+def should_exclude_from_aggregation(channel_name):
+    """
+    判断频道是否应排除在聚合之外
+    :param channel_name: 频道名
+    :return: 是否排除
+    """
+    if not isinstance(channel_name, str):
+        return False
+    # 检查是否为纯数字
+    if channel_name.isdigit():
+        return True
+    # 检查是否包含排除关键字
+    for keyword in CHANNEL_AGGREGATION_EXCLUDE_KEYWORDS:
+        if keyword in channel_name:
+            return True
+    return False
+
+def custom_channel_sort_key(channel_name):
+    """
+    自定义频道排序键，支持字符串排序和末尾数字排序
+    :param channel_name: 频道名
+    :return: 排序键
+    """
+    if not isinstance(channel_name, str):
+        return (channel_name,)
+    # 提取末尾的数字部分
+    match = re.search(r'(\d+)$', channel_name)
+    if match:
+        # 分离字符串部分和数字部分
+        str_part = channel_name[:match.start()]
+        num_part = int(match.group(1))
+        return (str_part, num_part)
+    else:
+        # 没有数字部分，直接返回字符串
+        return (channel_name, 0)
+
 def merge_lives_groups(lives):
     """
     合并 lives 数组中的重复分组和频道
@@ -760,19 +820,33 @@ def merge_lives_groups(lives):
     # 1. 按 URL 聚合并统计次数
     url_to_group_stats = {}  # URL -> {分组名: 出现次数}
     url_to_channel_stats = {}  # URL -> {频道名: 出现次数}
+    url_to_original_group = {}  # URL -> 原始分组（用于排除聚合的频道）
     
     for group_item in lives:
         if not isinstance(group_item, dict):
             continue
         
-        group_name = group_item.get('group', '未分组')
+        # 清洗分组名
+        original_group_name = group_item.get('group', '未分组')
+        cleaned_group_name = clean_string(original_group_name, GROUP_NAME_CLEAN_KEYWORDS)
+        
         channels = group_item.get('channels', [])
         
         for channel_item in channels:
             if not isinstance(channel_item, dict):
                 continue
             
-            channel_name = channel_item.get('name', '未命名')
+            original_channel_name = channel_item.get('name', '未命名')
+            # 检查是否应排除在聚合之外
+            if should_exclude_from_aggregation(original_channel_name):
+                # 对于排除聚合的频道，使用原始分组
+                cleaned_channel_name = original_channel_name
+                use_original_group = True
+            else:
+                # 清洗频道名
+                cleaned_channel_name = clean_string(original_channel_name, CHANNEL_NAME_CLEAN_KEYWORDS)
+                use_original_group = False
+            
             urls = channel_item.get('urls', [])
             
             for url in urls:
@@ -782,12 +856,18 @@ def merge_lives_groups(lives):
                 # 更新分组统计
                 if url not in url_to_group_stats:
                     url_to_group_stats[url] = {}
-                url_to_group_stats[url][group_name] = url_to_group_stats[url].get(group_name, 0) + 1
+                # 对于排除聚合的频道，使用原始分组名
+                group_name_to_use = original_group_name if use_original_group else cleaned_group_name
+                url_to_group_stats[url][group_name_to_use] = url_to_group_stats[url].get(group_name_to_use, 0) + 1
                 
                 # 更新频道统计
                 if url not in url_to_channel_stats:
                     url_to_channel_stats[url] = {}
-                url_to_channel_stats[url][channel_name] = url_to_channel_stats[url].get(channel_name, 0) + 1
+                url_to_channel_stats[url][cleaned_channel_name] = url_to_channel_stats[url].get(cleaned_channel_name, 0) + 1
+                
+                # 记录原始分组（用于排除聚合的频道）
+                if use_original_group:
+                    url_to_original_group[url] = original_group_name
     
     # 2. 为每个 URL 选择出现次数最多的分组和频道
     url_to_best_match = {}
@@ -795,6 +875,9 @@ def merge_lives_groups(lives):
         best_group = get_most_frequent(group_stats)
         channel_stats = url_to_channel_stats.get(url, {})
         best_channel = get_most_frequent(channel_stats)
+        # 对于排除聚合的频道，使用原始分组
+        if url in url_to_original_group:
+            best_group = url_to_original_group[url]
         url_to_best_match[url] = (best_group, best_channel)
     
     # 3. 按照频道聚合统计分组次数，合并频道并归入次数最多的分组
@@ -895,8 +978,8 @@ def merge_lives_groups(lives):
         if not channels:
             continue
         
-        # 按照频道名顺向排序
-        sorted_channels = sorted(channels.items(), key=lambda x: x[0])
+        # 按照频道名顺向排序，支持字符串和末尾数字排序
+        sorted_channels = sorted(channels.items(), key=lambda x: custom_channel_sort_key(x[0]))
         
         merged_channels = []
         for channel_name, urls in sorted_channels:
