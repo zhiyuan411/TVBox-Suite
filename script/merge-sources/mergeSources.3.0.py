@@ -60,6 +60,13 @@ GROUP_NAME_CLEAN_KEYWORDS = ['频道', '丨', '｜', '·', '-', '_', ';', '.', '
 , '🎼', '📛', '🐷', '🐻', '💰', '🎵', '🎮', '📡', '🕘️', '📢', '🎞', '🌊', '🇭🇰', '🇹🇼'
 , '🇰🇷', '🎰', '🇯🇵', '📻', '🇺🇸', '🙏', '🌏', '🖥', '📽', '🔥', '🐬', '💰', '🆕']
 
+# 调试常量
+DEBUG_MODE = True
+
+# 调试输出文件名
+DEBUG_ORIGINAL_LIVES_FILE = 'debug_original_lives.json'
+DEBUG_VALID_LIVES_FILE = 'debug_valid_lives.json'
+
 def remove_comments_from_string(input_string):
     input_string = re.sub(r'^[ ]*//[^\n]*', '', input_string, flags=re.MULTILINE)
     input_string = re.sub(r'^[ ]*#[^\n]*', '', input_string, flags=re.MULTILINE)
@@ -646,13 +653,14 @@ def convert_to_group_format(element):
 
 def get_most_frequent(stats_dict):
     """
-    获取出现次数最多的键
+    获取出现次数最多的键，当次数一样多时选择长度最短的键，当长度也一样时按照名称排序
     :param stats_dict: 统计字典 {键: 次数}
     :return: 出现次数最多的键
     """
     if not stats_dict:
         return '未分组'
-    return max(stats_dict.items(), key=lambda x: x[1])[0]
+    # 首先按次数排序，次数相同时按长度排序，长度相同时按名称排序
+    return max(stats_dict.items(), key=lambda x: (x[1], -len(x[0]), x[0]))[0]
 
 def lives_to_m3u(lives):
     """
@@ -990,11 +998,11 @@ def merge_lives_groups(lives):
     def custom_sort_key(item):
         group_name, channels, channel_count, url_count, ratio = item
         if channel_count > 10:
-            # 频道数>10：排在前面区域，按URL数/频道数的比值从大到小排序，相同时按频道数降序
-            return (0, -ratio, -channel_count, group_name)
+            # 频道数>10：排在前面区域，按URL数/频道数的比值从大到小排序，相同时按频道数降序，再按分组名长度升序
+            return (0, -ratio, -channel_count, len(group_name), group_name)
         else:
-            # 频道数<=10：排在后面区域，按频道数从多到少排序
-            return (1, -channel_count, 0.0, group_name)
+            # 频道数<=10：排在后面区域，按频道数从多到少排序，相同时按分组名长度升序
+            return (1, -channel_count, len(group_name), group_name)
     
     # 按自定义规则排序
     sorted_groups = sorted(group_stats, key=custom_sort_key)
@@ -1029,6 +1037,16 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
     :param output_txt_path: txt 输出文件路径
     :return: 验证后的 lives 数组
     """
+    # 当调试模式为true时，输出原始lives
+    if DEBUG_MODE:
+        print(f"[DEBUG] 输出原始 lives 到 {DEBUG_ORIGINAL_LIVES_FILE}")
+        try:
+            with open(DEBUG_ORIGINAL_LIVES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(lives, f, ensure_ascii=False, indent=2)
+            print(f"[DEBUG] 原始 lives 输出成功")
+        except Exception as e:
+            print(f"[DEBUG] 输出原始 lives 失败: {e}")
+    
     if not isinstance(lives, list):
         print("[Validate] lives 非数组，初始化为空数组")
         return []
@@ -1049,6 +1067,16 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
                 valid_lives.append(converted)
             else:
                 print("[Validate] 转换失败，跳过该元素")
+    
+    # 当调试模式为true时，输出转换后的valid_lives
+    if DEBUG_MODE:
+        print(f"[DEBUG] 输出转换后的 valid_lives 到 {DEBUG_VALID_LIVES_FILE}")
+        try:
+            with open(DEBUG_VALID_LIVES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(valid_lives, f, ensure_ascii=False, indent=2)
+            print(f"[DEBUG] 转换后的 valid_lives 输出成功")
+        except Exception as e:
+            print(f"[DEBUG] 输出转换后的 valid_lives 失败: {e}")
     
     # 合并结果
     merged_lives = merge_lives_groups(valid_lives)
