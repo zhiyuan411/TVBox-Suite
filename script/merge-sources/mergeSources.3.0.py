@@ -12,6 +12,9 @@ from urllib.parse import urljoin  # [新增] 用于标准路径拼接
 from charset_normalizer import from_bytes
 
 
+# 调试常量
+DEBUG_MODE = True
+
 # 定义常量
 INPUT_FILE_PATH = "input.txt"
 OUTPUT_FILE_PATH = "output.txt"
@@ -59,9 +62,6 @@ GROUP_NAME_CLEAN_KEYWORDS = ['频道', '丨', '｜', '·', '-', '_', ';', '.', '
 , '🏀', '🏛', '🎬', '🪁', '🇨🇳', '👠', '💋', '💃', '💝', '💖', '🍱', '🛰', '🔥', '🤹🏼'
 , '🎼', '📛', '🐷', '🐻', '💰', '🎵', '🎮', '📡', '🕘️', '📢', '🎞', '🌊', '🇭🇰', '🇹🇼'
 , '🇰🇷', '🎰', '🇯🇵', '📻', '🇺🇸', '🙏', '🌏', '🖥', '📽', '🔥', '🐬', '💰', '🆕']
-
-# 调试常量
-DEBUG_MODE = True
 
 # 调试输出文件名
 DEBUG_ORIGINAL_LIVES_FILE = 'debug_original_lives.json'
