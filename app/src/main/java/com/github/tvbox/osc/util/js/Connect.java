@@ -40,13 +40,46 @@ public class Connect {
             JSObject jsHeader = ctx.createJSObject();
             setHeader(ctx, res, jsHeader);
             jsObject.set("headers", jsHeader);
-            if (req.getBuffer() == 0) jsObject.set("content", new String(res.body().bytes(), req.getCharset()));
-            if (req.getBuffer() == 1) {
-                JSArray array = ctx.createJSArray();
-                for (byte aByte : res.body().bytes()) array.push((int) aByte);
-                jsObject.set("content", array);
+            
+            // 读取响应体
+            byte[] bodyBytes = res.body().bytes();
+            
+            // 检查响应是否为二进制数据
+            String contentType = res.header("Content-Type", "");
+            boolean isBinary = contentType.contains("image/") || contentType.contains("audio/") || contentType.contains("video/") || contentType.contains("application/octet-stream");
+            
+            // 即使 Content-Type 是文本格式，也检查实际内容是否为二进制
+            if (!isBinary) {
+                // 检查是否包含大量非可打印字符
+                int nonPrintableCount = 0;
+                for (byte b : bodyBytes) {
+                    if (b < 32 && b != 9 && b != 10 && b != 13) { // 排除制表符、换行符、回车符
+                        nonPrintableCount++;
+                    }
+                }
+                // 如果非可打印字符占比超过 10%，认为是二进制数据
+                isBinary = nonPrintableCount > bodyBytes.length * 0.1;
             }
-            if (req.getBuffer() == 2) jsObject.set("content", Base64.encodeToString(res.body().bytes(), Base64.DEFAULT | Base64.NO_WRAP));
+            
+            if (req.getBuffer() == 0) {
+                // 如果是二进制数据，返回空字符串
+                if (isBinary) {
+                    jsObject.set("content", "");
+                } else {
+                    try {
+                        jsObject.set("content", new String(bodyBytes, req.getCharset()));
+                    } catch (Exception e) {
+                        // 字符串转换失败，认为是二进制数据
+                        jsObject.set("content", "");
+                    }
+                }
+            } else if (req.getBuffer() == 1) {
+                JSArray array = ctx.createJSArray();
+                for (byte aByte : bodyBytes) array.push((int) aByte);
+                jsObject.set("content", array);
+            } else if (req.getBuffer() == 2) {
+                jsObject.set("content", Base64.encodeToString(bodyBytes, Base64.DEFAULT | Base64.NO_WRAP));
+            }
             return jsObject;
         } catch (Exception e) {
             return error(ctx);
