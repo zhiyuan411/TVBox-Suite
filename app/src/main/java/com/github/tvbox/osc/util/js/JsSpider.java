@@ -71,7 +71,7 @@ public class JsSpider extends Spider {
         try {
             if (jsObject == null) {
                 LOG.i("JSObject 为 null，无法调用函数: " + func);
-                return null;
+                return "";
             }
             return submit(() -> {
                 try {
@@ -80,18 +80,24 @@ public class JsSpider extends Spider {
                     return future.get(30, TimeUnit.SECONDS); // 30秒超时
                 } catch (TimeoutException e) {
                     LOG.i("JS 函数执行超时: " + func);
-                    return null;
+                    return "";
                 } catch (Exception e) {
                     LOG.i("JS 函数执行异常: " + func + "，错误: " + e.getMessage());
-                    return null;
+                    return "";
+                } catch (Throwable th) {
+                    LOG.i("JS 函数执行严重异常: " + func + "，错误: " + th.getMessage());
+                    return "";
                 }
             }).get(35, TimeUnit.SECONDS);  // 等待 executor 线程完成 JS 调用，额外5秒缓冲
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             LOG.i("Executor 提交或等待失败"+ e);
-            return null;
+            return "";
         } catch (Exception e) {
             LOG.i("调用函数时发生异常: " + e.getMessage());
-            return null;
+            return "";
+        } catch (Throwable th) {
+            LOG.i("调用函数时发生严重异常: " + th.getMessage());
+            return "";
         }
     }
 

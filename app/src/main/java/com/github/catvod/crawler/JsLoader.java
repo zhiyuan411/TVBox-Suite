@@ -139,6 +139,11 @@ public class JsLoader {
         recentKey = key;
         try {
             Log.i("JSLoader", "echo-getSpider load");
+            // 预检查模板语法
+            if (!preCheckTemplate(api)) {
+                LOG.i("echo-getSpider-template-error: 模板语法检查失败");
+                return new SpiderNull();
+            }
             Spider sp = new JsSpider(key, api, classLoader);
             sp.init(App.getInstance(), ext);
             spiders.put(key, sp);
@@ -147,6 +152,47 @@ public class JsLoader {
             LOG.i("echo-getSpider-error "+th.getMessage());
         }
         return new SpiderNull();
+    }
+
+    /**
+     * 预检查模板语法
+     * @param api 模板内容
+     * @return 是否通过检查
+     */
+    private boolean preCheckTemplate(String api) {
+        try {
+            // 简单的语法检查，避免明显的语法错误导致JS引擎崩溃
+            if (api == null || api.isEmpty()) {
+                return false;
+            }
+            // 检查括号匹配
+            int braces = 0, brackets = 0, parentheses = 0;
+            for (char c : api.toCharArray()) {
+                switch (c) {
+                    case '{': braces++;
+                        break;
+                    case '}': braces--;
+                        break;
+                    case '[': brackets++;
+                        break;
+                    case ']': brackets--;
+                        break;
+                    case '(': parentheses++;
+                        break;
+                    case ')': parentheses--;
+                        break;
+                }
+                // 如果出现负数，说明括号不匹配
+                if (braces < 0 || brackets < 0 || parentheses < 0) {
+                    return false;
+                }
+            }
+            // 检查是否所有括号都匹配
+            return braces == 0 && brackets == 0 && parentheses == 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public Object[] proxyInvoke(Map<String, String> params) {
