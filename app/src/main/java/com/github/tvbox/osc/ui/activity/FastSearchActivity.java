@@ -444,11 +444,12 @@ public class FastSearchActivity extends BaseActivity {
             searchExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    Log.d("FastSearchActivity", "执行搜索任务: " + sourceKey);
+                    String threadName = Thread.currentThread().getName();
+                    Log.d("FastSearchActivity", "[线程: " + threadName + "] 执行搜索任务: " + sourceKey);
                     try {
                         sourceViewModel.getSearch(sourceKey, searchTitle);
                     } catch (Exception e) {
-                        Log.e("FastSearchActivity", "搜索任务异常: " + sourceKey, e);
+                        Log.e("FastSearchActivity", "[线程: " + threadName + "] 搜索任务异常: " + sourceKey, e);
                         // 发送空结果事件，确保计数器正确减少
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
@@ -456,7 +457,7 @@ public class FastSearchActivity extends BaseActivity {
                             ex.printStackTrace();
                         }
                     } catch (Throwable th) {
-                        Log.e("FastSearchActivity", "搜索任务严重异常: " + sourceKey, th);
+                        Log.e("FastSearchActivity", "[线程: " + threadName + "] 搜索任务严重异常: " + sourceKey, th);
                         // 发送空结果事件，确保计数器正确减少
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));

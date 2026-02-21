@@ -77,6 +77,25 @@ public class SourceViewModel extends ViewModel {
     
     // 共享的固定大小线程池，用于处理 Python 插件（类型为 3 的源）的搜索任务
     private static final ExecutorService pythonExecutorService = Executors.newFixedThreadPool(5);
+    
+    /**
+     * 获取 Python 插件执行线程池
+     * @return 线程池实例
+     */
+    public static ExecutorService getPythonExecutorService() {
+        return pythonExecutorService;
+    }
+    
+    // 共享的固定大小线程池，用于处理 JavaScript 插件的执行
+    private static final ExecutorService jsExecutorService = Executors.newFixedThreadPool(5);
+    
+    /**
+     * 获取 JavaScript 插件执行线程池
+     * @return 线程池实例
+     */
+    public static ExecutorService getJsExecutorService() {
+        return jsExecutorService;
+    }
 
     public void initExecutor() {
         if (searchExecutorService != null) {
@@ -619,12 +638,16 @@ public class SourceViewModel extends ViewModel {
                         Future<String> future = pythonExecutorService.submit(new Callable<String>() {
                             @Override
                             public String call() throws Exception {
+                                String threadName = Thread.currentThread().getName();
+                                LOG.i("[线程: " + threadName + "] 执行 Python 插件搜索任务: " + sourceKey);
                                 try {
                                     return sp.searchContent(wd, false);
                                 } catch (Exception e) {
+                                    LOG.e("[线程: " + threadName + "] Python 插件搜索任务异常: " + sourceKey, e);
                                     e.printStackTrace();
                                     return "";
                                 } catch (Throwable th) {
+                                    LOG.e("[线程: " + threadName + "] Python 插件搜索任务严重异常: " + sourceKey, th);
                                     th.printStackTrace();
                                     return "";
                                 }

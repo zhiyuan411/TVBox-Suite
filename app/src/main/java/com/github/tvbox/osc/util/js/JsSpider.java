@@ -22,6 +22,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,6 +37,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 
 public class JsSpider extends Spider {
@@ -49,7 +54,8 @@ public class JsSpider extends Spider {
 
     public JsSpider(String key, String api, Class<?> cls) throws Exception {
         this.key = "J" + MD5.encode(key);
-        this.executor = Executors.newSingleThreadExecutor();
+        // 使用共享的 JavaScript 执行线程池
+        this.executor = com.github.tvbox.osc.viewmodel.SourceViewModel.getJsExecutorService();
         this.api = api;
         this.dex = cls;
         initializeJS();
@@ -70,33 +76,39 @@ public class JsSpider extends Spider {
 //        return executor.submit((FunCall.call(jsObject, func, args))).get();
         try {
             if (jsObject == null) {
-                LOG.i("JSObject 为 null，无法调用函数: " + func);
+                String threadName = Thread.currentThread().getName();
+                LOG.i("[线程: " + threadName + "] JSObject 为 null，无法调用函数: " + func);
                 return "";
             }
             return submit(() -> {
+                String threadName = Thread.currentThread().getName();
                 try {
                     // 设置JS执行超时时间
+                    LOG.i("[线程: " + threadName + "] 执行 JS 函数: " + func);
                     Future<Object> future = Async.run(jsObject, func, args);
                     return future.get(30, TimeUnit.SECONDS); // 30秒超时
                 } catch (TimeoutException e) {
-                    LOG.i("JS 函数执行超时: " + func);
+                    LOG.i("[线程: " + threadName + "] JS 函数执行超时: " + func);
                     return "";
                 } catch (Exception e) {
-                    LOG.i("JS 函数执行异常: " + func + "，错误: " + e.getMessage());
+                    LOG.i("[线程: " + threadName + "] JS 函数执行异常: " + func + "，错误: " + e.getMessage());
                     return "";
                 } catch (Throwable th) {
-                    LOG.i("JS 函数执行严重异常: " + func + "，错误: " + th.getMessage());
+                    LOG.i("[线程: " + threadName + "] JS 函数执行严重异常: " + func + "，错误: " + th.getMessage());
                     return "";
                 }
             }).get(35, TimeUnit.SECONDS);  // 等待 executor 线程完成 JS 调用，额外5秒缓冲
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            LOG.i("Executor 提交或等待失败"+ e);
+            String threadName = Thread.currentThread().getName();
+            LOG.i("[线程: " + threadName + "] Executor 提交或等待失败"+ e);
             return "";
         } catch (Exception e) {
-            LOG.i("调用函数时发生异常: " + e.getMessage());
+            String threadName = Thread.currentThread().getName();
+            LOG.i("[线程: " + threadName + "] 调用函数时发生异常: " + e.getMessage());
             return "";
         } catch (Throwable th) {
-            LOG.i("调用函数时发生严重异常: " + th.getMessage());
+            String threadName = Thread.currentThread().getName();
+            LOG.i("[线程: " + threadName + "] 调用函数时发生严重异常: " + th.getMessage());
             return "";
         }
     }
@@ -217,11 +229,7 @@ public class JsSpider extends Spider {
     public void destroy() {
         try {
             submit(() -> {
-                try {
-                    executor.shutdownNow();
-                } catch (Exception e) {
-                    LOG.i("关闭 executor 异常: " + e.getMessage());
-                }
+                // 不再关闭线程池，因为它是共享的
                 try {
                     if (ctx != null) {
                         ctx.destroy();
@@ -263,6 +271,13 @@ public class JsSpider extends Spider {
                     if (TextUtils.isEmpty(content)) {
                         LOG.i("模块内容为空: " + api);
                         return null;
+                    }
+                    
+                    // 尝试处理压缩格式的Base64编码内容
+                    String decodedContent = tryDecodeCompressedContent(content);
+                    if (decodedContent != null && !decodedContent.equals(content)) {
+                        LOG.i("成功解码压缩格式内容: " + api);
+                        content = decodedContent;
                     }
                     
                     // 内容和格式校验
@@ -573,6 +588,107 @@ public class JsSpider extends Spider {
             LOG.i("执行 proxy2 异常: " + e.getMessage());
             return new Object[0];
         }
+    }
+    
+    /**
+     * 尝试解码压缩格式的Base64编码内容
+     * @param content 原始内容
+     * @return 解码后的内容，失败则返回null
+     */
+    private String tryDecodeCompressedContent(String content) {
+        if (TextUtils.isEmpty(content)) {
+            return null;
+        }
+        
+        // 检查内容长度是否足够
+        if (content.length() < 4) {
+            return null;
+        }
+        
+        // 获取前4个字符
+        String prefix = content.substring(0, 4);
+        
+        try {
+            // 尝试Base64解码
+            byte[] decodedBytes = Base64.decode(content, Base64.DEFAULT);
+            
+            // 根据前缀判断压缩格式并尝试解压
+            switch (prefix) {
+                case "H4sI": // gzip
+                    LOG.i("检测到 gzip 压缩格式");
+                    return decompressGzip(decodedBytes);
+                case "eJx": // zlib (默认)
+                case "eNr": // zlib (最佳)
+                    LOG.i("检测到 zlib 压缩格式");
+                    return decompressZlib(decodedBytes);
+                case "Qlpo": // bzip2
+                    LOG.i("检测到 bzip2 压缩格式");
+                    return decompressBzip2(decodedBytes);
+                default:
+                    return null;
+            }
+        } catch (Exception e) {
+            LOG.i("解码压缩内容异常: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 解压 gzip 压缩的字节数组
+     * @param bytes 压缩的字节数组
+     * @return 解压后的字符串
+     */
+    private String decompressGzip(byte[] bytes) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+             GZIPInputStream gis = new GZIPInputStream(bis);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = gis.read(buffer)) > 0) {
+                bos.write(buffer, 0, len);
+            }
+            
+            return bos.toString("UTF-8");
+        } catch (IOException e) {
+            LOG.i("解压 gzip 异常: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 解压 zlib 压缩的字节数组
+     * @param bytes 压缩的字节数组
+     * @return 解压后的字符串
+     */
+    private String decompressZlib(byte[] bytes) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+             InflaterInputStream iis = new InflaterInputStream(bis);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = iis.read(buffer)) > 0) {
+                bos.write(buffer, 0, len);
+            }
+            
+            return bos.toString("UTF-8");
+        } catch (IOException e) {
+            LOG.i("解压 zlib 异常: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 解压 bzip2 压缩的字节数组
+     * @param bytes 压缩的字节数组
+     * @return 解压后的字符串
+     */
+    private String decompressBzip2(byte[] bytes) {
+        // 注意：Android 标准库不包含 Bzip2 解压功能
+        // 这里返回null，表示暂不支持bzip2格式
+        LOG.i("暂不支持 bzip2 压缩格式");
+        return null;
     }
 
    /* private Object[] proxy2(Map<String, String> params) throws Exception {

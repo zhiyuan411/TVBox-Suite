@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+@Deprecated
 public class SpiderJS extends Spider {
 
     private final String key;
@@ -38,6 +39,7 @@ public class SpiderJS extends Spider {
     public QuickJSContext runtime;
     public ExecutorService executor;
 
+    @Deprecated
     public SpiderJS(String key, String js, Class<?> cls) throws Exception {
         this.js = js;
         this.executor = Executors.newSingleThreadExecutor();

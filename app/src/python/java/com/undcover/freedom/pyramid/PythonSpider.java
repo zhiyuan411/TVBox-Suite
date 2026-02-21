@@ -247,24 +247,62 @@ public class PythonSpider extends Spider {
      * @return
      */
     public String searchContent(String key, boolean quick) {
-        PyLog.nw("searchContent" + "-" + name, paramLog(key, quick));
+        String threadName = Thread.currentThread().getName();
+        PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, paramLog(key, quick));
         try {
             // 输入参数预校验
             if (key == null || key.trim().isEmpty()) {
-                PyLog.nw("searchContent" + "-" + name, "Empty search key");
+                PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, "Empty search key");
                 return "";
             }
             PyObject po = app.callAttr("searchContent", pySpider, key, quick);
             String rsp = po.toString();
-            PyLog.nw("searchContent" + "-" + name, rsp);
+            PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, rsp);
             return rsp;
         } catch (Exception e) {
             e.printStackTrace();
-            PyLog.nw("searchContent" + "-" + name, "Python exception: " + e.getMessage());
+            PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, "Python exception: " + e.getMessage());
             return "";
         } catch (Throwable th) {
             th.printStackTrace();
-            PyLog.nw("searchContent" + "-" + name, "Python throwable: " + th.getMessage());
+            PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, "Python throwable: " + th.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * 带超时控制的搜索方法
+     * @param key 搜索关键词
+     * @param quick 是否快速搜索
+     * @param timeout 超时时间（秒）
+     * @return 搜索结果
+     */
+    public String searchContentWithTimeout(String key, boolean quick, long timeout) {
+        String threadName = Thread.currentThread().getName();
+        PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, paramLog(key, quick, timeout));
+        try {
+            // 使用共享线程池执行搜索任务
+            java.util.concurrent.ExecutorService executorService = com.github.tvbox.osc.viewmodel.SourceViewModel.getPythonExecutorService();
+            java.util.concurrent.Future<String> future = executorService.submit(new java.util.concurrent.Callable<String>() {
+                @Override
+                public String call() throws Exception {
+                    return searchContent(key, quick);
+                }
+            });
+            
+            // 设置超时
+            return future.get(timeout, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (java.util.concurrent.TimeoutException e) {
+            e.printStackTrace();
+            PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, "Python search timeout: " + e.getMessage());
+            return "";
+        } catch (Exception e) {
+            e.printStackTrace();
+            PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, "Python exception: " + e.getMessage());
+            return "";
+        } catch (Throwable th) {
+            th.printStackTrace();
+            PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, "Python throwable: " + th.getMessage());
             return "";
         }
     }
