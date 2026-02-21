@@ -765,13 +765,22 @@ public class SearchActivity extends BaseActivity {
         }
 
         for (String key : siteKey) {
+            final String sourceKey = key;
             sourceViewModel.execute(new Runnable() {
                 @Override
                 public void run() {
+                    String threadName = Thread.currentThread().getName();
+                    android.util.Log.d("SearchActivity", "[线程: " + threadName + "] 执行搜索任务: " + sourceKey);
                     try {
-                        sourceViewModel.getSearch(key, searchTitle);
+                        sourceViewModel.getSearch(sourceKey, searchTitle);
                     } catch (Exception e) {
+                        android.util.Log.e("SearchActivity", "[线程: " + threadName + "] 搜索任务异常: " + sourceKey, e);
                         e.printStackTrace();
+                        // 发送空结果事件，确保计数器正确减少
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                    } catch (Throwable th) {
+                        android.util.Log.e("SearchActivity", "[线程: " + threadName + "] 搜索任务严重异常: " + sourceKey, th);
+                        th.printStackTrace();
                         // 发送空结果事件，确保计数器正确减少
                         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                     }
