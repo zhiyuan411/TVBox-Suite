@@ -282,6 +282,8 @@ public class JsSpider extends Spider {
                             loadSuccess = true;
                         } catch (Exception e) {
                             LOG.i("处理 bb 格式内容异常: " + e.getMessage());
+                        } catch (Throwable th) {
+                            LOG.i("处理 bb 格式内容严重异常: " + th.getMessage());
                         }
                     } else {
                         try {
@@ -298,6 +300,8 @@ public class JsSpider extends Spider {
                             loadSuccess = true;
                         } catch (Exception e) {
                             LOG.i("处理模块内容异常: " + e.getMessage());
+                        } catch (Throwable th) {
+                            LOG.i("处理模块内容严重异常: " + th.getMessage());
                         }
                     }
                     
@@ -609,9 +613,9 @@ public class JsSpider extends Spider {
                 return false;
             }
             
-            // 检查是否包含可能导致崩溃的恶意代码
-            if (content.contains("while(true)")) {
-                LOG.i("JS内容包含无限循环");
+            // 检查是否为HTML错误页面（以'<'开头）
+            if (content.trim().startsWith("<")) {
+                LOG.i("JS内容可能是HTML错误页面");
                 return false;
             }
             
@@ -623,14 +627,6 @@ public class JsSpider extends Spider {
             // 检查是否为base64编码的内容
             if (content.startsWith("//bb") || content.startsWith("//DRPY")) {
                 return true;
-            }
-            
-            // 检查是否为有效的JSON
-            try {
-                new JSONObject(content);
-                return true;
-            } catch (JSONException e) {
-                // 不是JSON，继续检查
             }
             
             return false;

@@ -143,6 +143,8 @@ dependencies {
     implementation "androidx.media3:media3-datasource-rtmp:1.3.1"
     implementation 'androidx.media3:media3-common:1.3.1'
     implementation "com.github.anilbeesetti.nextlib:nextlib-media3ext:0.7.1"
+    // 添加 J2ObjC 注解库依赖，解决反射支持注解警告
+    implementation 'com.google.j2objc:j2objc-annotations:1.3'
 
 
 

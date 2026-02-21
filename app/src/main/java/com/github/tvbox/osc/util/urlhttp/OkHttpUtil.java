@@ -22,6 +22,11 @@ public class OkHttpUtil {
             @Override
             public String onParseResponse(Call call, Response response) {
                 try {
+                    // 检查HTTP状态码
+                    if (!response.isSuccessful()) {
+                        return "";
+                    }
+                    
                     if (respHeaderMap != null) {
                         respHeaderMap.clear();
                         respHeaderMap.putAll(response.headers().toMultimap());
