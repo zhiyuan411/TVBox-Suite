@@ -613,7 +613,38 @@ public class SourceViewModel extends ViewModel {
                 try {
                     Spider sp = ApiConfig.get().getCSP(sourceBean);
                     if (sp != null) {
-                        String search = sp.searchContent(wd, false);
+                        ExecutorService executor = Executors.newSingleThreadExecutor();
+                        Future<String> future = executor.submit(new Callable<String>() {
+                            @Override
+                            public String call() throws Exception {
+                                try {
+                                    return sp.searchContent(wd, false);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    return "";
+                                } catch (Throwable th) {
+                                    th.printStackTrace();
+                                    return "";
+                                }
+                            }
+                        });
+                        String search = null;
+                        try {
+                            search = future.get(20, TimeUnit.SECONDS);
+                        } catch (TimeoutException e) {
+                            e.printStackTrace();
+                            future.cancel(true);
+                            search = "";
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
+                            search = "";
+                        } finally {
+                            try {
+                                executor.shutdown();
+                            } catch (Throwable th) {
+                                th.printStackTrace();
+                            }
+                        }
                         try {
                             if (!TextUtils.isEmpty(search)) {
                                 json(searchResult, search, sourceBean.getKey());

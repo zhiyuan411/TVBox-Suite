@@ -57,6 +57,8 @@ def should_exclude_from_aggregation(channel_name):
     :param channel_name: 频道名
     :return: 是否排除
     """
+    # 测试排除字段影响，直接全部返回false
+    return False
     if not isinstance(channel_name, str):
         return False
     # 检查是否为纯数字

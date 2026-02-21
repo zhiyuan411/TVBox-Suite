@@ -2,6 +2,7 @@ package com.github.tvbox.osc.ui.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.BounceInterpolator;// 添加选中放大效果
 import android.widget.LinearLayout;
@@ -350,6 +351,11 @@ public class FastSearchActivity extends BaseActivity {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void refresh(RefreshEvent event) {
+        // 检查 Activity 是否处于活跃状态
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        
         if (mSearchTitle != null) {
 //            mSearchTitle.setText(String.format(getString(R.string.fs_results) + " : %d/%d", finishedCount, spNames.size()));
             finishedCount = searchAdapter.getData().size();
@@ -370,6 +376,7 @@ public class FastSearchActivity extends BaseActivity {
     }
 
     private void search(String title) {
+        Log.d("FastSearchActivity", "开始搜索: " + title);
         cancel();
         showLoading();
         this.searchTitle = title;
@@ -393,6 +400,7 @@ public class FastSearchActivity extends BaseActivity {
     private final AtomicInteger allRunCount = new AtomicInteger(0);
 
     private void searchResult() {
+        Log.d("FastSearchActivity", "准备搜索任务");
         try {
             if (searchExecutorService != null) {
                 searchExecutorService.shutdownNow();
@@ -430,16 +438,31 @@ public class FastSearchActivity extends BaseActivity {
             allRunCount.incrementAndGet();
         }
 
+        Log.d("FastSearchActivity", "提交搜索任务数量: " + siteKey.size());
         for (String key : siteKey) {
+            final String sourceKey = key;
             searchExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
+                    Log.d("FastSearchActivity", "执行搜索任务: " + sourceKey);
                     try {
-                        sourceViewModel.getSearch(key, searchTitle);
+                        sourceViewModel.getSearch(sourceKey, searchTitle);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.e("FastSearchActivity", "搜索任务异常: " + sourceKey, e);
                         // 发送空结果事件，确保计数器正确减少
-                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        try {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    } catch (Throwable th) {
+                        Log.e("FastSearchActivity", "搜索任务严重异常: " + sourceKey, th);
+                        // 发送空结果事件，确保计数器正确减少
+                        try {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
                     }
                 }
             });
@@ -472,10 +495,12 @@ public class FastSearchActivity extends BaseActivity {
     }
 
     private void searchData(AbsXml absXml) {
+        Log.d("FastSearchActivity", "处理搜索结果");
         try {
             String lastSourceKey = "";
 
             if (absXml != null && absXml.movie != null && absXml.movie.videoList != null && absXml.movie.videoList.size() > 0) {
+                Log.d("FastSearchActivity", "搜索结果数量: " + absXml.movie.videoList.size());
                 try {
                     List<Movie.Video> data = new ArrayList<>();
                     for (Movie.Video video : absXml.movie.videoList) {
@@ -509,6 +534,7 @@ public class FastSearchActivity extends BaseActivity {
                     }
 
                     if (!data.isEmpty() && searchAdapter != null) {
+                        Log.d("FastSearchActivity", "添加搜索结果: " + data.size() + " 个视频");
                         try {
                             if (searchAdapter.getData().size() > 0) {
                                 searchAdapter.addData(data);
@@ -536,9 +562,12 @@ public class FastSearchActivity extends BaseActivity {
 
             try {
                 int count = allRunCount.decrementAndGet();
+                Log.d("FastSearchActivity", "搜索任务完成，剩余任务数: " + count);
                 if (count <= 0) {
+                    Log.d("FastSearchActivity", "所有搜索任务完成");
                     try {
                         if (searchAdapter != null && searchAdapter.getData().size() <= 0) {
+                            Log.d("FastSearchActivity", "无搜索结果");
                             try {
                                 showEmpty();
                             } catch (Exception e) {
@@ -560,6 +589,7 @@ public class FastSearchActivity extends BaseActivity {
                 // 计数器操作异常，继续执行
             }
         } catch (Exception e) {
+            Log.e("FastSearchActivity", "处理搜索结果异常", e);
             e.printStackTrace();
             // 整体异常，确保流程不中断
             try {
