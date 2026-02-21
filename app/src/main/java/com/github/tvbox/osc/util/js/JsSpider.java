@@ -645,6 +645,16 @@ public class JsSpider extends Spider {
         // 获取前4个字符
         String prefix = content.substring(0, 4);
         
+        // 根据前缀判断是否可能是压缩格式的Base64编码
+        boolean isCompressedFormat = prefix.equals("H4sI") || // gzip
+                                   prefix.equals("eJx") || // zlib (默认)
+                                   prefix.equals("eNr") || // zlib (最佳)
+                                   prefix.equals("Qlpo"); // bzip2
+        
+        if (!isCompressedFormat) {
+            return null;
+        }
+        
         try {
             // 尝试Base64解码
             byte[] decodedBytes = Base64.decode(content, Base64.DEFAULT);
