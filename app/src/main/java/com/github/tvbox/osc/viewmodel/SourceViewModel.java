@@ -76,7 +76,8 @@ public class SourceViewModel extends ViewModel {
     public Gson gson;
     
     // 共享的固定大小线程池，用于处理 Python 插件（类型为 3 的源）的搜索任务
-    private static final ExecutorService pythonExecutorService = Executors.newFixedThreadPool(5);
+    // 调试临时修改，以方便定位问题
+    private static final ExecutorService pythonExecutorService = Executors.newFixedThreadPool(1);
     
     /**
      * 获取 Python 插件执行线程池
@@ -86,8 +87,9 @@ public class SourceViewModel extends ViewModel {
         return pythonExecutorService;
     }
     
+    // 调试临时修改，以方便定位问题
     // 共享的固定大小线程池，用于处理 JavaScript 插件的执行
-    private static final ExecutorService jsExecutorService = Executors.newFixedThreadPool(5);
+    private static final ExecutorService jsExecutorService = Executors.newFixedThreadPool(1);
     
     /**
      * 获取 JavaScript 插件执行线程池
@@ -103,7 +105,8 @@ public class SourceViewModel extends ViewModel {
             searchExecutorService = null;
             JsLoader.stopAll();
         }
-        searchExecutorService = Executors.newFixedThreadPool(5);
+        // 调试临时修改，以方便定位问题
+        searchExecutorService = Executors.newFixedThreadPool(1);
     }
 
     public void execute(Runnable runnable) {
