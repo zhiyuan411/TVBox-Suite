@@ -26,6 +26,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class SpiderJS extends Spider {
 
@@ -59,7 +61,15 @@ public class SpiderJS extends Spider {
     }
 
     private Object call(String func, Object... args) throws Exception {
-        return executor.submit(FunCall.call(jsObject, func, args)).get();
+        try {
+            return executor.submit(FunCall.call(jsObject, func, args)).get(30, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOG.i("JS 函数执行异常: " + func + "，错误: " + e.getMessage());
+            return "";
+        } catch (Throwable th) {
+            LOG.i("JS 函数执行严重异常: " + func + "，错误: " + th.getMessage());
+            return "";
+        }
     }
 
     private void initjs(Class<?> cls) throws Exception {
@@ -172,7 +182,7 @@ public class SpiderJS extends Spider {
 
     @Override
     public String categoryContent(String tid, String pg, boolean filter, HashMap<String, String> extend) throws Exception {
-        JSObject obj = submit(() -> new JSUtils<String>().toObj(runtime, extend)).get();
+        JSObject obj = submit((Callable<JSObject>)() -> new JSUtils<String>().toObj(runtime, extend)).get();
         return (String) call("category", tid, pg, filter, obj);
     }
 
@@ -183,7 +193,7 @@ public class SpiderJS extends Spider {
 
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
-        JSArray array = submit(() -> new JSUtils<String>().toArray(runtime, vipFlags)).get();
+        JSArray array = submit((Callable<JSArray>)() -> new JSUtils<String>().toArray(runtime, vipFlags)).get();
         return (String) call("play", flag, id, array);
     }
 

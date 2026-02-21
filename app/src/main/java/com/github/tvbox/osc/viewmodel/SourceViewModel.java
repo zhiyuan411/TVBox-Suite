@@ -74,6 +74,9 @@ public class SourceViewModel extends ViewModel {
     public MutableLiveData<JSONObject> playResult;
     private ExecutorService searchExecutorService;
     public Gson gson;
+    
+    // 共享的固定大小线程池，用于处理 Python 插件（类型为 3 的源）的搜索任务
+    private static final ExecutorService pythonExecutorService = Executors.newFixedThreadPool(5);
 
     public void initExecutor() {
         if (searchExecutorService != null) {
@@ -613,8 +616,7 @@ public class SourceViewModel extends ViewModel {
                 try {
                     Spider sp = ApiConfig.get().getCSP(sourceBean);
                     if (sp != null) {
-                        ExecutorService executor = Executors.newSingleThreadExecutor();
-                        Future<String> future = executor.submit(new Callable<String>() {
+                        Future<String> future = pythonExecutorService.submit(new Callable<String>() {
                             @Override
                             public String call() throws Exception {
                                 try {
@@ -638,12 +640,6 @@ public class SourceViewModel extends ViewModel {
                         } catch (InterruptedException | ExecutionException e) {
                             e.printStackTrace();
                             search = "";
-                        } finally {
-                            try {
-                                executor.shutdown();
-                            } catch (Throwable th) {
-                                th.printStackTrace();
-                            }
                         }
                         try {
                             if (!TextUtils.isEmpty(search)) {
