@@ -14,6 +14,7 @@ import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -247,10 +248,25 @@ public class PythonSpider extends Spider {
      */
     public String searchContent(String key, boolean quick) {
         PyLog.nw("searchContent" + "-" + name, paramLog(key, quick));
-        PyObject po = app.callAttr("searchContent", pySpider, key, quick);
-        String rsp = po.toString();
-        PyLog.nw("searchContent" + "-" + name, rsp);
-        return rsp;
+        try {
+            // 输入参数预校验
+            if (key == null || key.trim().isEmpty()) {
+                PyLog.nw("searchContent" + "-" + name, "Empty search key");
+                return "";
+            }
+            PyObject po = app.callAttr("searchContent", pySpider, key, quick);
+            String rsp = po.toString();
+            PyLog.nw("searchContent" + "-" + name, rsp);
+            return rsp;
+        } catch (Exception e) {
+            e.printStackTrace();
+            PyLog.nw("searchContent" + "-" + name, "Python exception: " + e.getMessage());
+            return "";
+        } catch (Throwable th) {
+            th.printStackTrace();
+            PyLog.nw("searchContent" + "-" + name, "Python throwable: " + th.getMessage());
+            return "";
+        }
     }
 
     /**
@@ -262,10 +278,28 @@ public class PythonSpider extends Spider {
      */
     public String playerContent(String flag, String id, List<String> vipFlags) {
         PyLog.nw("playerContent" + "-" + name, paramLog(flag, id, list2json(vipFlags).toString()));
-        PyObject po = app.callAttr("playerContent", pySpider, flag, id, list2json(vipFlags).toString());
-        String rsp = replaceLocalUrl(po.toString());
-        PyLog.nw("playerContent" + "-" + name, rsp);
-        return rsp;
+        try {
+            // 输入参数预校验
+            if (flag == null || flag.trim().isEmpty() || id == null || id.trim().isEmpty()) {
+                PyLog.nw("playerContent" + "-" + name, "Empty flag or id");
+                return "";
+            }
+            if (vipFlags == null) {
+                vipFlags = new ArrayList<>();
+            }
+            PyObject po = app.callAttr("playerContent", pySpider, flag, id, list2json(vipFlags).toString());
+            String rsp = replaceLocalUrl(po.toString());
+            PyLog.nw("playerContent" + "-" + name, rsp);
+            return rsp;
+        } catch (Exception e) {
+            e.printStackTrace();
+            PyLog.nw("playerContent" + "-" + name, "Python exception: " + e.getMessage());
+            return "";
+        } catch (Throwable th) {
+            th.printStackTrace();
+            PyLog.nw("playerContent" + "-" + name, "Python throwable: " + th.getMessage());
+            return "";
+        }
     }
 
     /**
@@ -274,10 +308,20 @@ public class PythonSpider extends Spider {
      */
     public String liveContent(String url) {
         PyLog.nw("liveContent" + "-" + name, "");
-        PyObject po = app.callAttr("liveContent", pySpider,url);
-        String rsp = po.toString();
-        PyLog.nw("liveContent" + "-" + name, rsp);
-        return rsp;
+        try {
+            PyObject po = app.callAttr("liveContent", pySpider, url);
+            String rsp = po.toString();
+            PyLog.nw("liveContent" + "-" + name, rsp);
+            return rsp;
+        } catch (Exception e) {
+            e.printStackTrace();
+            PyLog.nw("liveContent" + "-" + name, "Python exception: " + e.getMessage());
+            return "";
+        } catch (Throwable th) {
+            th.printStackTrace();
+            PyLog.nw("liveContent" + "-" + name, "Python throwable: " + th.getMessage());
+            return "";
+        }
     }
 
     /**
