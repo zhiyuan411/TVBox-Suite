@@ -51,6 +51,8 @@ public class JsSpider extends Spider {
     private final String key;
     private final String api;
     private boolean cat;
+    private boolean initialized = false;
+    private final Object initLock = new Object();
 
     public JsSpider(String key, String api, Class<?> cls) throws Exception {
         this.key = "J" + MD5.encode(key);
@@ -76,7 +78,18 @@ public class JsSpider extends Spider {
 //        return executor.submit((FunCall.call(jsObject, func, args))).get();
         try {
             String threadName = Thread.currentThread().getName();
-            LOG.i("[线程: " + threadName + "] 开始调用 JS 函数: " + func);
+            // 入口日志：打印函数名和截取后的参数
+            String argsStr = "无";
+            if (args != null && args.length > 0) {
+                String tempArgsStr = java.util.Arrays.toString(args);
+                if (tempArgsStr.length() > 100) {
+                    tempArgsStr = tempArgsStr.substring(0, 100) + "...";
+                }
+                argsStr = tempArgsStr;
+            }
+            LOG.i("[线程: " + threadName + "] 调用 JS 函数: " + func + "，参数: " + argsStr);
+            
+            // 防御性编程：检查必要对象是否有效
             if (jsObject == null) {
                 LOG.i("[线程: " + threadName + "] JSObject 为 null，无法调用函数: " + func);
                 return "";
@@ -85,40 +98,56 @@ public class JsSpider extends Spider {
                 LOG.i("[线程: " + threadName + "] JS 上下文为 null，无法调用函数: " + func);
                 return "";
             }
-            LOG.i("[线程: " + threadName + "] 提交 JS 函数调用任务: " + func);
+            
+            // 核心执行流程
             return submit(() -> {
                 String execThreadName = Thread.currentThread().getName();
-                LOG.i("[线程: " + execThreadName + "] 执行 JS 函数调用: " + func);
                 try {
-                    // 设置JS执行超时时间
-                    LOG.i("[线程: " + execThreadName + "] 开始执行 JS 函数: " + func);
                     Future<Object> future = Async.run(jsObject, func, args);
-                    LOG.i("[线程: " + execThreadName + "] 等待 JS 函数执行完成: " + func);
                     Object result = future.get(30, TimeUnit.SECONDS); // 30秒超时
-                    LOG.i("[线程: " + execThreadName + "] JS 函数执行成功: " + func);
+                    
+                    // 正常出口日志：打印结果值
+                    if (result != null) {
+                        try {
+                            String resultStr = result.toString();
+                            if (resultStr.length() > 100) {
+                                resultStr = resultStr.substring(0, 100) + "...";
+                            }
+                            LOG.i("[线程: " + execThreadName + "] JS 函数执行成功: " + func + "，结果: " + resultStr);
+                        } catch (Exception e) {
+                            try {
+                                LOG.i("[线程: " + execThreadName + "] JS 函数执行成功: " + func + "，结果类型: " + result.getClass().getName());
+                            } catch (Exception ex) {
+                                LOG.i("[线程: " + execThreadName + "] JS 函数执行成功: " + func + "，结果类型: 未知");
+                            }
+                        }
+                    } else {
+                        LOG.i("[线程: " + execThreadName + "] JS 函数执行成功: " + func + "，结果: null");
+                    }
+                    
                     return result;
                 } catch (TimeoutException e) {
                     LOG.i("[线程: " + execThreadName + "] JS 函数执行超时: " + func);
                     return "";
                 } catch (Exception e) {
-                    LOG.i("[线程: " + execThreadName + "] JS 函数执行异常: " + func + "，错误: " + e.getMessage());
+                    LOG.e("[线程: " + execThreadName + "] JS 函数执行异常: " + func, e);
                     return "";
                 } catch (Throwable th) {
-                    LOG.i("[线程: " + execThreadName + "] JS 函数执行严重异常: " + func + "，错误: " + th.getMessage());
+                    LOG.e("[线程: " + execThreadName + "] JS 函数执行严重异常: " + func, th);
                     return "";
                 }
             }).get(35, TimeUnit.SECONDS);  // 等待 executor 线程完成 JS 调用，额外5秒缓冲
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             String threadName = Thread.currentThread().getName();
-            LOG.i("[线程: " + threadName + "] Executor 提交或等待失败"+ e);
+            LOG.e("[线程: " + threadName + "] Executor 提交或等待失败", e);
             return "";
         } catch (Exception e) {
             String threadName = Thread.currentThread().getName();
-            LOG.i("[线程: " + threadName + "] 调用函数时发生异常: " + e.getMessage());
+            LOG.e("[线程: " + threadName + "] 调用函数时发生异常", e);
             return "";
         } catch (Throwable th) {
             String threadName = Thread.currentThread().getName();
-            LOG.i("[线程: " + threadName + "] 调用函数时发生严重异常: " + th.getMessage());
+            LOG.e("[线程: " + threadName + "] 调用函数时发生严重异常", th);
             return "";
         }
     }
@@ -134,11 +163,28 @@ public class JsSpider extends Spider {
 
     @Override
     public void init(Context context, String extend) {
-        try {
-            if (cat) call("init", submit(() -> cfg(extend)).get());
-            else call("init", Json.valid(extend) ? ctx.parse(extend) : extend);
-        }catch (Exception e){
-
+        if (!initialized) {
+            synchronized (initLock) {
+                if (!initialized) {
+                    try {
+                        String threadName = Thread.currentThread().getName();
+                        LOG.i("[线程: " + threadName + "] 开始初始化 JS 爬虫: " + key);
+                        if (cat) call("init", submit(() -> cfg(extend)).get());
+                        else call("init", Json.valid(extend) ? ctx.parse(extend) : extend);
+                        initialized = true;
+                        LOG.i("[线程: " + threadName + "] JS 爬虫初始化完成: " + key);
+                    } catch (Exception e) {
+                        String threadName = Thread.currentThread().getName();
+                        LOG.i("[线程: " + threadName + "] JS 爬虫初始化失败: " + e.getMessage());
+                    }
+                } else {
+                    String threadName = Thread.currentThread().getName();
+                    LOG.i("[线程: " + threadName + "] JS 爬虫已初始化，跳过: " + key);
+                }
+            }
+        } else {
+            String threadName = Thread.currentThread().getName();
+            LOG.i("[线程: " + threadName + "] JS 爬虫已初始化，跳过: " + key);
         }
     }
 
@@ -279,15 +325,12 @@ public class JsSpider extends Spider {
                     String execThreadName = Thread.currentThread().getName();
                     LOG.i("[线程: " + execThreadName + "] 执行 JS 初始化任务: " + api);
                     if (ctx == null) {
-                        LOG.i("[线程: " + execThreadName + "] 创建 JS 上下文");
                         createCtx();
                     }
                     if (dex != null) {
-                        LOG.i("[线程: " + execThreadName + "] 创建 Dex");
                         createDex();
                     }
 
-                    LOG.i("[线程: " + execThreadName + "] 加载模块内容: " + api);
                     String content = FileUtils.loadModule(api);            
                     if (TextUtils.isEmpty(content)) {
                         LOG.i("[线程: " + execThreadName + "] 模块内容为空: " + api);
@@ -295,15 +338,12 @@ public class JsSpider extends Spider {
                     }
                     
                     // 尝试处理压缩格式的Base64编码内容
-                    LOG.i("[线程: " + execThreadName + "] 检查压缩格式: " + api);
                     String decodedContent = tryDecodeCompressedContent(content);
                     if (decodedContent != null && !decodedContent.equals(content)) {
-                        LOG.i("[线程: " + execThreadName + "] 成功解码压缩格式内容: " + api);
                         content = decodedContent;
                     }
                     
                     // 内容和格式校验
-                    LOG.i("[线程: " + execThreadName + "] 校验JS内容有效性: " + api);
                     if (!isValidJSContent(content)) {
                         LOG.i("[线程: " + execThreadName + "] 模块内容无效: " + api);
                         return null;
@@ -311,16 +351,13 @@ public class JsSpider extends Spider {
                     
                     // 尝试加载和执行JS代码
                     boolean loadSuccess = false;
-                    LOG.i("[线程: " + execThreadName + "] 开始执行JS代码: " + api);
                     if(content.startsWith("//bb")){
                         cat = true;
                         try {
-                            LOG.i("[线程: " + execThreadName + "] 处理 bb 格式内容: " + api);
                             byte[] b = Base64.decode(content.replace("//bb",""), 0);
                             ctx.execute(byteFF(b), key + ".js");
                             ctx.evaluateModule(String.format(SPIDER_STRING_CODE, key + ".js") + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
                             loadSuccess = true;
-                            LOG.i("[线程: " + execThreadName + "] 处理 bb 格式成功: " + api);
                         } catch (Exception e) {
                             LOG.i("[线程: " + execThreadName + "] 处理 bb 格式内容异常: " + e.getMessage());
                         } catch (Throwable th) {
@@ -328,23 +365,17 @@ public class JsSpider extends Spider {
                         }
                     } else {
                         try {
-                            LOG.i("[线程: " + execThreadName + "] 处理普通格式内容: " + api);
                             if (content.contains("__JS_SPIDER__")) {
                                 content = content.replaceAll("__JS_SPIDER__\\s*=", "export default ");
-                                LOG.i("[线程: " + execThreadName + "] 处理 __JS_SPIDER__ 标记: " + api);
                             }
                             String moduleExtName = "default";
                             if (content.contains("__jsEvalReturn") && !content.contains("export default")) {
                                 moduleExtName = "__jsEvalReturn";
                                 cat = true;
-                                LOG.i("[线程: " + execThreadName + "] 处理 __jsEvalReturn 标记: " + api);
                             }
-                            LOG.i("[线程: " + execThreadName + "] 执行 evaluateModule: " + api);
                             ctx.evaluateModule(content, api);
-                            LOG.i("[线程: " + execThreadName + "] 执行 tv_box_root.js: " + api);
                             ctx.evaluateModule(String.format(SPIDER_STRING_CODE, api) + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
                             loadSuccess = true;
-                            LOG.i("[线程: " + execThreadName + "] 处理普通格式成功: " + api);
                         } catch (Exception e) {
                             LOG.i("[线程: " + execThreadName + "] 处理模块内容异常: " + e.getMessage());
                         } catch (Throwable th) {
@@ -355,13 +386,7 @@ public class JsSpider extends Spider {
                     // 只有加载成功后才尝试获取JSObject
                     if (loadSuccess) {
                         try {
-                            LOG.i("[线程: " + execThreadName + "] 获取 JSObject: " + key);
                             jsObject = (JSObject) ctx.get(ctx.getGlobalObject(), key);
-                            if (jsObject == null) {
-                                LOG.i("[线程: " + execThreadName + "] 无法获取 JSObject: " + key);
-                            } else {
-                                LOG.i("[线程: " + execThreadName + "] 成功获取 JSObject: " + key);
-                            }
                         } catch (Exception e) {
                             LOG.i("[线程: " + execThreadName + "] 获取 JSObject 异常: " + e.getMessage());
                         }
@@ -424,7 +449,15 @@ public class JsSpider extends Spider {
         ctx.setConsole(new QuickJSContext.Console() {
             @Override
             public void log(String s) {
-                LOG.i("QuJs"+s);
+                // 日志截断处理，避免过长日志影响可读性
+                if (s != null) {
+                    if (s.length() > 200) {
+                        s = s.substring(0, 200) + "... [截断，原始长度: " + s.length() + "]";
+                    }
+                    // 添加线程标识，与本类中其他位置格式一致
+                    String threadName = Thread.currentThread().getName();
+                    LOG.i("[线程: " + threadName + "] QuJs：" + s);
+                }
             }
         });
 

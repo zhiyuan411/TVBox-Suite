@@ -19,17 +19,36 @@ public class Async {
 
     private SettableFuture<Object> call(JSObject object, String name, Object[] args) {
         try {
+            // 防御性编程：检查必要对象
+            if (object == null) {
+                future.setException(new NullPointerException("JSObject is null"));
+                return future;
+            }
+            if (name == null || name.isEmpty()) {
+                future.setException(new IllegalArgumentException("Function name is empty"));
+                return future;
+            }
+            
             JSFunction function = object.getJSFunction(name);
             if (function == null) {
                 future.set(null);
                 return future;
             }
+            
+            // 防御性编程：检查参数
+            if (args == null) {
+                args = new Object[0];
+            }
+            
             Object result = function.call(args);
             if (result instanceof JSObject) {
                 then(result);
             } else {
                 future.set(result);
             }
+        } catch (com.whl.quickjs.wrapper.QuickJSException e) {
+            // 特殊处理 QuickJSException，避免 JNI 层异常
+            future.setException(new RuntimeException("JavaScript execution error: " + e.getMessage()));
         } catch (Throwable t) {
             future.setException(t);
         }
