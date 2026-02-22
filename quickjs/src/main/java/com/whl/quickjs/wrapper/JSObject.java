@@ -287,10 +287,15 @@ public class JSObject {
                         @Override
                         public Object call(Object... args) {
                             try {
+                                // 防御性编程：检查参数
+                                if (args == null) {
+                                    args = new Object[0];
+                                }
                                 return functionMethod.invoke(callbackReceiver, args);
                             } catch (Exception e) {
-                                throw new QuickJSException(
-                                        e.getMessage());
+                                // 不再抛出异常，而是返回null，防止传递到JNI层
+                                // 这里不能抛出异常，否则会导致JNI层崩溃
+                                return null;
                             }
                         }
                     });

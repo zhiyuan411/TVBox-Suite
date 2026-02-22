@@ -245,12 +245,26 @@ public class QuickJSContext {
         checkDestroyed();
 
         JSCallFunction callFunction = callFunctionMap.get(callFunctionId);
-        Object ret = callFunction.call(args);
-        if (ret instanceof JSCallFunction) {
-            putCallFunction((JSCallFunction) ret);
+        if (callFunction == null) {
+            return null;
         }
-
-        return ret;
+        
+        try {
+            // 防御性编程：检查参数
+            if (args == null) {
+                args = new Object[0];
+            }
+            
+            Object ret = callFunction.call(args);
+            if (ret instanceof JSCallFunction) {
+                putCallFunction((JSCallFunction) ret);
+            }
+            return ret;
+        } catch (Throwable t) {
+            // 捕获所有异常，防止传递到JNI层
+            // 这里不能抛出异常，否则会导致JNI层崩溃
+            return null;
+        }
     }
 
     public void freeValue(JSObject jsObj) {
@@ -314,13 +328,28 @@ public class QuickJSContext {
         checkSameThread();
         checkDestroyed();
 
-        for (Object arg : args) {
-            if (arg instanceof JSCallFunction) {
-                putCallFunction((JSCallFunction) arg);
-            }
+        // 防御性编程：检查必要对象
+        if (func == null) {
+            throw new QuickJSException("JSFunction is null");
         }
+        
+        // 防御性编程：检查参数
+        if (args == null) {
+            args = new Object[0];
+        }
+        
+        try {
+            for (Object arg : args) {
+                if (arg instanceof JSCallFunction) {
+                    putCallFunction((JSCallFunction) arg);
+                }
+            }
 
-        return call(context, func.getPointer(), objPointer, args);
+            return call(context, func.getPointer(), objPointer, args);
+        } catch (Throwable t) {
+            // 捕获所有异常，防止传递到JNI层
+            throw new QuickJSException(t.getMessage());
+        }
     }
 
     /**
