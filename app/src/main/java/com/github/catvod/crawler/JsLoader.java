@@ -97,28 +97,38 @@ public class JsLoader {
                 }
             }
         }
+        Response response = null;
+        InputStream is = null;
+        OutputStream os = null;
         try {
-            Response response = OkGo.<File>get(jar).execute();
-            InputStream is = response.body().byteStream();
-            OutputStream os = new FileOutputStream(cache);
-            try {
-                byte[] buffer = new byte[2048];
-                int length;
-                while ((length = is.read(buffer)) > 0) {
-                    os.write(buffer, 0, length);
-                }
-            } finally {
-                try {
-                    is.close();
-                    os.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            response = OkGo.<File>get(jar).execute();
+            is = response.body().byteStream();
+            os = new FileOutputStream(cache);
+            byte[] buffer = new byte[2048];
+            int length;
+            while ((length = is.read(buffer)) > 0) {
+                os.write(buffer, 0, length);
             }
             loadClassLoader(cache.getAbsolutePath(), key);
             return classes.get(key);
+        } catch (java.net.UnknownHostException e) {
+            // 特殊处理DNS解析失败异常，减少日志长度
+            Log.i("JSLoader", "echo-loadJarInternal DNS解析失败: " + jar + " - " + e.getMessage());
+        } catch (java.io.IOException e) {
+            // 特殊处理网络IO异常，减少日志长度
+            Log.i("JSLoader", "echo-loadJarInternal 网络IO异常: " + jar + " - " + e.getMessage());
         } catch (Throwable e) {
+            // 其他异常仍打印完整堆栈
             e.printStackTrace();
+        } finally {
+            try {
+                if (is != null) is.close();
+                if (os != null) os.close();
+                if (response != null) response.close();
+            } catch (Exception e) {
+                // 资源释放异常只打印简单信息
+                Log.i("JSLoader", "echo-loadJarInternal 资源释放异常: " + e.getMessage());
+            }
         }
         return null;
     }

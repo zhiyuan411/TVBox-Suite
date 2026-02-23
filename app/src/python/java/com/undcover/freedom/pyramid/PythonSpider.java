@@ -52,7 +52,6 @@ public class PythonSpider extends Spider {
         String extInfo = uri.getQueryParameter("extend");
         if (null == extInfo) extInfo = "";
         String path = retValue.toString();
-        Log.i("PyLoader", "echo-init path: " +path);
         File file = new File(path);
         if (file.exists()) {
             pySpider = app.callAttr("loadFromDisk", path);
@@ -60,23 +59,18 @@ public class PythonSpider extends Spider {
             List<PyObject> poList = app.callAttr("getDependence", pySpider).asList();
             for (PyObject po : poList) {
                 String api = po.toString();
-                Log.i("PyLoader", "echo-init api: " +api);
                 String depUrl = PythonLoader.getInstance().getUrlByApi(api);
                 if (!depUrl.isEmpty()) {
-                    Log.i("PyLoader", "echo-init depUrl: " +depUrl);
                     String tmpPath = app.callAttr("downloadPlugin", cachePath, depUrl).toString();
                     if (!new File(tmpPath).exists()) {
                         PyToast.showCancelableToast(api + "加载失败!");
                         return;
-                    } else {
-                        PyLog.d(api + ": 加载插件依赖成功！");
                     }
                 }
             }
             app.callAttr("init", pySpider, extInfo);
             loadSuccess = true;
-            Log.i("PyLoader", "echo-init extInfo: " +url+ extInfo);
-            PyLog.d(name + ": 下載插件成功！");
+            Log.i("PyLoader",name + ": 下載插件成功！" + "echo-init extInfo: " +url+ extInfo);
         } else {
             PyToast.showCancelableToast(name + "下载插件失败");
         }
@@ -140,7 +134,6 @@ public class PythonSpider extends Spider {
     }
 
     public Object[] proxyLocal(Map<String,String> params) {
-        Log.i("PyLoader","echo-proxyLocal:param"+params.toString());
         List<PyObject> list = app.callAttr("localProxy", pySpider, map2json(params).toString()).asList();
         boolean base64 = list.size() > 4 && list.get(4).toInt() == 1;
         boolean headerAvailable = list.size() > 3 && list.get(3) != null;
@@ -149,7 +142,6 @@ public class PythonSpider extends Spider {
         result[1] = list.get(1).toString();
         result[2] = getStream(list.get(2), base64);
         result[3] = headerAvailable ? getHeader(list.get(3)) : null;
-//        result[3] = null;
         return result;
     }
 
@@ -188,11 +180,27 @@ public class PythonSpider extends Spider {
      * @return
      */
     public String homeContent(boolean filter) {
-        PyLog.nw("homeContent" + "-" + name, paramLog(filter));
-        PyObject po = app.callAttr("homeContent", pySpider, filter);
-        String rsp = po.toString();
-        PyLog.nw("homeContent" + "-" + name, rsp);
-        return rsp;
+        PyObject po = null;
+        try {
+            po = app.callAttr("homeContent", pySpider, filter);
+            if (po == null) {
+                return "";
+            }
+            String rsp = po.toString();
+            return rsp;
+        } catch (Throwable th) {
+            PyLog.nw("homeContent" + "-" + name, "异常: " + th.getMessage());
+            return "";
+        } finally {
+            // 释放PyObject资源
+            if (po != null) {
+                try {
+                    po.close();
+                } catch (Exception e) {
+                    // 忽略释放异常
+                }
+            }
+        }
     }
 
     /**
@@ -201,11 +209,27 @@ public class PythonSpider extends Spider {
      * @return
      */
     public String homeVideoContent() {
-        PyLog.nw("homeVideoContent" + "-" + name, "");
-        PyObject po = app.callAttr("homeVideoContent", pySpider);
-        String rsp = po.toString();
-        PyLog.nw("homeVideoContent" + "-" + name, rsp);
-        return rsp;
+        PyObject po = null;
+        try {
+            po = app.callAttr("homeVideoContent", pySpider);
+            if (po == null) {
+                return "";
+            }
+            String rsp = po.toString();
+            return rsp;
+        } catch (Throwable th) {
+            PyLog.nw("homeVideoContent" + "-" + name, "异常: " + th.getMessage());
+            return "";
+        } finally {
+            // 释放PyObject资源
+            if (po != null) {
+                try {
+                    po.close();
+                } catch (Exception e) {
+                    // 忽略释放异常
+                }
+            }
+        }
     }
 
     /**
@@ -218,11 +242,27 @@ public class PythonSpider extends Spider {
      * @return
      */
     public String categoryContent(String tid, String pg, boolean filter, HashMap<String, String> extend) {
-        PyLog.nw("categoryContent" + "-" + name, paramLog(tid, pg, filter, map2json(extend).toString()));
-        PyObject po = app.callAttr("categoryContent", pySpider, tid, pg, filter, map2json(extend).toString());
-        String rsp = po.toString();
-        PyLog.nw("categoryContent" + "-" + name, rsp);
-        return rsp;
+        PyObject po = null;
+        try {
+            po = app.callAttr("categoryContent", pySpider, tid, pg, filter, map2json(extend).toString());
+            if (po == null) {
+                return "";
+            }
+            String rsp = po.toString();
+            return rsp;
+        } catch (Throwable th) {
+            PyLog.nw("categoryContent" + "-" + name, "异常: " + th.getMessage());
+            return "";
+        } finally {
+            // 释放PyObject资源
+            if (po != null) {
+                try {
+                    po.close();
+                } catch (Exception e) {
+                    // 忽略释放异常
+                }
+            }
+        }
     }
 
     /**
@@ -232,11 +272,27 @@ public class PythonSpider extends Spider {
      * @return
      */
     public String detailContent(List<String> ids) {
-        PyLog.nw("detailContent" + "-" + name, paramLog(list2json(ids).toString()));
-        PyObject po = app.callAttr("detailContent", pySpider, list2json(ids).toString());
-        String rsp = po.toString();
-        PyLog.nw("detailContent" + "-" + name, rsp);
-        return rsp;
+        PyObject po = null;
+        try {
+            po = app.callAttr("detailContent", pySpider, list2json(ids).toString());
+            if (po == null) {
+                return "";
+            }
+            String rsp = po.toString();
+            return rsp;
+        } catch (Throwable th) {
+            PyLog.nw("detailContent" + "-" + name, "异常: " + th.getMessage());
+            return "";
+        } finally {
+            // 释放PyObject资源
+            if (po != null) {
+                try {
+                    po.close();
+                } catch (Exception e) {
+                    // 忽略释放异常
+                }
+            }
+        }
     }
 
     /**
@@ -248,25 +304,38 @@ public class PythonSpider extends Spider {
      */
     public String searchContent(String key, boolean quick) {
         String threadName = Thread.currentThread().getName();
-        PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, paramLog(key, quick));
+        PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, "入口");
+        PyObject po = null;
         try {
             // 输入参数预校验
             if (key == null || key.trim().isEmpty()) {
-                PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, "Empty search key");
                 return "";
             }
-            PyObject po = app.callAttr("searchContent", pySpider, key, quick);
+            po = app.callAttr("searchContent", pySpider, key, quick);
+            if (po == null) {
+                return "";
+            }
             String rsp = po.toString();
             PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, rsp);
             return rsp;
         } catch (Exception e) {
             e.printStackTrace();
-            PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, "Python exception: " + e.getMessage());
+            PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, "异常: " + e.getMessage());
             return "";
         } catch (Throwable th) {
             th.printStackTrace();
-            PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, "Python throwable: " + th.getMessage());
+            PyLog.nw("[线程: " + threadName + "] searchContent" + "-" + name, "异常: " + th.getMessage());
             return "";
+        } finally {
+            // 释放PyObject资源
+            if (po != null) {
+                try {
+                    // 尝试释放资源
+                    po.close();
+                } catch (Exception e) {
+                    // 忽略释放异常
+                }
+            }
         }
     }
 
@@ -294,15 +363,15 @@ public class PythonSpider extends Spider {
             return future.get(timeout, java.util.concurrent.TimeUnit.SECONDS);
         } catch (java.util.concurrent.TimeoutException e) {
             e.printStackTrace();
-            PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, "Python search timeout: " + e.getMessage());
+            PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, "超时: " + e.getMessage());
             return "";
         } catch (Exception e) {
             e.printStackTrace();
-            PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, "Python exception: " + e.getMessage());
+            PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, "异常: " + e.getMessage());
             return "";
         } catch (Throwable th) {
             th.printStackTrace();
-            PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, "Python throwable: " + th.getMessage());
+            PyLog.nw("[线程: " + threadName + "] searchContentWithTimeout" + "-" + name, "异常: " + th.getMessage());
             return "";
         }
     }
@@ -315,7 +384,7 @@ public class PythonSpider extends Spider {
      * @return
      */
     public String playerContent(String flag, String id, List<String> vipFlags) {
-        PyLog.nw("playerContent" + "-" + name, paramLog(flag, id, list2json(vipFlags).toString()));
+        PyObject po = null;
         try {
             // 输入参数预校验
             if (flag == null || flag.trim().isEmpty() || id == null || id.trim().isEmpty()) {
@@ -325,18 +394,29 @@ public class PythonSpider extends Spider {
             if (vipFlags == null) {
                 vipFlags = new ArrayList<>();
             }
-            PyObject po = app.callAttr("playerContent", pySpider, flag, id, list2json(vipFlags).toString());
+            po = app.callAttr("playerContent", pySpider, flag, id, list2json(vipFlags).toString());
+            if (po == null) {
+                return "";
+            }
             String rsp = replaceLocalUrl(po.toString());
-            PyLog.nw("playerContent" + "-" + name, rsp);
             return rsp;
         } catch (Exception e) {
             e.printStackTrace();
-            PyLog.nw("playerContent" + "-" + name, "Python exception: " + e.getMessage());
+            PyLog.nw("playerContent" + "-" + name, "异常: " + e.getMessage());
             return "";
         } catch (Throwable th) {
             th.printStackTrace();
-            PyLog.nw("playerContent" + "-" + name, "Python throwable: " + th.getMessage());
+            PyLog.nw("playerContent" + "-" + name, "异常: " + th.getMessage());
             return "";
+        } finally {
+            // 释放PyObject资源
+            if (po != null) {
+                try {
+                    po.close();
+                } catch (Exception e) {
+                    // 忽略释放异常
+                }
+            }
         }
     }
 
@@ -345,20 +425,32 @@ public class PythonSpider extends Spider {
      * @return
      */
     public String liveContent(String url) {
-        PyLog.nw("liveContent" + "-" + name, "");
+        PyObject po = null;
         try {
-            PyObject po = app.callAttr("liveContent", pySpider, url);
+            po = app.callAttr("liveContent", pySpider, url);
+            if (po == null) {
+                return "";
+            }
             String rsp = po.toString();
             PyLog.nw("liveContent" + "-" + name, rsp);
             return rsp;
         } catch (Exception e) {
             e.printStackTrace();
-            PyLog.nw("liveContent" + "-" + name, "Python exception: " + e.getMessage());
+            PyLog.nw("liveContent" + "-" + name, "异常: " + e.getMessage());
             return "";
         } catch (Throwable th) {
             th.printStackTrace();
-            PyLog.nw("liveContent" + "-" + name, "Python throwable: " + th.getMessage());
+            PyLog.nw("liveContent" + "-" + name, "异常: " + th.getMessage());
             return "";
+        } finally {
+            // 释放PyObject资源
+            if (po != null) {
+                try {
+                    po.close();
+                } catch (Exception e) {
+                    // 忽略释放异常
+                }
+            }
         }
     }
 

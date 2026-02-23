@@ -277,9 +277,9 @@ public class FileUtils {
     }
 
     public static String get(String str, Map<String, String> headerMap) {
+        Response response = null;
         try {
             HttpHeaders h = new HttpHeaders();
-            Response response = null;
             if (headerMap != null) {
                 for (String key : headerMap.keySet()) {
                     h.put(key, headerMap.get(key));
@@ -293,8 +293,23 @@ public class FileUtils {
             } else {
                 return "";
             }
-        } catch (IOException e) {
+        } catch (java.net.UnknownHostException e) {
+            // 特殊处理DNS解析失败异常，减少日志长度
+            LOG.i("echo-get DNS解析失败: " + str + " - " + e.getMessage());
             return "";
+        } catch (java.io.IOException e) {
+            // 特殊处理网络IO异常，减少日志长度
+            LOG.i("echo-get 网络IO异常: " + str + " - " + e.getMessage());
+            return "";
+        } finally {
+            if (response != null) {
+                try {
+                    response.close();
+                } catch (Exception e) {
+                    // 资源释放异常只打印简单信息
+                    LOG.i("echo-get 资源释放异常: " + e.getMessage());
+                }
+            }
         }
     }
 

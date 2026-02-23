@@ -365,6 +365,12 @@ public class JsSpider extends Spider {
                         }
                     } else {
                         try {
+                            // 验证内容是否为有效的JS代码，避免编译无效内容导致JNI错误
+                            if (content.startsWith("<")) {
+                                LOG.i("[线程: " + execThreadName + "] 无效的JS内容（以'<'开头）: " + api);
+                                return null;
+                            }
+                            
                             if (content.contains("__JS_SPIDER__")) {
                                 content = content.replaceAll("__JS_SPIDER__\\s*=", "export default ");
                             }
@@ -373,9 +379,19 @@ public class JsSpider extends Spider {
                                 moduleExtName = "__jsEvalReturn";
                                 cat = true;
                             }
-                            ctx.evaluateModule(content, api);
-                            ctx.evaluateModule(String.format(SPIDER_STRING_CODE, api) + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
-                            loadSuccess = true;
+                            
+                            // 捕获evaluateModule过程中的异常，避免JNI错误
+                            try {
+                                ctx.evaluateModule(content, api);
+                                ctx.evaluateModule(String.format(SPIDER_STRING_CODE, api) + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
+                                loadSuccess = true;
+                            } catch (com.whl.quickjs.wrapper.QuickJSException e) {
+                                // 特殊处理QuickJSException，避免JNI错误
+                                LOG.i("[线程: " + execThreadName + "] QuickJS执行异常: " + e.getMessage());
+                            } catch (Throwable th) {
+                                // 捕获所有其他异常，确保不会导致JNI错误
+                                LOG.i("[线程: " + execThreadName + "] JS执行严重异常: " + th.getMessage());
+                            }
                         } catch (Exception e) {
                             LOG.i("[线程: " + execThreadName + "] 处理模块内容异常: " + e.getMessage());
                         } catch (Throwable th) {
@@ -421,23 +437,53 @@ public class JsSpider extends Spider {
         ctx.setModuleLoader(new QuickJSContext.BytecodeModuleLoader() {
             @Override
             public byte[] getModuleBytecode(String moduleName) {
-                String ss = FileUtils.loadModule(moduleName);
-                if (TextUtils.isEmpty(ss)) {
-                    LOG.i("echo-getModuleBytecode empty :"+ moduleName);
-                    return null;
-                }
-                if(ss.startsWith("//DRPY")){
-                    return Base64.decode(ss.replace("//DRPY",""), Base64.URL_SAFE);
-                } else if(ss.startsWith("//bb")){
-                    byte[] b = Base64.decode(ss.replace("//bb",""), 0);
-                    return byteFF(b);
-                } else {
-                    if (moduleName.contains("cheerio.min.js")) {
-                        FileUtils.setCacheByte("cheerio.min", ctx.compileModule(ss, "cheerio.min.js"));
-                    } else if (moduleName.contains("crypto-js.js")) {
-                        FileUtils.setCacheByte("crypto-js", ctx.compileModule(ss, "crypto-js.js"));
+                try {
+                    String ss = FileUtils.loadModule(moduleName);
+                    if (TextUtils.isEmpty(ss)) {
+                        LOG.i("echo-getModuleBytecode empty :"+ moduleName);
+                        return null;
                     }
-                    return ctx.compileModule(ss, moduleName);
+                    
+                    // 验证内容是否为有效的JS代码，避免编译无效内容导致JNI错误
+                    if (ss.startsWith("<")) {
+                        LOG.i("echo-getModuleBytecode invalid JS content (starts with '<'):"+ moduleName);
+                        return null;
+                    }
+                    
+                    if(ss.startsWith("//DRPY")){
+                        return Base64.decode(ss.replace("//DRPY",""), Base64.URL_SAFE);
+                    } else if(ss.startsWith("//bb")){
+                        byte[] b = Base64.decode(ss.replace("//bb",""), 0);
+                        return byteFF(b);
+                    } else {
+                        // 捕获编译过程中的异常，避免JNI错误
+                        try {
+                            if (moduleName.contains("cheerio.min.js")) {
+                                byte[] compiled = ctx.compileModule(ss, "cheerio.min.js");
+                                if (compiled != null) {
+                                    FileUtils.setCacheByte("cheerio.min", compiled);
+                                }
+                            } else if (moduleName.contains("crypto-js.js")) {
+                                byte[] compiled = ctx.compileModule(ss, "crypto-js.js");
+                                if (compiled != null) {
+                                    FileUtils.setCacheByte("crypto-js", compiled);
+                                }
+                            }
+                            return ctx.compileModule(ss, moduleName);
+                        } catch (com.whl.quickjs.wrapper.QuickJSException e) {
+                            // 特殊处理QuickJSException，避免JNI错误
+                            LOG.i("echo-getModuleBytecode QuickJS compile error:"+ moduleName + " - " + e.getMessage());
+                            return null;
+                        } catch (Throwable th) {
+                            // 捕获所有其他异常，确保不会导致JNI错误
+                            LOG.i("echo-getModuleBytecode compile error:"+ moduleName + " - " + th.getMessage());
+                            return null;
+                        }
+                    }
+                } catch (Throwable th) {
+                    // 捕获所有异常，确保即使获取模块内容失败也不会导致JNI错误
+                    LOG.i("echo-getModuleBytecode error:"+ moduleName + " - " + th.getMessage());
+                    return null;
                 }
             }
 
