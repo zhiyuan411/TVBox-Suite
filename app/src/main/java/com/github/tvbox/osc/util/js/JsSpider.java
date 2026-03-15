@@ -56,8 +56,14 @@ public class JsSpider extends Spider {
 
     public JsSpider(String key, String api, Class<?> cls) throws Exception {
         this.key = "J" + MD5.encode(key);
-        // 使用共享的 JavaScript 执行线程池
-        this.executor = com.github.tvbox.osc.viewmodel.SourceViewModel.getJsExecutorService();
+        // 关键修复：每个 JsSpider 实例使用独立的单线程线程池
+        // 确保 QuickJSContext 的所有操作（创建、使用、销毁）都在同一个线程执行
+        this.executor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable);
+            thread.setName("JsSpider-" + key + "-Thread");
+            thread.setDaemon(true);
+            return thread;
+        });
         this.api = api;
         this.dex = cls;
         initializeJS();
@@ -361,6 +367,14 @@ public class JsSpider extends Spider {
                 }
             } catch (Exception ex) {
                 LOG.i("备用方案执行异常: " + ex.getMessage());
+            }
+        } finally {
+            try {
+                if (executor != null && !executor.isShutdown()) {
+                    executor.shutdownNow();
+                }
+            } catch (Exception e) {
+                LOG.i("关闭 executor 异常: " + e.getMessage());
             }
         }
     }
