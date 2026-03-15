@@ -778,13 +778,10 @@ public class SearchActivity extends BaseActivity {
                     try {
                         sourceViewModel.getSearch(sourceKey, searchTitle);
                     } catch (OutOfMemoryError e) {
-                        // OOM 错误处理：打印内存信息并中止剩余搜索
+                        // OOM 错误处理：先打印内存信息
                         android.util.Log.e("SearchActivity", "[线程：" + threadName + "] 搜索任务内存不足：" + sourceKey, e);
                         e.printStackTrace();
                         MemoryMonitor.printMemoryLog(mContext, "OOM 发生 - 搜索任务：" + sourceKey);
-                        
-                        // 发送空结果事件，确保计数器正确减少
-                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                         
                         // 中止剩余搜索，关闭执行器
                         try {
@@ -792,12 +789,15 @@ public class SearchActivity extends BaseActivity {
                         } catch (Exception ex) {
                             ex.printStackTrace();
                         }
+                        // 继续抛出，让后续的 Throwable 兜底处理也能捕获到
+                        throw e;
                     } catch (Exception e) {
                         android.util.Log.e("SearchActivity", "[线程：" + threadName + "] 搜索任务异常：" + sourceKey, e);
                         e.printStackTrace();
                         // 发送空结果事件，确保计数器正确减少
                         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                     } catch (Throwable th) {
+                        // 这里会捕获到所有未处理的异常和错误，包括上面重新抛出的 OOM
                         android.util.Log.e("SearchActivity", "[线程：" + threadName + "] 搜索任务严重异常：" + sourceKey, th);
                         th.printStackTrace();
                         // 发送空结果事件，确保计数器正确减少

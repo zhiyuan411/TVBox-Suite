@@ -657,6 +657,11 @@ public class SourceViewModel extends ViewModel {
                                 LOG.i("[线程: " + threadName + "] 执行 Python 插件搜索任务: " + sourceKey);
                                 try {
                                     return sp.searchContent(wd, false);
+                                } catch (OutOfMemoryError e) {
+                                    LOG.e("[线程: " + threadName + "] Python 插件搜索任务内存不足: " + sourceKey, e);
+                                    e.printStackTrace();
+                                    MemoryMonitor.printMemoryLog(App.getInstance(), "OOM 发生 - Python 插件搜索: " + sourceKey);
+                                    return "";
                                 } catch (Exception e) {
                                     LOG.e("[线程: " + threadName + "] Python 插件搜索任务异常: " + sourceKey, e);
                                     e.printStackTrace();
@@ -909,6 +914,16 @@ public class SourceViewModel extends ViewModel {
                     }
                 }
             }
+        } catch (OutOfMemoryError e) {
+            LOG.e("SourceViewModel", "getSearch 内存不足: " + sourceKey);
+            e.printStackTrace();
+            MemoryMonitor.printMemoryLog(App.getInstance(), "OOM 发生 - getSearch: " + sourceKey);
+            try {
+                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
             try {

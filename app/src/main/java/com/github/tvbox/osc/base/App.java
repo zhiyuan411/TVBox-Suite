@@ -19,6 +19,7 @@ import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LocaleHelper;
 import com.github.tvbox.osc.util.LOG;
+import com.github.tvbox.osc.util.MemoryMonitor;
 import com.github.tvbox.osc.util.OkGoHelper;
 import com.github.tvbox.osc.util.PlayerHelper;
 import com.github.tvbox.osc.util.SubtitleHelper;
@@ -61,6 +62,38 @@ public class App extends MultiDexApplication {
     @Override
     public void onCreate() {
         super.onCreate();
+        
+        // 设置全局异常处理器，在任何异常发生前先打印内存信息
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            private final Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+            
+            @Override
+            public void uncaughtException(Thread thread, Throwable ex) {
+                try {
+                    // 先打印内存和进程监控信息
+                    if (ex instanceof OutOfMemoryError) {
+                        MemoryMonitor.printMemoryLog(App.getInstance(), "全局 OOM 捕获 - 线程: " + thread.getName());
+                    } else {
+                        MemoryMonitor.printMemoryLog(App.getInstance(), "全局异常捕获 - 线程: " + thread.getName());
+                    }
+                    // 打印异常堆栈
+                    LOG.e("全局异常捕获 - 线程: " + thread.getName(), ex);
+                } catch (Throwable e) {
+                    // 防止在打印日志时又发生异常
+                    android.util.Log.e("App", "异常处理时出错", e);
+                }
+                
+                // 调用默认的异常处理器，确保系统能正常处理崩溃
+                if (defaultHandler != null) {
+                    defaultHandler.uncaughtException(thread, ex);
+                } else {
+                    // 如果没有默认处理器，则安全退出
+                    android.os.Process.killProcess(android.os.Process.myPid());
+                    System.exit(10);
+                }
+            }
+        });
+        
         SubtitleHelper.initSubtitleColor(this);
         initParams();
         // takagen99 : Initialize Locale

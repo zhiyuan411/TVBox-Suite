@@ -25,17 +25,14 @@ import okhttp3.Response;
  */
 public class JsonParallel {
 
-    private static OkHttpClient client;
-    private static ExecutorService executorService;
-    private static final List<Future<JSONObject>> futures = new ArrayList<>();
     public static JSONObject parse(LinkedHashMap<String, String> jx, String url) {
         try {
             if (jx != null && jx.size() > 0) {
-                client = new OkHttpClient();
+                OkHttpClient client = new OkHttpClient();
                 // 使用线程池并发处理任务
-                executorService = Executors.newFixedThreadPool(5);
+                ExecutorService executorService = Executors.newFixedThreadPool(5);
                 CompletionService<JSONObject> completionService = new ExecutorCompletionService<>(executorService);
-                futures.clear();
+                List<Future<JSONObject>> futures = new ArrayList<>();
 
                 // 遍历所有的解析配置
                 for (final String jxName : jx.keySet()) {
@@ -102,21 +99,8 @@ public class JsonParallel {
     }
 
     public static void cancelTasks() {
-        if (client != null) {
-            client.dispatcher().cancelAll();
-        }
-        if (futures != null) {
-            for (Future<JSONObject> future : futures) {
-                try {
-                    future.cancel(true);
-                } catch (Throwable t) {
-                }
-            }
-            futures.clear();
-        }
-        if (executorService != null) {
-            executorService.shutdownNow();
-        }
+        // 已改为局部变量，无需手动取消，方法结束后自动回收
+        // 保留此方法以保持 API 兼容性
     }
     public static HashMap<String, String> getReqHeader(String url) {
         HashMap<String, String> reqHeaders = new HashMap<>();

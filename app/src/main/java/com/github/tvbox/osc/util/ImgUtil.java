@@ -133,6 +133,8 @@ public class ImgUtil {
                 .transform(new CenterCrop(), new RoundedCorners(roundingRadius));
             if (newWidth > 0 && newHeight > 0) {
                 requestOptions = requestOptions.override(newWidth, newHeight);
+            } else {
+                requestOptions = requestOptions.override(defaultWidth, defaultHeight);
             }
             Glide.with(App.getInstance())
                 .asBitmap()
