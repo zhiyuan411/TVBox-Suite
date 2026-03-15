@@ -453,12 +453,50 @@ public class FastSearchActivity extends BaseActivity {
 
         Log.d("FastSearchActivity", "总搜索任务数量：" + siteKey.size() + "，分批执行，每批 " + BATCH_SIZE + " 个");
         
+        if (!checkMemoryBeforeSearch()) {
+            Log.e("FastSearchActivity", "内存不足，取消搜索");
+            Toast.makeText(mContext, "内存不足，请清理后台应用后重试", Toast.LENGTH_LONG).show();
+            return;
+        }
+        
+        searchExecutorService = Executors.newFixedThreadPool(5);
         executeSearchBatches(siteKey, 0);
+    }
+    
+    private boolean checkMemoryBeforeSearch() {
+        try {
+            Runtime runtime = Runtime.getRuntime();
+            long usedMem = runtime.totalMemory() - runtime.freeMemory();
+            long maxMem = runtime.maxMemory();
+            double usagePercent = (double) usedMem / maxMem * 100;
+            
+            Log.d("FastSearchActivity", "搜索前内存检查 - 已用: " + (usedMem / 1024 / 1024) + 
+                  "MB, 最大: " + (maxMem / 1024 / 1024) + "MB, 使用率: " + String.format("%.2f", usagePercent) + "%");
+            
+            if (usagePercent > 85) {
+                Log.w("FastSearchActivity", "内存使用率过高: " + String.format("%.2f", usagePercent) + "%");
+                System.gc();
+                SystemClock.sleep(200);
+                
+                usedMem = runtime.totalMemory() - runtime.freeMemory();
+                usagePercent = (double) usedMem / maxMem * 100;
+                Log.d("FastSearchActivity", "GC后内存检查 - 使用率: " + String.format("%.2f", usagePercent) + "%");
+                
+                if (usagePercent > 80) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Throwable th) {
+            Log.e("FastSearchActivity", "内存检查异常", th);
+            return true;
+        }
     }
     
     private void executeSearchBatches(final ArrayList<String> siteKey, final int batchStartIndex) {
         if (isSearchCancelled || batchStartIndex >= siteKey.size()) {
             Log.d("FastSearchActivity", "搜索已取消或所有批次执行完成");
+            finishSearch();
             return;
         }
         
@@ -471,7 +509,6 @@ public class FastSearchActivity extends BaseActivity {
         
         MemoryMonitor.printMemoryLog(mContext, "开始执行批次 " + (batchStartIndex / BATCH_SIZE + 1));
         
-        searchExecutorService = Executors.newFixedThreadPool(5);
         final CountDownLatch batchLatch = new CountDownLatch(batchKeys.size());
         final AtomicInteger batchErrorCount = new AtomicInteger(0);
         
@@ -528,7 +565,7 @@ public class FastSearchActivity extends BaseActivity {
                     Log.d("FastSearchActivity", "批次 " + (batchStartIndex / BATCH_SIZE + 1) + 
                           " 执行完成，错误数：" + batchErrorCount.get());
                     
-                    cleanupBatch();
+                    cleanupBetweenBatches();
                     
                     if (!isSearchCancelled) {
                         SystemClock.sleep(500);
@@ -542,18 +579,28 @@ public class FastSearchActivity extends BaseActivity {
         }).start();
     }
     
-    private void cleanupBatch() {
+    private void finishSearch() {
         try {
-            Log.d("FastSearchActivity", "执行批次间内存清理");
-            
             if (searchExecutorService != null) {
                 searchExecutorService.shutdownNow();
                 searchExecutorService = null;
             }
+            JsLoader.stopAll();
+            System.gc();
+            Log.d("FastSearchActivity", "搜索任务全部完成");
+        } catch (Throwable th) {
+            Log.e("FastSearchActivity", "完成搜索时异常", th);
+        }
+    }
+    
+    private void cleanupBetweenBatches() {
+        try {
+            Log.d("FastSearchActivity", "执行批次间内存清理");
             
             JsLoader.stopAll();
             
             System.gc();
+            SystemClock.sleep(100);
             
             MemoryMonitor.printMemoryLog(mContext, "批次间内存清理完成");
             

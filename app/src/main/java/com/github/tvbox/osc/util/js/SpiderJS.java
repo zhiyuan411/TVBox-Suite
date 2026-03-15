@@ -48,102 +48,168 @@ public class SpiderJS extends Spider {
     }
     
     public void destroy() {
-        submit(() -> {
-            executor.shutdownNow();
-            runtime.destroy();
-        });
+        try {
+            Future<Void> future = submitCallable(() -> {
+                try {
+                    if (runtime != null) {
+                        runtime.runGC();
+                        runtime.destroy();
+                    }
+                } catch (Exception e) {
+                    LOG.i("销毁 runtime 异常: " + e.getMessage());
+                }
+                try {
+                    executor.shutdownNow();
+                } catch (Exception e) {
+                    LOG.i("关闭 executor 异常: " + e.getMessage());
+                }
+                return null;
+            });
+            future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOG.i("执行 destroy 异常: " + e.getMessage());
+        }
     }
     
     private void submit(Runnable runnable) {
         executor.submit(runnable);
     }
 
-    private <T> Future<T> submit(Callable<T> callable) {
+    private <T> Future<T> submitCallable(Callable<T> callable) {
         return executor.submit(callable);
     }
 
     private Object call(String func, Object... args) throws Exception {
         try {
-            return executor.submit(FunCall.call(jsObject, func, args)).get(30, TimeUnit.SECONDS);
+            Object result = executor.submit(FunCall.call(jsObject, func, args)).get(30, TimeUnit.SECONDS);
+            try {
+                if (runtime != null) {
+                    runtime.runGC();
+                }
+            } catch (Exception e) {
+            }
+            return result;
         } catch (Exception e) {
             LOG.i("JS 函数执行异常: " + func + "，错误: " + e.getMessage());
+            try {
+                if (runtime != null) {
+                    runtime.runGC();
+                }
+            } catch (Exception gcEx) {
+            }
             return "";
         } catch (Throwable th) {
             LOG.i("JS 函数执行严重异常: " + func + "，错误: " + th.getMessage());
+            try {
+                if (runtime != null) {
+                    runtime.runGC();
+                }
+            } catch (Exception gcEx) {
+            }
             return "";
         }
     }
 
     private void initjs(Class<?> cls) throws Exception {
-        submit(() -> {
-            if (runtime == null) this.runtime = QuickJSContext.create();
-            runtime.setModuleLoader(new QuickJSContext.DefaultModuleLoader() {
-                @Override
-                public String getModuleStringCode(String moduleName) {
-                    return FileUtils.loadModule(moduleName);
-                }
-
-                @Override
-                public String moduleNormalizeName(String moduleBaseName, String moduleName) {
-                    return UriUtil.resolve(moduleBaseName, moduleName);
-                }
-            });
-
-            initConsole();
-            runtime.getGlobalObject().bind(new Global(executor));
-
-            if(cls != null){
-                Class<?>[] classes = cls.getDeclaredClasses();
-                JSObject apiObj = runtime.createJSObject();
-
-                LOG.e("cls","" + classes.length);
-                for (Class<?> classe : classes) {
-                    Object javaObj = null;
-                    try {
-                        javaObj = classe.getDeclaredConstructor(cls).newInstance(cls.getDeclaredConstructor(QuickJSContext.class).newInstance(runtime));
-                    } catch (Exception e) {
-                        e.printStackTrace();
+        submitCallable(() -> {
+            try {
+                if (runtime == null) this.runtime = QuickJSContext.create();
+                runtime.setModuleLoader(new QuickJSContext.DefaultModuleLoader() {
+                    @Override
+                    public String getModuleStringCode(String moduleName) {
+                        return FileUtils.loadModule(moduleName);
                     }
-                    if (javaObj == null) {
-                        throw new NullPointerException("The JavaObj cannot be null. An error occurred in newInstance!");
+
+                    @Override
+                    public String moduleNormalizeName(String moduleBaseName, String moduleName) {
+                        return UriUtil.resolve(moduleBaseName, moduleName);
                     }
-                    JSObject claObj = runtime.createJSObject();
-                    Method[] methods = classe.getDeclaredMethods();
-                    for (Method method : methods) {
-                        if (method.isAnnotationPresent(Function.class)) {
-                            Object finalJavaObj = javaObj;
-                            claObj.set(method.getName(), new JSCallFunction() {
-                                @Override
-                                public Object call(Object... objects) {
-                                    try {
-                                        return method.invoke(finalJavaObj, objects);
-                                    } catch (Throwable e) {
-                                        return null;
-                                    }
-                                }
-                            });
+                });
+
+                initConsole();
+                runtime.getGlobalObject().bind(new Global(executor));
+
+                if(cls != null){
+                    Class<?>[] classes = cls.getDeclaredClasses();
+                    JSObject apiObj = runtime.createJSObject();
+
+                    LOG.e("cls","" + classes.length);
+                    for (Class<?> classe : classes) {
+                        Object javaObj = null;
+                        try {
+                            javaObj = classe.getDeclaredConstructor(cls).newInstance(cls.getDeclaredConstructor(QuickJSContext.class).newInstance(runtime));
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
+                        if (javaObj == null) {
+                            throw new NullPointerException("The JavaObj cannot be null. An error occurred in newInstance!");
+                        }
+                        JSObject claObj = runtime.createJSObject();
+                        Method[] methods = classe.getDeclaredMethods();
+                        for (Method method : methods) {
+                            if (method.isAnnotationPresent(Function.class)) {
+                                Object finalJavaObj = javaObj;
+                                claObj.set(method.getName(), new JSCallFunction() {
+                                    @Override
+                                    public Object call(Object... objects) {
+                                        try {
+                                            return method.invoke(finalJavaObj, objects);
+                                        } catch (Throwable e) {
+                                            return null;
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                        apiObj.set(classe.getSimpleName(), claObj);
+                        LOG.e("cls", classe.getSimpleName());
                     }
-                    apiObj.set(classe.getSimpleName(), claObj);
-                    LOG.e("cls", classe.getSimpleName());
+                    runtime.getGlobalObject().set("jsapi", apiObj);
                 }
-                runtime.getGlobalObject().set("jsapi", apiObj);
-            }
-            String jsContent = FileUtils.loadModule(js);
+                String jsContent = FileUtils.loadModule(js);
 
-            if (jsContent.contains("__jsEvalReturn")) {
-                runtime.evaluate("req = http");
-                jsContent = jsContent + "\n\nglobalThis." + key + " = __jsEvalReturn()";
-            } else if (jsContent.contains("export default{") || jsContent.contains("export default {")) {
-                jsContent = jsContent.replaceAll("export default.*?[{]", "globalThis." + key + " = {");
-            } else {
-                jsContent = jsContent.replace("__JS_SPIDER__", "globalThis." + key);
+                if (jsContent.contains("__jsEvalReturn")) {
+                    runtime.evaluate("req = http");
+                    jsContent = jsContent + "\n\nglobalThis." + key + " = __jsEvalReturn()";
+                } else if (jsContent.contains("export default{") || jsContent.contains("export default {")) {
+                    jsContent = jsContent.replaceAll("export default.*?[{]", "globalThis." + key + " = {");
+                } else {
+                    jsContent = jsContent.replace("__JS_SPIDER__", "globalThis." + key);
+                }
+                //LOG.e("cls", jsContent);
+                runtime.evaluateModule(jsContent + "\n\n;console.log(typeof(" + key + ".init));\n\nconsole.log(typeof(req));\n\nconsole.log(Object.keys(" + key + "));", js);
+                jsObject = (JSObject) runtime.get(runtime.getGlobalObject(), key);
+                runtime.runGC();
+                return null;
+            } catch (Throwable th) {
+                LOG.e("初始化 JS 环境异常", th);
+                cleanUpPartialInit();
+                return null;
             }
-            //LOG.e("cls", jsContent);
-            runtime.evaluateModule(jsContent + "\n\n;console.log(typeof(" + key + ".init));\n\nconsole.log(typeof(req));\n\nconsole.log(Object.keys(" + key + "));", js);
-            jsObject = (JSObject) runtime.get(runtime.getGlobalObject(), key);
-            return null;
         }).get();
+    }
+    
+    /**
+     * 清理部分初始化失败时的资源
+     */
+    private void cleanUpPartialInit() {
+        try {
+            if (runtime != null) {
+                runtime.runGC();
+                runtime.destroy();
+                runtime = null;
+            }
+        } catch (Exception e) {
+            LOG.i("清理部分初始化资源异常: " + e.getMessage());
+        }
+        try {
+            if (jsObject != null) {
+                jsObject.release();
+                jsObject = null;
+            }
+        } catch (Exception e) {
+            LOG.i("释放部分初始化 jsObject 异常: " + e.getMessage());
+        }
     }
 
     private void initConsole() {
@@ -184,7 +250,7 @@ public class SpiderJS extends Spider {
 
     @Override
     public String categoryContent(String tid, String pg, boolean filter, HashMap<String, String> extend) throws Exception {
-        JSObject obj = submit((Callable<JSObject>)() -> new JSUtils<String>().toObj(runtime, extend)).get();
+        JSObject obj = submitCallable((Callable<JSObject>)() -> new JSUtils<String>().toObj(runtime, extend)).get();
         return (String) call("category", tid, pg, filter, obj);
     }
 
@@ -195,7 +261,7 @@ public class SpiderJS extends Spider {
 
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
-        JSArray array = submit((Callable<JSArray>)() -> new JSUtils<String>().toArray(runtime, vipFlags)).get();
+        JSArray array = submitCallable((Callable<JSArray>)() -> new JSUtils<String>().toArray(runtime, vipFlags)).get();
         return (String) call("play", flag, id, array);
     }
 
@@ -211,7 +277,7 @@ public class SpiderJS extends Spider {
 
     @Override
     public Object[] proxyLocal(Map<String, String> params) throws Exception {
-        return submit(() -> {
+        return submitCallable(() -> {
             try {
                 JSObject o = new JSUtils<String>().toObj(runtime, params);
                 JSFunction jsFunction = jsObject.getJSFunction("proxy");
@@ -232,9 +298,21 @@ public class SpiderJS extends Spider {
                     baos = new ByteArrayInputStream(opt.opt(2).toString().getBytes());
                 }
                 result[2] = baos;
+                try {
+                    if (runtime != null) {
+                        runtime.runGC();
+                    }
+                } catch (Exception e) {
+                }
                 return result;
             } catch (Throwable throwable) {
                 LOG.e(throwable);
+                try {
+                    if (runtime != null) {
+                        runtime.runGC();
+                    }
+                } catch (Exception e) {
+                }
                 return new Object[0];
             }
         }).get();

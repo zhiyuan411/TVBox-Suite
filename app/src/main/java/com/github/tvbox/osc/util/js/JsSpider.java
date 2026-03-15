@@ -106,6 +106,15 @@ public class JsSpider extends Spider {
                     Future<Object> future = Async.run(jsObject, func, args);
                     Object result = future.get(30, TimeUnit.SECONDS); // 30秒超时
                     
+                    // 定期 GC 调用，释放 JS 引擎中的临时对象
+                    try {
+                        if (ctx != null) {
+                            ctx.runGC();
+                        }
+                    } catch (Exception e) {
+                        // 忽略 GC 异常
+                    }
+                    
                     // 正常出口日志：打印结果值
                     if (result != null) {
                         try {
@@ -128,12 +137,33 @@ public class JsSpider extends Spider {
                     return result;
                 } catch (TimeoutException e) {
                     LOG.i("[线程: " + execThreadName + "] JS 函数执行超时: " + func);
+                    try {
+                        if (ctx != null) {
+                            ctx.runGC();
+                        }
+                    } catch (Exception gcEx) {
+                        // 忽略 GC 异常
+                    }
                     return "";
                 } catch (Exception e) {
                     LOG.e("[线程: " + execThreadName + "] JS 函数执行异常: " + func, e);
+                    try {
+                        if (ctx != null) {
+                            ctx.runGC();
+                        }
+                    } catch (Exception gcEx) {
+                        // 忽略 GC 异常
+                    }
                     return "";
                 } catch (Throwable th) {
                     LOG.e("[线程: " + execThreadName + "] JS 函数执行严重异常: " + func, th);
+                    try {
+                        if (ctx != null) {
+                            ctx.runGC();
+                        }
+                    } catch (Exception gcEx) {
+                        // 忽略 GC 异常
+                    }
                     return "";
                 }
             }).get(35, TimeUnit.SECONDS);  // 等待 executor 线程完成 JS 调用，额外5秒缓冲
@@ -284,11 +314,13 @@ public class JsSpider extends Spider {
     @Override
     public void destroy() {
         try {
-            submit(() -> {
+            Future<Void> future = submit(() -> {
                 // 不再关闭线程池，因为它是共享的
                 try {
                     if (ctx != null) {
+                        ctx.runGC();
                         ctx.destroy();
+                        ctx = null;
                     }
                 } catch (Exception e) {
                     LOG.i("销毁 ctx 异常: " + e.getMessage());
@@ -296,11 +328,14 @@ public class JsSpider extends Spider {
                 try {
                     if (jsObject != null) {
                         jsObject.release();
+                        jsObject = null;
                     }
                 } catch (Exception e) {
                     LOG.i("释放 jsObject 异常: " + e.getMessage());
                 }
+                return null;
             });
+            future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             LOG.i("执行 destroy 异常: " + e.getMessage());
         }
@@ -334,6 +369,7 @@ public class JsSpider extends Spider {
                     String content = FileUtils.loadModule(api);            
                     if (TextUtils.isEmpty(content)) {
                         LOG.i("[线程: " + execThreadName + "] 模块内容为空: " + api);
+                        cleanUpPartialInit();
                         return null;
                     }
                     
@@ -346,6 +382,7 @@ public class JsSpider extends Spider {
                     // 内容和格式校验
                     if (!isValidJSContent(content)) {
                         LOG.i("[线程: " + execThreadName + "] 模块内容无效: " + api);
+                        cleanUpPartialInit();
                         return null;
                     }
                     
@@ -360,14 +397,17 @@ public class JsSpider extends Spider {
                             loadSuccess = true;
                         } catch (Exception e) {
                             LOG.i("[线程: " + execThreadName + "] 处理 bb 格式内容异常: " + e.getMessage());
+                            cleanUpPartialInit();
                         } catch (Throwable th) {
                             LOG.i("[线程: " + execThreadName + "] 处理 bb 格式内容严重异常: " + th.getMessage());
+                            cleanUpPartialInit();
                         }
                     } else {
                         try {
                             // 验证内容是否为有效的JS代码，避免编译无效内容导致JNI错误
                             if (content.startsWith("<")) {
                                 LOG.i("[线程: " + execThreadName + "] 无效的JS内容（以'<'开头）: " + api);
+                                cleanUpPartialInit();
                                 return null;
                             }
                             
@@ -388,14 +428,18 @@ public class JsSpider extends Spider {
                             } catch (com.whl.quickjs.wrapper.QuickJSException e) {
                                 // 特殊处理QuickJSException，避免JNI错误
                                 LOG.i("[线程: " + execThreadName + "] QuickJS执行异常: " + e.getMessage());
+                                cleanUpPartialInit();
                             } catch (Throwable th) {
                                 // 捕获所有其他异常，确保不会导致JNI错误
                                 LOG.i("[线程: " + execThreadName + "] JS执行严重异常: " + th.getMessage());
+                                cleanUpPartialInit();
                             }
                         } catch (Exception e) {
                             LOG.i("[线程: " + execThreadName + "] 处理模块内容异常: " + e.getMessage());
+                            cleanUpPartialInit();
                         } catch (Throwable th) {
                             LOG.i("[线程: " + execThreadName + "] 处理模块内容严重异常: " + th.getMessage());
+                            cleanUpPartialInit();
                         }
                     }
                     
@@ -403,14 +447,17 @@ public class JsSpider extends Spider {
                     if (loadSuccess) {
                         try {
                             jsObject = (JSObject) ctx.get(ctx.getGlobalObject(), key);
+                            ctx.runGC();
                         } catch (Exception e) {
                             LOG.i("[线程: " + execThreadName + "] 获取 JSObject 异常: " + e.getMessage());
+                            cleanUpPartialInit();
                         }
                     }
                     return null;
                 } catch (Exception e) {
                     String execThreadName = Thread.currentThread().getName();
                     LOG.i("[线程: " + execThreadName + "] 初始化 JS 环境异常: " + e.getMessage());
+                    cleanUpPartialInit();
                     return null;
                 } finally {
                     // 确保即使发生异常，也能保持系统稳定
@@ -420,8 +467,33 @@ public class JsSpider extends Spider {
             }).get(60, TimeUnit.SECONDS); // 60秒超时
         } catch (TimeoutException e) {
             LOG.i("[线程: " + Thread.currentThread().getName() + "] JS 初始化超时: " + api);
+            cleanUpPartialInit();
         } catch (Exception e) {
             LOG.i("[线程: " + Thread.currentThread().getName() + "] 初始化 JS 时发生异常: " + e.getMessage());
+            cleanUpPartialInit();
+        }
+    }
+    
+    /**
+     * 清理部分初始化失败时的资源
+     */
+    private void cleanUpPartialInit() {
+        try {
+            if (ctx != null) {
+                ctx.runGC();
+                ctx.destroy();
+                ctx = null;
+            }
+        } catch (Exception e) {
+            LOG.i("清理部分初始化资源异常: " + e.getMessage());
+        }
+        try {
+            if (jsObject != null) {
+                jsObject.release();
+                jsObject = null;
+            }
+        } catch (Exception e) {
+            LOG.i("释放部分初始化 jsObject 异常: " + e.getMessage());
         }
     }
 
