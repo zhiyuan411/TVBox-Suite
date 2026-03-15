@@ -23,6 +23,7 @@ import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.MD5;
+import com.github.tvbox.osc.util.MemoryMonitor;
 import com.github.tvbox.osc.util.thunder.Thunder;
 import com.github.tvbox.osc.util.urlhttp.OkHttpUtil;
 import com.github.tvbox.osc.util.FileUtils;
@@ -119,6 +120,20 @@ public class SourceViewModel extends ViewModel {
     public void destroyExecutor() {
         if (searchExecutorService != null) {
             searchExecutorService = null;
+        }
+    }
+    
+    /**
+     * 关闭执行器，用于 OOM 时中止搜索
+     */
+    public void shutdownExecutor() {
+        try {
+            if (searchExecutorService != null && !searchExecutorService.isShutdown()) {
+                searchExecutorService.shutdownNow();
+                JsLoader.stopAll();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

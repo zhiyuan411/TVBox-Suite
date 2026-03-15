@@ -53,6 +53,7 @@ import com.github.tvbox.osc.ui.tv.widget.CustomEditText;
 import com.github.tvbox.osc.ui.tv.widget.SearchKeyboard;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
+import com.github.tvbox.osc.util.MemoryMonitor;
 import com.github.tvbox.osc.util.SearchHelper;
 import com.github.tvbox.osc.util.SettingsUtil;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
@@ -706,6 +707,9 @@ public class SearchActivity extends BaseActivity {
     }
 
     private void search(String title) {
+        // 搜索开始时打印内存监控信息
+        MemoryMonitor.printMemoryLog(mContext, "搜索开始：" + title);
+        
         cancel();
         showLoading();
         this.searchTitle = title;
@@ -770,16 +774,31 @@ public class SearchActivity extends BaseActivity {
                 @Override
                 public void run() {
                     String threadName = Thread.currentThread().getName();
-                    android.util.Log.d("SearchActivity", "[线程: " + threadName + "] 执行搜索任务: " + sourceKey);
+                    android.util.Log.d("SearchActivity", "[线程：" + threadName + "] 执行搜索任务：" + sourceKey);
                     try {
                         sourceViewModel.getSearch(sourceKey, searchTitle);
+                    } catch (OutOfMemoryError e) {
+                        // OOM 错误处理：打印内存信息并中止剩余搜索
+                        android.util.Log.e("SearchActivity", "[线程：" + threadName + "] 搜索任务内存不足：" + sourceKey, e);
+                        e.printStackTrace();
+                        MemoryMonitor.printMemoryLog(mContext, "OOM 发生 - 搜索任务：" + sourceKey);
+                        
+                        // 发送空结果事件，确保计数器正确减少
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        
+                        // 中止剩余搜索，关闭执行器
+                        try {
+                            sourceViewModel.shutdownExecutor();
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
                     } catch (Exception e) {
-                        android.util.Log.e("SearchActivity", "[线程: " + threadName + "] 搜索任务异常: " + sourceKey, e);
+                        android.util.Log.e("SearchActivity", "[线程：" + threadName + "] 搜索任务异常：" + sourceKey, e);
                         e.printStackTrace();
                         // 发送空结果事件，确保计数器正确减少
                         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                     } catch (Throwable th) {
-                        android.util.Log.e("SearchActivity", "[线程: " + threadName + "] 搜索任务严重异常: " + sourceKey, th);
+                        android.util.Log.e("SearchActivity", "[线程：" + threadName + "] 搜索任务严重异常：" + sourceKey, th);
                         th.printStackTrace();
                         // 发送空结果事件，确保计数器正确减少
                         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));

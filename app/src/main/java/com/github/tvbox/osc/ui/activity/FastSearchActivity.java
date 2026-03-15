@@ -27,6 +27,7 @@ import com.github.tvbox.osc.ui.adapter.FastListAdapter;
 import com.github.tvbox.osc.ui.adapter.FastSearchAdapter;
 import com.github.tvbox.osc.ui.adapter.SearchWordAdapter;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
+import com.github.tvbox.osc.util.MemoryMonitor;
 import com.github.tvbox.osc.util.SearchHelper;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
 import com.google.gson.Gson;
@@ -376,7 +377,10 @@ public class FastSearchActivity extends BaseActivity {
     }
 
     private void search(String title) {
-        Log.d("FastSearchActivity", "开始搜索: " + title);
+        // 搜索开始时打印内存监控信息
+        MemoryMonitor.printMemoryLog(mContext, "快速搜索开始：" + title);
+            
+        Log.d("FastSearchActivity", "开始搜索：" + title);
         cancel();
         showLoading();
         this.searchTitle = title;
@@ -385,14 +389,14 @@ public class FastSearchActivity extends BaseActivity {
         mGridViewFilter.setVisibility(View.GONE);
         searchAdapter.setNewData(new ArrayList<>());
         searchAdapterFilter.setNewData(new ArrayList<>());
-
+    
         spListAdapter.reset();
         resultVods.clear();
         searchFilterKey = "";
         isFilterMode = false;
         spNames.clear();
         finishedCount = 0;
-
+    
         searchResult();
     }
 
@@ -438,18 +442,40 @@ public class FastSearchActivity extends BaseActivity {
             allRunCount.incrementAndGet();
         }
 
-        Log.d("FastSearchActivity", "提交搜索任务数量: " + siteKey.size());
+        Log.d("FastSearchActivity", "提交搜索任务数量：" + siteKey.size());
         for (String key : siteKey) {
             final String sourceKey = key;
             searchExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
                     String threadName = Thread.currentThread().getName();
-                    Log.d("FastSearchActivity", "[线程: " + threadName + "] 执行搜索任务: " + sourceKey);
+                    Log.d("FastSearchActivity", "[线程：" + threadName + "] 执行搜索任务：" + sourceKey);
                     try {
                         sourceViewModel.getSearch(sourceKey, searchTitle);
+                    } catch (OutOfMemoryError e) {
+                        // OOM 错误处理：打印内存信息并中止剩余搜索
+                        Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务内存不足：" + sourceKey, e);
+                        e.printStackTrace();
+                        MemoryMonitor.printMemoryLog(mContext, "OOM 发生 - 快速搜索任务：" + sourceKey);
+                        
+                        // 发送空结果事件，确保计数器正确减少
+                        try {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                        
+                        // 中止剩余搜索，关闭执行器
+                        try {
+                            if (searchExecutorService != null && !searchExecutorService.isShutdown()) {
+                                searchExecutorService.shutdownNow();
+                                JsLoader.stopAll();
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
                     } catch (Exception e) {
-                        Log.e("FastSearchActivity", "[线程: " + threadName + "] 搜索任务异常: " + sourceKey, e);
+                        Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务异常：" + sourceKey, e);
                         // 发送空结果事件，确保计数器正确减少
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
@@ -457,7 +483,7 @@ public class FastSearchActivity extends BaseActivity {
                             ex.printStackTrace();
                         }
                     } catch (Throwable th) {
-                        Log.e("FastSearchActivity", "[线程: " + threadName + "] 搜索任务严重异常: " + sourceKey, th);
+                        Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务严重异常：" + sourceKey, th);
                         // 发送空结果事件，确保计数器正确减少
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
