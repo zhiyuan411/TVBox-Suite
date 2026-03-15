@@ -322,6 +322,14 @@ public class JsSpider extends Spider {
         try {
             Future<Void> future = submit(() -> {
                 try {
+                    if (jsObject != null) {
+                        jsObject.release();
+                        jsObject = null;
+                    }
+                } catch (Exception e) {
+                    LOG.i("释放 jsObject 异常: " + e.getMessage());
+                }
+                try {
                     if (ctx != null) {
                         ctx.runGC();
                         ctx.destroy();
@@ -329,14 +337,6 @@ public class JsSpider extends Spider {
                     }
                 } catch (Exception e) {
                     LOG.i("销毁 ctx 异常: " + e.getMessage());
-                }
-                try {
-                    if (jsObject != null) {
-                        jsObject.release();
-                        jsObject = null;
-                    }
-                } catch (Exception e) {
-                    LOG.i("释放 jsObject 异常: " + e.getMessage());
                 }
                 return null;
             });
@@ -347,6 +347,14 @@ public class JsSpider extends Spider {
                 if (executor != null && !executor.isShutdown()) {
                     executor.execute(() -> {
                         try {
+                            if (jsObject != null) {
+                                jsObject.release();
+                                jsObject = null;
+                            }
+                        } catch (Exception ex) {
+                            LOG.i("备用方案释放 jsObject 异常: " + ex.getMessage());
+                        }
+                        try {
                             if (ctx != null) {
                                 ctx.runGC();
                                 ctx.destroy();
@@ -354,14 +362,6 @@ public class JsSpider extends Spider {
                             }
                         } catch (Exception ex) {
                             LOG.i("备用方案销毁 ctx 异常: " + ex.getMessage());
-                        }
-                        try {
-                            if (jsObject != null) {
-                                jsObject.release();
-                                jsObject = null;
-                            }
-                        } catch (Exception ex) {
-                            LOG.i("备用方案释放 jsObject 异常: " + ex.getMessage());
                         }
                     });
                 }
@@ -517,6 +517,14 @@ public class JsSpider extends Spider {
      */
     private void cleanUpPartialInit() {
         try {
+            if (jsObject != null) {
+                jsObject.release();
+                jsObject = null;
+            }
+        } catch (Exception e) {
+            LOG.i("释放部分初始化 jsObject 异常: " + e.getMessage());
+        }
+        try {
             if (ctx != null) {
                 ctx.runGC();
                 ctx.destroy();
@@ -524,14 +532,6 @@ public class JsSpider extends Spider {
             }
         } catch (Exception e) {
             LOG.i("清理部分初始化资源异常: " + e.getMessage());
-        }
-        try {
-            if (jsObject != null) {
-                jsObject.release();
-                jsObject = null;
-            }
-        } catch (Exception e) {
-            LOG.i("释放部分初始化 jsObject 异常: " + e.getMessage());
         }
     }
 

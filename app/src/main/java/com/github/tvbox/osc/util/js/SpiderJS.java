@@ -51,6 +51,14 @@ public class SpiderJS extends Spider {
         try {
             Future<Void> future = submitCallable(() -> {
                 try {
+                    if (jsObject != null) {
+                        jsObject.release();
+                        jsObject = null;
+                    }
+                } catch (Exception e) {
+                    LOG.i("释放 jsObject 异常: " + e.getMessage());
+                }
+                try {
                     if (runtime != null) {
                         runtime.runGC();
                         runtime.destroy();
@@ -58,14 +66,6 @@ public class SpiderJS extends Spider {
                     }
                 } catch (Exception e) {
                     LOG.i("销毁 runtime 异常: " + e.getMessage());
-                }
-                try {
-                    if (jsObject != null) {
-                        jsObject.release();
-                        jsObject = null;
-                    }
-                } catch (Exception e) {
-                    LOG.i("释放 jsObject 异常: " + e.getMessage());
                 }
                 return null;
             });
@@ -76,6 +76,14 @@ public class SpiderJS extends Spider {
                 if (executor != null && !executor.isShutdown()) {
                     executor.execute(() -> {
                         try {
+                            if (jsObject != null) {
+                                jsObject.release();
+                                jsObject = null;
+                            }
+                        } catch (Exception ex) {
+                            LOG.i("备用方案释放 jsObject 异常: " + ex.getMessage());
+                        }
+                        try {
                             if (runtime != null) {
                                 runtime.runGC();
                                 runtime.destroy();
@@ -83,14 +91,6 @@ public class SpiderJS extends Spider {
                             }
                         } catch (Exception ex) {
                             LOG.i("备用方案销毁 runtime 异常: " + ex.getMessage());
-                        }
-                        try {
-                            if (jsObject != null) {
-                                jsObject.release();
-                                jsObject = null;
-                            }
-                        } catch (Exception ex) {
-                            LOG.i("备用方案释放 jsObject 异常: " + ex.getMessage());
                         }
                     });
                 }
@@ -223,6 +223,14 @@ public class SpiderJS extends Spider {
      */
     private void cleanUpPartialInit() {
         try {
+            if (jsObject != null) {
+                jsObject.release();
+                jsObject = null;
+            }
+        } catch (Exception e) {
+            LOG.i("释放部分初始化 jsObject 异常: " + e.getMessage());
+        }
+        try {
             if (runtime != null) {
                 runtime.runGC();
                 runtime.destroy();
@@ -230,14 +238,6 @@ public class SpiderJS extends Spider {
             }
         } catch (Exception e) {
             LOG.i("清理部分初始化资源异常: " + e.getMessage());
-        }
-        try {
-            if (jsObject != null) {
-                jsObject.release();
-                jsObject = null;
-            }
-        } catch (Exception e) {
-            LOG.i("释放部分初始化 jsObject 异常: " + e.getMessage());
         }
     }
 
