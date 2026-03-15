@@ -70,26 +70,68 @@ public class App extends MultiDexApplication {
             @Override
             public void uncaughtException(Thread thread, Throwable ex) {
                 try {
-                    // 先打印内存和进程监控信息
+                    String threadName = thread != null ? thread.getName() : "unknown";
+                    
                     if (ex instanceof OutOfMemoryError) {
-                        MemoryMonitor.printMemoryLog(App.getInstance(), "全局 OOM 捕获 - 线程: " + thread.getName());
+                        tryOOMLog(threadName, ex);
                     } else {
-                        MemoryMonitor.printMemoryLog(App.getInstance(), "全局异常捕获 - 线程: " + thread.getName());
+                        tryGeneralExceptionLog(threadName, ex);
                     }
-                    // 打印异常堆栈
-                    LOG.e("全局异常捕获 - 线程: " + thread.getName(), ex);
                 } catch (Throwable e) {
-                    // 防止在打印日志时又发生异常
-                    android.util.Log.e("App", "异常处理时出错", e);
+                    try {
+                        android.util.Log.e("App", "异常处理时出错: " + e.getMessage());
+                    } catch (Throwable ignored) {}
                 }
                 
-                // 调用默认的异常处理器，确保系统能正常处理崩溃
                 if (defaultHandler != null) {
-                    defaultHandler.uncaughtException(thread, ex);
+                    try {
+                        defaultHandler.uncaughtException(thread, ex);
+                    } catch (Throwable ignored) {}
                 } else {
-                    // 如果没有默认处理器，则安全退出
                     android.os.Process.killProcess(android.os.Process.myPid());
                     System.exit(10);
+                }
+            }
+            
+            private void tryOOMLog(String threadName, Throwable ex) {
+                try {
+                    android.util.Log.e("App", "===== 全局 OOM 捕获 - 线程: " + threadName + " =====");
+                    android.util.Log.e("App", "OOM 类型: " + ex.getClass().getName());
+                    android.util.Log.e("App", "OOM 消息: " + (ex.getMessage() != null ? ex.getMessage() : "null"));
+                    android.util.Log.e("App", "堆栈信息:");
+                    ex.printStackTrace();
+                } catch (Throwable e) {
+                    try {
+                        android.util.Log.e("App", "打印 OOM 日志失败: " + e.getMessage());
+                    } catch (Throwable ignored) {}
+                }
+                
+                try {
+                    MemoryMonitor.printMemoryLog(App.getInstance(), "全局 OOM 捕获 - 线程: " + threadName);
+                } catch (Throwable e) {
+                    try {
+                        android.util.Log.e("App", "打印内存信息失败: " + e.getMessage());
+                    } catch (Throwable ignored) {}
+                }
+            }
+            
+            private void tryGeneralExceptionLog(String threadName, Throwable ex) {
+                try {
+                    android.util.Log.e("App", "===== 全局异常捕获 - 线程: " + threadName + " =====");
+                    LOG.e("全局异常捕获 - 线程: " + threadName, ex);
+                } catch (Throwable e) {
+                    try {
+                        android.util.Log.e("App", "打印异常日志失败: " + e.getMessage());
+                        ex.printStackTrace();
+                    } catch (Throwable ignored) {}
+                }
+                
+                try {
+                    MemoryMonitor.printMemoryLog(App.getInstance(), "全局异常捕获 - 线程: " + threadName);
+                } catch (Throwable e) {
+                    try {
+                        android.util.Log.e("App", "打印内存信息失败: " + e.getMessage());
+                    } catch (Throwable ignored) {}
                 }
             }
         });

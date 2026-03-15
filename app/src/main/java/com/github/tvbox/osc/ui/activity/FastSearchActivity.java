@@ -50,9 +50,12 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import android.os.SystemClock;
 
 /**
  * @author pj567
@@ -206,6 +209,7 @@ public class FastSearchActivity extends BaseActivity {
                 Movie.Video video = searchAdapter.getData().get(position);
                 if (video != null) {
                     try {
+                        isSearchCancelled = true;
                         if (searchExecutorService != null) {
                             pauseRunnable = searchExecutorService.shutdownNow();
                             searchExecutorService = null;
@@ -232,6 +236,7 @@ public class FastSearchActivity extends BaseActivity {
                 Movie.Video video = searchAdapterFilter.getData().get(position);
                 if (video != null) {
                     try {
+                        isSearchCancelled = true;
                         if (searchExecutorService != null) {
                             pauseRunnable = searchExecutorService.shutdownNow();
                             searchExecutorService = null;
@@ -402,9 +407,13 @@ public class FastSearchActivity extends BaseActivity {
 
     private ExecutorService searchExecutorService = null;
     private final AtomicInteger allRunCount = new AtomicInteger(0);
+    private static final int BATCH_SIZE = 50;
+    private volatile boolean isSearchCancelled = false;
 
     private void searchResult() {
         Log.d("FastSearchActivity", "准备搜索任务");
+        isSearchCancelled = false;
+        
         try {
             if (searchExecutorService != null) {
                 searchExecutorService.shutdownNow();
@@ -418,7 +427,7 @@ public class FastSearchActivity extends BaseActivity {
             searchAdapterFilter.setNewData(new ArrayList<>());
             allRunCount.set(0);
         }
-        searchExecutorService = Executors.newFixedThreadPool(5);
+        
         List<SourceBean> searchRequestList = new ArrayList<>();
         searchRequestList.addAll(ApiConfig.get().getSourceBeanList());
         SourceBean home = ApiConfig.get().getHomeSourceBean();
@@ -442,53 +451,133 @@ public class FastSearchActivity extends BaseActivity {
             allRunCount.incrementAndGet();
         }
 
-        Log.d("FastSearchActivity", "提交搜索任务数量：" + siteKey.size());
-        for (String key : siteKey) {
+        Log.d("FastSearchActivity", "总搜索任务数量：" + siteKey.size() + "，分批执行，每批 " + BATCH_SIZE + " 个");
+        
+        executeSearchBatches(siteKey, 0);
+    }
+    
+    private void executeSearchBatches(final ArrayList<String> siteKey, final int batchStartIndex) {
+        if (isSearchCancelled || batchStartIndex >= siteKey.size()) {
+            Log.d("FastSearchActivity", "搜索已取消或所有批次执行完成");
+            return;
+        }
+        
+        final int batchEndIndex = Math.min(batchStartIndex + BATCH_SIZE, siteKey.size());
+        final List<String> batchKeys = siteKey.subList(batchStartIndex, batchEndIndex);
+        
+        Log.d("FastSearchActivity", "执行批次 " + (batchStartIndex / BATCH_SIZE + 1) + 
+              "，任务范围：" + batchStartIndex + " - " + (batchEndIndex - 1) + 
+              "，共 " + batchKeys.size() + " 个任务");
+        
+        MemoryMonitor.printMemoryLog(mContext, "开始执行批次 " + (batchStartIndex / BATCH_SIZE + 1));
+        
+        searchExecutorService = Executors.newFixedThreadPool(5);
+        final CountDownLatch batchLatch = new CountDownLatch(batchKeys.size());
+        final AtomicInteger batchErrorCount = new AtomicInteger(0);
+        
+        for (final String key : batchKeys) {
             final String sourceKey = key;
             searchExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
                     String threadName = Thread.currentThread().getName();
-                    Log.d("FastSearchActivity", "[线程：" + threadName + "] 执行搜索任务：" + sourceKey);
                     try {
-                        sourceViewModel.getSearch(sourceKey, searchTitle);
-                    } catch (OutOfMemoryError e) {
-                        // OOM 错误处理：先打印内存信息
-                        Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务内存不足：" + sourceKey, e);
-                        e.printStackTrace();
-                        MemoryMonitor.printMemoryLog(mContext, "OOM 发生 - 快速搜索任务：" + sourceKey);
-                        
-                        // 中止剩余搜索，关闭执行器
-                        try {
-                            if (searchExecutorService != null && !searchExecutorService.isShutdown()) {
-                                searchExecutorService.shutdownNow();
-                                JsLoader.stopAll();
-                            }
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
+                        if (!isSearchCancelled) {
+                            Log.d("FastSearchActivity", "[线程：" + threadName + "] 执行搜索任务：" + sourceKey);
+                            sourceViewModel.getSearch(sourceKey, searchTitle);
                         }
-                        // 继续抛出，让后续的 Throwable 兜底处理也能捕获到
-                        throw e;
+                    } catch (OutOfMemoryError e) {
+                        batchErrorCount.incrementAndGet();
+                        handleOOM(threadName, sourceKey, e);
                     } catch (Exception e) {
+                        batchErrorCount.incrementAndGet();
                         Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务异常：" + sourceKey, e);
-                        // 发送空结果事件，确保计数器正确减少
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                         } catch (Exception ex) {
                             ex.printStackTrace();
                         }
                     } catch (Throwable th) {
-                        // 这里会捕获到所有未处理的异常和错误，包括上面重新抛出的 OOM
+                        batchErrorCount.incrementAndGet();
                         Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务严重异常：" + sourceKey, th);
-                        // 发送空结果事件，确保计数器正确减少
-                        try {
-                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
+                        if (th instanceof OutOfMemoryError) {
+                            handleOOM(threadName, sourceKey, (OutOfMemoryError) th);
+                        } else {
+                            try {
+                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
                         }
+                    } finally {
+                        batchLatch.countDown();
                     }
                 }
             });
+        }
+        
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    boolean batchCompleted = batchLatch.await(5, TimeUnit.MINUTES);
+                    if (!batchCompleted) {
+                        Log.w("FastSearchActivity", "批次 " + (batchStartIndex / BATCH_SIZE + 1) + " 执行超时");
+                    }
+                    
+                    Log.d("FastSearchActivity", "批次 " + (batchStartIndex / BATCH_SIZE + 1) + 
+                          " 执行完成，错误数：" + batchErrorCount.get());
+                    
+                    cleanupBatch();
+                    
+                    if (!isSearchCancelled) {
+                        SystemClock.sleep(500);
+                        executeSearchBatches(siteKey, batchEndIndex);
+                    }
+                } catch (InterruptedException e) {
+                    Log.e("FastSearchActivity", "批次等待被中断", e);
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }).start();
+    }
+    
+    private void cleanupBatch() {
+        try {
+            Log.d("FastSearchActivity", "执行批次间内存清理");
+            
+            if (searchExecutorService != null) {
+                searchExecutorService.shutdownNow();
+                searchExecutorService = null;
+            }
+            
+            JsLoader.stopAll();
+            
+            System.gc();
+            
+            MemoryMonitor.printMemoryLog(mContext, "批次间内存清理完成");
+            
+        } catch (Throwable th) {
+            Log.e("FastSearchActivity", "批次间清理异常", th);
+        }
+    }
+    
+    private void handleOOM(String threadName, String sourceKey, OutOfMemoryError e) {
+        try {
+            Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务内存不足：" + sourceKey, e);
+            e.printStackTrace();
+            MemoryMonitor.printMemoryLog(mContext, "OOM 发生 - 快速搜索任务：" + sourceKey);
+        } catch (Throwable ex) {
+            android.util.Log.e("FastSearchActivity", "打印 OOM 信息时出错", ex);
+        }
+        
+        try {
+            if (searchExecutorService != null && !searchExecutorService.isShutdown()) {
+                searchExecutorService.shutdownNow();
+                JsLoader.stopAll();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -640,6 +729,7 @@ public class FastSearchActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        isSearchCancelled = true;
         cancel();
         try {
             if (searchExecutorService != null) {
