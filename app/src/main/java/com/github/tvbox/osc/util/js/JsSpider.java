@@ -315,7 +315,6 @@ public class JsSpider extends Spider {
     public void destroy() {
         try {
             Future<Void> future = submit(() -> {
-                // 不再关闭线程池，因为它是共享的
                 try {
                     if (ctx != null) {
                         ctx.runGC();
@@ -338,6 +337,31 @@ public class JsSpider extends Spider {
             future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             LOG.i("执行 destroy 异常: " + e.getMessage());
+            try {
+                if (executor != null && !executor.isShutdown()) {
+                    executor.execute(() -> {
+                        try {
+                            if (ctx != null) {
+                                ctx.runGC();
+                                ctx.destroy();
+                                ctx = null;
+                            }
+                        } catch (Exception ex) {
+                            LOG.i("备用方案销毁 ctx 异常: " + ex.getMessage());
+                        }
+                        try {
+                            if (jsObject != null) {
+                                jsObject.release();
+                                jsObject = null;
+                            }
+                        } catch (Exception ex) {
+                            LOG.i("备用方案释放 jsObject 异常: " + ex.getMessage());
+                        }
+                    });
+                }
+            } catch (Exception ex) {
+                LOG.i("备用方案执行异常: " + ex.getMessage());
+            }
         }
     }
 

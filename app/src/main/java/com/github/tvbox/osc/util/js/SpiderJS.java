@@ -54,20 +54,49 @@ public class SpiderJS extends Spider {
                     if (runtime != null) {
                         runtime.runGC();
                         runtime.destroy();
+                        runtime = null;
                     }
                 } catch (Exception e) {
                     LOG.i("销毁 runtime 异常: " + e.getMessage());
                 }
                 try {
-                    executor.shutdownNow();
+                    if (jsObject != null) {
+                        jsObject.release();
+                        jsObject = null;
+                    }
                 } catch (Exception e) {
-                    LOG.i("关闭 executor 异常: " + e.getMessage());
+                    LOG.i("释放 jsObject 异常: " + e.getMessage());
                 }
                 return null;
             });
             future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             LOG.i("执行 destroy 异常: " + e.getMessage());
+            try {
+                if (executor != null && !executor.isShutdown()) {
+                    executor.execute(() -> {
+                        try {
+                            if (runtime != null) {
+                                runtime.runGC();
+                                runtime.destroy();
+                                runtime = null;
+                            }
+                        } catch (Exception ex) {
+                            LOG.i("备用方案销毁 runtime 异常: " + ex.getMessage());
+                        }
+                        try {
+                            if (jsObject != null) {
+                                jsObject.release();
+                                jsObject = null;
+                            }
+                        } catch (Exception ex) {
+                            LOG.i("备用方案释放 jsObject 异常: " + ex.getMessage());
+                        }
+                    });
+                }
+            } catch (Exception ex) {
+                LOG.i("备用方案执行异常: " + ex.getMessage());
+            }
         }
     }
     
