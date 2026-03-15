@@ -597,10 +597,21 @@ public class FastSearchActivity extends BaseActivity {
         try {
             Log.d("FastSearchActivity", "执行批次间内存清理");
             
+            Log.d("FastSearchActivity", "步骤1: 停止所有 Spider 请求");
             JsLoader.stopAll();
             
+            Log.d("FastSearchActivity", "步骤2: 销毁所有 Spider 并清理缓存（释放 Native 内存）");
+            JsLoader.destroyAllAndClear();
+            
+            Log.d("FastSearchActivity", "步骤3: 触发 Java GC");
             System.gc();
-            SystemClock.sleep(100);
+            
+            Log.d("FastSearchActivity", "步骤4: 等待 GC 执行完成");
+            SystemClock.sleep(300);
+            
+            Log.d("FastSearchActivity", "步骤5: 再次触发 GC，确保资源释放");
+            System.gc();
+            SystemClock.sleep(200);
             
             MemoryMonitor.printMemoryLog(mContext, "批次间内存清理完成");
             

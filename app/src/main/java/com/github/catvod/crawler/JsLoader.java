@@ -34,6 +34,8 @@ public class JsLoader {
             spider.cancelByTag();
             spider.destroy();
         }
+        spiders.clear();
+        classes.clear();
     }
     public void clear() {
         spiders.clear();
@@ -43,6 +45,30 @@ public class JsLoader {
     public static void stopAll() {
         for (Spider spider : spiders.values()){
             spider.cancelByTag();
+        }
+    }
+    
+    /**
+     * 彻底销毁所有 Spider 并清理缓存，释放 Native 内存
+     * 用于批次间清理，防止 Native 内存泄露
+     */
+    public static void destroyAllAndClear() {
+        try {
+            Log.i("JsLoader", "开始销毁所有 Spider 并清理缓存，当前数量: " + spiders.size());
+            int destroyCount = 0;
+            for (Spider spider : spiders.values()){
+                try {
+                    spider.cancelByTag();
+                    spider.destroy();
+                    destroyCount++;
+                } catch (Exception e) {
+                    Log.i("JsLoader", "销毁 Spider 异常: " + e.getMessage());
+                }
+            }
+            spiders.clear();
+            Log.i("JsLoader", "完成销毁 Spider，已销毁: " + destroyCount + " 个");
+        } catch (Exception e) {
+            Log.i("JsLoader", "destroyAllAndClear 异常: " + e.getMessage());
         }
     }
 
