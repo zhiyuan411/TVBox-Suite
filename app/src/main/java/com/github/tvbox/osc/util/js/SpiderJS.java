@@ -48,32 +48,53 @@ public class SpiderJS extends Spider {
     }
     
     public void destroy() {
+        String threadName = Thread.currentThread().getName();
+        LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 开始销毁");
         try {
+            LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 提交任务到线程池");
             Future<Void> future = submitCallable(() -> {
+                String execThreadName = Thread.currentThread().getName();
+                LOG.i("[线程: " + execThreadName + "] [SpiderJS-" + key + "] 执行资源释放 - 开始");
+                
                 try {
                     if (jsObject != null) {
+                        LOG.i("[线程: " + execThreadName + "] [SpiderJS-" + key + "] 释放 jsObject");
                         jsObject.release();
                         jsObject = null;
+                        LOG.i("[线程: " + execThreadName + "] [SpiderJS-" + key + "] jsObject 释放成功");
+                    } else {
+                        LOG.i("[线程: " + execThreadName + "] [SpiderJS-" + key + "] jsObject 为 null，跳过释放");
                     }
                 } catch (Exception e) {
-                    LOG.i("释放 jsObject 异常: " + e.getMessage());
+                    LOG.e("释放 jsObject 异常: " + e.getMessage(), e);
                 }
+                
                 try {
                     if (runtime != null) {
+                        LOG.i("[线程: " + execThreadName + "] [SpiderJS-" + key + "] 运行 GC 并销毁 runtime");
                         runtime.runGC();
                         runtime.destroy();
                         runtime = null;
+                        LOG.i("[线程: " + execThreadName + "] [SpiderJS-" + key + "] runtime 销毁成功");
+                    } else {
+                        LOG.i("[线程: " + execThreadName + "] [SpiderJS-" + key + "] runtime 为 null，跳过销毁");
                     }
                 } catch (Exception e) {
-                    LOG.i("销毁 runtime 异常: " + e.getMessage());
+                    LOG.e("销毁 runtime 异常: " + e.getMessage(), e);
                 }
+                
+                LOG.i("[线程: " + execThreadName + "] [SpiderJS-" + key + "] 执行资源释放 - 完成");
                 return null;
             });
+            
+            LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 等待任务完成 (最多10秒)");
             future.get(10, TimeUnit.SECONDS);
+            LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 资源释放完成");
         } catch (Exception e) {
-            LOG.i("执行 destroy 异常: " + e.getMessage());
+            LOG.e("执行 destroy 异常: " + e.getMessage(), e);
             try {
                 if (executor != null && !executor.isShutdown()) {
+                    LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 执行备用方案");
                     executor.execute(() -> {
                         try {
                             if (jsObject != null) {
@@ -81,7 +102,7 @@ public class SpiderJS extends Spider {
                                 jsObject = null;
                             }
                         } catch (Exception ex) {
-                            LOG.i("备用方案释放 jsObject 异常: " + ex.getMessage());
+                            LOG.e("备用方案释放 jsObject 异常: " + ex.getMessage(), ex);
                         }
                         try {
                             if (runtime != null) {
@@ -90,12 +111,21 @@ public class SpiderJS extends Spider {
                                 runtime = null;
                             }
                         } catch (Exception ex) {
-                            LOG.i("备用方案销毁 runtime 异常: " + ex.getMessage());
+                            LOG.e("备用方案销毁 runtime 异常: " + ex.getMessage(), ex);
                         }
                     });
                 }
             } catch (Exception ex) {
-                LOG.i("备用方案执行异常: " + ex.getMessage());
+                LOG.e("备用方案执行异常: " + ex.getMessage(), ex);
+            }
+        } finally {
+            try {
+                if (executor != null && !executor.isShutdown()) {
+                    LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 关闭线程池");
+                    executor.shutdownNow();
+                }
+            } catch (Exception e) {
+                LOG.e("关闭 executor 异常: " + e.getMessage(), e);
             }
         }
     }
@@ -222,23 +252,34 @@ public class SpiderJS extends Spider {
      * 清理部分初始化失败时的资源
      */
     private void cleanUpPartialInit() {
+        String threadName = Thread.currentThread().getName();
+        LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 开始清理部分初始化资源，jsObject=" + (jsObject != null ? "非空" : "null") + ", runtime=" + (runtime != null ? "非空" : "null"));
         try {
             if (jsObject != null) {
+                LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 释放 jsObject");
                 jsObject.release();
                 jsObject = null;
+                LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] jsObject 释放成功");
+            } else {
+                LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] jsObject 为 null，跳过释放");
             }
         } catch (Exception e) {
-            LOG.i("释放部分初始化 jsObject 异常: " + e.getMessage());
+            LOG.e("释放部分初始化 jsObject 异常: " + e.getMessage(), e);
         }
         try {
             if (runtime != null) {
+                LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 运行 GC 并销毁 runtime");
                 runtime.runGC();
                 runtime.destroy();
                 runtime = null;
+                LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] runtime 销毁成功");
+            } else {
+                LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] runtime 为 null，跳过销毁");
             }
         } catch (Exception e) {
-            LOG.i("清理部分初始化资源异常: " + e.getMessage());
+            LOG.e("清理部分初始化资源异常: " + e.getMessage(), e);
         }
+        LOG.i("[线程: " + threadName + "] [SpiderJS-" + key + "] 部分初始化资源清理完成");
     }
 
     private void initConsole() {

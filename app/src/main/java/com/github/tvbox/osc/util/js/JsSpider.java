@@ -4,9 +4,11 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Base64;
 import com.github.catvod.crawler.Spider;
+import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.MD5;
+import com.github.tvbox.osc.util.MonitorUtils;
 
 import com.whl.quickjs.wrapper.Function;
 import com.whl.quickjs.wrapper.JSArray;
@@ -48,10 +50,15 @@ public class JsSpider extends Spider {
     private final Class<?> dex;
     private QuickJSContext ctx;
     private JSObject jsObject;
+    private JSObject localObject;
+    private JSObject jsapiObject;
+    private java.util.List<JSObject> subJsObjects;
     private final String key;
     private final String api;
+    private final String apiKey;
     private boolean cat;
     private boolean initialized = false;
+    private boolean initSuccess = false;
     private final Object initLock = new Object();
 
     public JsSpider(String key, String api, Class<?> cls) throws Exception {
@@ -65,7 +72,9 @@ public class JsSpider extends Spider {
             return thread;
         });
         this.api = api;
+        this.apiKey = MD5.encode(api);
         this.dex = cls;
+        this.subJsObjects = new java.util.ArrayList<>();
         initializeJS();
     }
     public void cancelByTag() {
@@ -81,33 +90,14 @@ public class JsSpider extends Spider {
     }
 
     private Object call(String func, Object... args) {
-//        return executor.submit((FunCall.call(jsObject, func, args))).get();
         try {
-            String threadName = Thread.currentThread().getName();
-            // 入口日志：打印函数名和截取后的参数
-            String argsStr = "无";
-            if (args != null && args.length > 0) {
-                String tempArgsStr = java.util.Arrays.toString(args);
-                if (tempArgsStr.length() > 100) {
-                    tempArgsStr = tempArgsStr.substring(0, 100) + "...";
-                }
-                argsStr = tempArgsStr;
-            }
-            LOG.i("[线程: " + threadName + "] 调用 JS 函数: " + func + "，参数: " + argsStr);
-            
             // 防御性编程：检查必要对象是否有效
-            if (jsObject == null) {
-                LOG.i("[线程: " + threadName + "] JSObject 为 null，无法调用函数: " + func);
-                return "";
-            }
-            if (ctx == null) {
-                LOG.i("[线程: " + threadName + "] JS 上下文为 null，无法调用函数: " + func);
+            if (jsObject == null || ctx == null) {
                 return "";
             }
             
             // 核心执行流程
             return submit(() -> {
-                String execThreadName = Thread.currentThread().getName();
                 try {
                     Future<Object> future = Async.run(jsObject, func, args);
                     Object result = future.get(30, TimeUnit.SECONDS); // 30秒超时
@@ -121,28 +111,8 @@ public class JsSpider extends Spider {
                         // 忽略 GC 异常
                     }
                     
-                    // 正常出口日志：打印结果值
-                    if (result != null) {
-                        try {
-                            String resultStr = result.toString();
-                            if (resultStr.length() > 100) {
-                                resultStr = resultStr.substring(0, 100) + "...";
-                            }
-                            LOG.i("[线程: " + execThreadName + "] JS 函数执行成功: " + func + "，结果: " + resultStr);
-                        } catch (Exception e) {
-                            try {
-                                LOG.i("[线程: " + execThreadName + "] JS 函数执行成功: " + func + "，结果类型: " + result.getClass().getName());
-                            } catch (Exception ex) {
-                                LOG.i("[线程: " + execThreadName + "] JS 函数执行成功: " + func + "，结果类型: 未知");
-                            }
-                        }
-                    } else {
-                        LOG.i("[线程: " + execThreadName + "] JS 函数执行成功: " + func + "，结果: null");
-                    }
-                    
                     return result;
                 } catch (TimeoutException e) {
-                    LOG.i("[线程: " + execThreadName + "] JS 函数执行超时: " + func);
                     try {
                         if (ctx != null) {
                             ctx.runGC();
@@ -152,7 +122,6 @@ public class JsSpider extends Spider {
                     }
                     return "";
                 } catch (Exception e) {
-                    LOG.e("[线程: " + execThreadName + "] JS 函数执行异常: " + func, e);
                     try {
                         if (ctx != null) {
                             ctx.runGC();
@@ -162,7 +131,6 @@ public class JsSpider extends Spider {
                     }
                     return "";
                 } catch (Throwable th) {
-                    LOG.e("[线程: " + execThreadName + "] JS 函数执行严重异常: " + func, th);
                     try {
                         if (ctx != null) {
                             ctx.runGC();
@@ -174,16 +142,10 @@ public class JsSpider extends Spider {
                 }
             }).get(35, TimeUnit.SECONDS);  // 等待 executor 线程完成 JS 调用，额外5秒缓冲
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            String threadName = Thread.currentThread().getName();
-            LOG.e("[线程: " + threadName + "] Executor 提交或等待失败", e);
             return "";
         } catch (Exception e) {
-            String threadName = Thread.currentThread().getName();
-            LOG.e("[线程: " + threadName + "] 调用函数时发生异常", e);
             return "";
         } catch (Throwable th) {
-            String threadName = Thread.currentThread().getName();
-            LOG.e("[线程: " + threadName + "] 调用函数时发生严重异常", th);
             return "";
         }
     }
@@ -203,24 +165,22 @@ public class JsSpider extends Spider {
             synchronized (initLock) {
                 if (!initialized) {
                     try {
-                        String threadName = Thread.currentThread().getName();
-                        LOG.i("[线程: " + threadName + "] 开始初始化 JS 爬虫: " + key);
-                        if (cat) call("init", submit(() -> cfg(extend)).get());
-                        else call("init", Json.valid(extend) ? ctx.parse(extend) : extend);
+                        if (cat) {
+                            call("init", submit(() -> cfg(extend)).get());
+                        } else {
+                            if (Json.valid(extend)) {
+                                Object parsedExtend = submit(() -> ctx.parse(extend)).get();
+                                call("init", parsedExtend);
+                            } else {
+                                call("init", extend);
+                            }
+                        }
                         initialized = true;
-                        LOG.i("[线程: " + threadName + "] JS 爬虫初始化完成: " + key);
                     } catch (Exception e) {
-                        String threadName = Thread.currentThread().getName();
-                        LOG.i("[线程: " + threadName + "] JS 爬虫初始化失败: " + e.getMessage());
+                        LOG.i("JS 爬虫初始化失败: " + e.getMessage());
                     }
-                } else {
-                    String threadName = Thread.currentThread().getName();
-                    LOG.i("[线程: " + threadName + "] JS 爬虫已初始化，跳过: " + key);
                 }
             }
-        } else {
-            String threadName = Thread.currentThread().getName();
-            LOG.i("[线程: " + threadName + "] JS 爬虫已初始化，跳过: " + key);
         }
     }
 
@@ -317,67 +277,212 @@ public class JsSpider extends Spider {
         }
     }
 
+    /**
+     * 检查 Spider 是否初始化成功
+     * @return true 表示初始化成功，false 表示初始化失败
+     */
+    public boolean isInitSuccess() {
+        return initSuccess;
+    }
+    
+    public String getApiKey() {
+        return apiKey;
+    }
+
     @Override
     public void destroy() {
+        boolean releaseSuccess = false;
         try {
             Future<Void> future = submit(() -> {
-                try {
-                    if (jsObject != null) {
-                        jsObject.release();
-                        jsObject = null;
-                    }
-                } catch (Exception e) {
-                    LOG.i("释放 jsObject 异常: " + e.getMessage());
-                }
-                try {
-                    if (ctx != null) {
-                        ctx.runGC();
-                        ctx.destroy();
-                        ctx = null;
-                    }
-                } catch (Exception e) {
-                    LOG.i("销毁 ctx 异常: " + e.getMessage());
-                }
+                // 释放所有 JSObject 资源
+                releaseAllJsObjects(Thread.currentThread().getName());
+                
+                // 运行 GC 并销毁 ctx（关键：释放 Native 内存）
+                destroyContext(Thread.currentThread().getName());
+                
                 return null;
             });
-            future.get(10, TimeUnit.SECONDS);
+            
+            // 延长等待时间到 30 秒，确保复杂 Spider 有足够时间释放
+            future.get(30, TimeUnit.SECONDS);
+            releaseSuccess = true;
         } catch (Exception e) {
-            LOG.i("执行 destroy 异常: " + e.getMessage());
+            // 异常情况下在线程池中执行强制释放
             try {
-                if (executor != null && !executor.isShutdown()) {
-                    executor.execute(() -> {
-                        try {
-                            if (jsObject != null) {
-                                jsObject.release();
-                                jsObject = null;
-                            }
-                        } catch (Exception ex) {
-                            LOG.i("备用方案释放 jsObject 异常: " + ex.getMessage());
-                        }
-                        try {
-                            if (ctx != null) {
-                                ctx.runGC();
-                                ctx.destroy();
-                                ctx = null;
-                            }
-                        } catch (Exception ex) {
-                            LOG.i("备用方案销毁 ctx 异常: " + ex.getMessage());
-                        }
-                    });
-                }
+                submit(() -> {
+                    releaseAllJsObjects(Thread.currentThread().getName());
+                    destroyContext(Thread.currentThread().getName());
+                    return null;
+                }).get(15, TimeUnit.SECONDS);
             } catch (Exception ex) {
-                LOG.i("备用方案执行异常: " + ex.getMessage());
+                ex.printStackTrace();
             }
         } finally {
-            try {
-                if (executor != null && !executor.isShutdown()) {
-                    executor.shutdownNow();
-                }
-            } catch (Exception e) {
-                LOG.i("关闭 executor 异常: " + e.getMessage());
+            // 无论如何都要关闭线程池，防止线程泄漏
+            shutdownExecutor(Thread.currentThread().getName());
+            
+            // 如果正常释放失败，再次检查是否有遗漏的资源
+            if (!releaseSuccess) {
+                performCleanupCheck();
             }
         }
     }
+    
+    /**
+     * 释放所有 JSObject 资源（提取为独立方法）
+     */
+    private void releaseAllJsObjects(String threadName) {
+        // 释放 jsObject
+        if (jsObject != null) {
+            try {
+                jsObject.release();
+                jsObject = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        // 释放 localObject
+        if (localObject != null) {
+            try {
+                localObject.release();
+                localObject = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        // 释放 jsapiObject
+        if (jsapiObject != null) {
+            try {
+                jsapiObject.release();
+                jsapiObject = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        // 释放 subJsObjects
+        if (subJsObjects != null && !subJsObjects.isEmpty()) {
+            for (int i = 0; i < subJsObjects.size(); i++) {
+                JSObject subObj = subJsObjects.get(i);
+                if (subObj != null) {
+                    try {
+                        subObj.release();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            subJsObjects.clear();
+        }
+    }
+    
+    /**
+     * 销毁 QuickJSContext（关键：释放 Native 内存）
+     */
+    private void destroyContext(String threadName) {
+        if (ctx != null) {
+            LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 开始销毁 QuickJS Runtime");
+            com.github.tvbox.osc.util.MonitorUtils.monitorMemory(App.getInstance(), "JsSpider.destroyContext.start" + key);
+            com.github.tvbox.osc.util.MonitorUtils.startTiming("JsSpider.destroyRuntime" + key);
+            
+            try {
+                // ✅ 先运行 GC，帮助回收 Native 内存
+                LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 运行 GC");
+                ctx.runGC();
+                LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] ctx GC 完成");
+                
+                // ✅ 再销毁 ctx，释放 Native 资源
+                LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 执行 ctx.destroy()");
+                ctx.destroy();
+                LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] ctx.destroy() 执行完成");
+                
+                ctx = null;
+                LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] ctx 销毁成功，引用已置为 null");
+            } catch (Exception e) {
+                LOG.e("[线程：" + threadName + "] 销毁 ctx 异常：" + e.getMessage());
+            } finally {
+                com.github.tvbox.osc.util.MonitorUtils.endTiming("JsSpider.destroyRuntime" + key);
+                com.github.tvbox.osc.util.MonitorUtils.monitorMemory(App.getInstance(), "JsSpider.destroyContext.end" + key);
+            }
+        } else {
+            LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] ctx 为 null，跳过销毁");
+        }
+    }
+    
+    /**
+     * 强制释放资源（异常情况下使用）
+     */
+    @Deprecated
+    private void forceReleaseResources(String threadName) {
+        LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 执行强制资源释放");
+        try {
+            // 即使 Future.get 超时，也尝试直接释放资源
+            releaseAllJsObjects(threadName);
+            destroyContext(threadName);
+        } catch (Exception e) {
+            LOG.e("[线程：" + threadName + "] 强制释放资源异常：" + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 关闭 Executor（防止线程泄漏）
+     */
+    private void shutdownExecutor(String threadName) {
+        if (executor != null && !executor.isShutdown()) {
+            LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 关闭线程池");
+            try {
+                executor.shutdownNow();
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 线程池未能在 5 秒内终止");
+                } else {
+                    LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 线程池已关闭");
+                }
+            } catch (InterruptedException e) {
+                LOG.e("[线程：" + threadName + "] 等待线程池关闭被中断", e);
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                LOG.e("[线程：" + threadName + "] 关闭 executor 异常：" + e.getMessage(), e);
+            }
+        }
+    }
+    
+    /**
+     * 执行清理检查（确保没有遗漏的资源）
+     */
+    private void performCleanupCheck() {
+        String threadName = Thread.currentThread().getName();
+        boolean hasLeak = false;
+        
+        if (jsObject != null) {
+            LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 检测到 jsObject 未释放");
+            hasLeak = true;
+        }
+        if (localObject != null) {
+            LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 检测到 localObject 未释放");
+            hasLeak = true;
+        }
+        if (jsapiObject != null) {
+            LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 检测到 jsapiObject 未释放");
+            hasLeak = true;
+        }
+        if (subJsObjects != null && !subJsObjects.isEmpty()) {
+            LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 检测到 " + subJsObjects.size() + " 个 subJsObjects 未释放");
+            hasLeak = true;
+        }
+        if (ctx != null) {
+            LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] 检测到 ctx 未销毁 - ⚠️ 可能导致 Native 内存泄漏！");
+            hasLeak = true;
+        }
+        
+        if (hasLeak) {
+            LOG.e("[线程：" + threadName + "] [JsSpider-" + key + "] ⚠️⚠️⚠️ 严重：存在资源泄漏风险，请检查日志定位原因");
+        } else {
+            LOG.i("[线程：" + threadName + "] [JsSpider-" + key + "] ✓ 所有资源已成功释放");
+        }
+    }
+
 
     private static final String SPIDER_STRING_CODE = "import * as spider from '%s'\n\n" +
             "if (!globalThis.__JS_SPIDER__) {\n" +
@@ -393,13 +498,20 @@ public class JsSpider extends Spider {
         try {
             String threadName = Thread.currentThread().getName();
             LOG.i("[线程: " + threadName + "] 开始初始化 JS 环境: " + api);
+            com.github.tvbox.osc.util.MonitorUtils.monitorMemory(App.getInstance(), "JsSpider.initializeJS.start" + key);
+            com.github.tvbox.osc.util.MonitorUtils.monitorThread("JsSpider.initializeJS" + key);
+            
             submit(() -> {
                 try {
                     String execThreadName = Thread.currentThread().getName();
                     LOG.i("[线程: " + execThreadName + "] 执行 JS 初始化任务: " + api);
+                    com.github.tvbox.osc.util.MonitorUtils.startTiming("JsSpider.createCtx" + key);
+                    
                     if (ctx == null) {
                         createCtx();
                     }
+                    com.github.tvbox.osc.util.MonitorUtils.endTiming("JsSpider.createCtx" + key);
+                    
                     if (dex != null) {
                         createDex();
                     }
@@ -426,6 +538,7 @@ public class JsSpider extends Spider {
                     
                     // 尝试加载和执行JS代码
                     boolean loadSuccess = false;
+                    com.github.tvbox.osc.util.MonitorUtils.startTiming("JsSpider.loadJS" + key);
                     if(content.startsWith("//bb")){
                         cat = true;
                         try {
@@ -480,17 +593,33 @@ public class JsSpider extends Spider {
                             cleanUpPartialInit();
                         }
                     }
+                    com.github.tvbox.osc.util.MonitorUtils.endTiming("JsSpider.loadJS" + key);
                     
                     // 只有加载成功后才尝试获取JSObject
                     if (loadSuccess) {
                         try {
                             jsObject = (JSObject) ctx.get(ctx.getGlobalObject(), key);
                             ctx.runGC();
+                            if (jsObject != null) {
+                                initSuccess = true;
+                                LOG.i("[线程: " + execThreadName + "] JS 初始化成功，jsObject 已获取");
+                                com.github.tvbox.osc.util.MonitorUtils.monitorMemory(App.getInstance(), "JsSpider.initializeJS.end" + key);
+                            } else {
+                                LOG.i("[线程: " + execThreadName + "] JSObject 获取结果为 null，清理资源");
+                                cleanUpPartialInit();
+                            }
                         } catch (Exception e) {
                             LOG.i("[线程: " + execThreadName + "] 获取 JSObject 异常: " + e.getMessage());
                             cleanUpPartialInit();
                         }
                     }
+                    return null;
+                } catch (OutOfMemoryError e) {
+                    String execThreadName = Thread.currentThread().getName();
+                    LOG.e("[线程: " + execThreadName + "] 初始化 JS 环境时内存不足", e);
+                    e.printStackTrace();
+                    cleanUpPartialInit();
+                    com.github.tvbox.osc.util.MonitorUtils.monitorMemory(App.getInstance(), "JsSpider.initializeJS.OOM" + key);
                     return null;
                 } catch (Exception e) {
                     String execThreadName = Thread.currentThread().getName();
@@ -504,11 +633,29 @@ public class JsSpider extends Spider {
                 }
             }).get(60, TimeUnit.SECONDS); // 60秒超时
         } catch (TimeoutException e) {
-            LOG.i("[线程: " + Thread.currentThread().getName() + "] JS 初始化超时: " + api);
-            cleanUpPartialInit();
+            String threadName = Thread.currentThread().getName();
+            LOG.i("[线程: " + threadName + "] JS 初始化超时: " + api);
+            // 关键修复：超时异常时，cleanUpPartialInit()必须在executor线程中执行
+            try {
+                submit(() -> {
+                    cleanUpPartialInit();
+                    return null;
+                }).get(10, TimeUnit.SECONDS);
+            } catch (Exception ex) {
+                LOG.e("[线程: " + threadName + "] 超时后清理资源异常", ex);
+            }
         } catch (Exception e) {
-            LOG.i("[线程: " + Thread.currentThread().getName() + "] 初始化 JS 时发生异常: " + e.getMessage());
-            cleanUpPartialInit();
+            String threadName = Thread.currentThread().getName();
+            LOG.i("[线程: " + threadName + "] 初始化 JS 时发生异常: " + e.getMessage());
+            // 关键修复：其他异常时，cleanUpPartialInit()必须在executor线程中执行
+            try {
+                submit(() -> {
+                    cleanUpPartialInit();
+                    return null;
+                }).get(10, TimeUnit.SECONDS);
+            } catch (Exception ex) {
+                LOG.e("[线程: " + threadName + "] 异常后清理资源异常", ex);
+            }
         }
     }
     
@@ -516,14 +663,54 @@ public class JsSpider extends Spider {
      * 清理部分初始化失败时的资源
      */
     private void cleanUpPartialInit() {
+        String threadName = Thread.currentThread().getName();
+        LOG.i("[线程: " + threadName + "] [JsSpider-" + key + "] 开始清理部分初始化资源");
+        
         try {
             if (jsObject != null) {
                 jsObject.release();
                 jsObject = null;
             }
         } catch (Exception e) {
-            LOG.i("释放部分初始化 jsObject 异常: " + e.getMessage());
+            LOG.e("释放部分初始化 jsObject 异常: " + e.getMessage());
         }
+        
+        try {
+            if (localObject != null) {
+                localObject.release();
+                localObject = null;
+            }
+        } catch (Exception e) {
+            LOG.e("释放部分初始化 localObject 异常: " + e.getMessage());
+        }
+        
+        try {
+            if (jsapiObject != null) {
+                jsapiObject.release();
+                jsapiObject = null;
+            }
+        } catch (Exception e) {
+            LOG.e("释放部分初始化 jsapiObject 异常: " + e.getMessage());
+        }
+        
+        try {
+            if (subJsObjects != null && !subJsObjects.isEmpty()) {
+                for (int i = 0; i < subJsObjects.size(); i++) {
+                    JSObject subObj = subJsObjects.get(i);
+                    if (subObj != null) {
+                        try {
+                            subObj.release();
+                        } catch (Exception e) {
+                            LOG.e("释放 subJsObjects[" + i + "] 异常: " + e.getMessage());
+                        }
+                    }
+                }
+                subJsObjects.clear();
+            }
+        } catch (Exception e) {
+            LOG.e("释放部分初始化 subJsObjects 异常: " + e.getMessage());
+        }
+        
         try {
             if (ctx != null) {
                 ctx.runGC();
@@ -531,8 +718,9 @@ public class JsSpider extends Spider {
                 ctx = null;
             }
         } catch (Exception e) {
-            LOG.i("清理部分初始化资源异常: " + e.getMessage());
+            LOG.e("清理部分初始化资源异常: " + e.getMessage());
         }
+        LOG.i("[线程: " + threadName + "] [JsSpider-" + key + "] 部分初始化资源清理完成");
     }
 
     public static byte[] byteFF(byte[] bytes) {
@@ -543,7 +731,17 @@ public class JsSpider extends Spider {
     }
 
     private void createCtx() {
+        String threadName = Thread.currentThread().getName();
+        LOG.i("[线程: " + threadName + "] [JsSpider-" + key + "] 开始创建 QuickJS Runtime");
+        com.github.tvbox.osc.util.MonitorUtils.monitorMemory(App.getInstance(), "JsSpider.createCtx.start" + key);
+        com.github.tvbox.osc.util.MonitorUtils.startTiming("JsSpider.createRuntime" + key);
+        
         ctx = QuickJSContext.create();
+        LOG.i("[线程: " + threadName + "] [JsSpider-" + key + "] QuickJS Runtime 创建成功，ctx: " + ctx);
+        
+        com.github.tvbox.osc.util.MonitorUtils.endTiming("JsSpider.createRuntime" + key);
+        com.github.tvbox.osc.util.MonitorUtils.monitorMemory(App.getInstance(), "JsSpider.createCtx.end" + key);
+        
         ctx.setModuleLoader(new QuickJSContext.BytecodeModuleLoader() {
             @Override
             public byte[] getModuleBytecode(String moduleName) {
@@ -619,21 +817,21 @@ public class JsSpider extends Spider {
 
         ctx.getGlobalObject().bind(new Global(executor));
 
-        JSObject local = ctx.createJSObject();
-        ctx.getGlobalObject().set("local", local);
-        local.bind(new local());
+        localObject = ctx.createJSObject();
+        ctx.getGlobalObject().set("local", localObject);
+        localObject.bind(new local());
 
         ctx.getGlobalObject().getContext().evaluate(FileUtils.loadModule("net.js"));
     }
 
     private void createDex() {
         try {
-            JSObject obj = ctx.createJSObject();
+            jsapiObject = ctx.createJSObject();
             Class<?> clz = dex;
             Class<?>[] classes = clz.getDeclaredClasses();
-            ctx.getGlobalObject().set("jsapi", obj);
-            if (classes.length == 0) invokeSingle(clz, obj);
-            if (classes.length >= 1) invokeMultiple(clz, obj);
+            ctx.getGlobalObject().set("jsapi", jsapiObject);
+            if (classes.length == 0) invokeSingle(clz, jsapiObject);
+            if (classes.length >= 1) invokeMultiple(clz, jsapiObject);
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -647,6 +845,7 @@ public class JsSpider extends Spider {
         for (Class<?> subClz : clz.getDeclaredClasses()) {
             Object javaObj = subClz.getDeclaredConstructor(clz).newInstance(clz.getDeclaredConstructor(QuickJSContext.class).newInstance(ctx));
             JSObject subObj = ctx.createJSObject();
+            subJsObjects.add(subObj);
             invoke(subClz, subObj, javaObj);
             jsObj.set(subClz.getSimpleName(), subObj);
         }

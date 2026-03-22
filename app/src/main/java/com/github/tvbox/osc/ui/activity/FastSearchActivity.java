@@ -382,9 +382,7 @@ public class FastSearchActivity extends BaseActivity {
     }
 
     private void search(String title) {
-        // 搜索开始时打印内存监控信息
-        MemoryMonitor.printMemoryLog(mContext, "快速搜索开始：" + title);
-            
+        // 搜索开始时打印内存监控信息            
         Log.d("FastSearchActivity", "开始搜索：" + title);
         cancel();
         showLoading();
@@ -411,7 +409,6 @@ public class FastSearchActivity extends BaseActivity {
     private volatile boolean isSearchCancelled = false;
 
     private void searchResult() {
-        Log.d("FastSearchActivity", "准备搜索任务");
         isSearchCancelled = false;
         
         try {
@@ -451,10 +448,7 @@ public class FastSearchActivity extends BaseActivity {
             allRunCount.incrementAndGet();
         }
 
-        Log.d("FastSearchActivity", "总搜索任务数量：" + siteKey.size() + "，分批执行，每批 " + BATCH_SIZE + " 个");
-        
         if (!checkMemoryBeforeSearch()) {
-            Log.e("FastSearchActivity", "内存不足，取消搜索");
             Toast.makeText(mContext, "内存不足，请清理后台应用后重试", Toast.LENGTH_LONG).show();
             return;
         }
@@ -470,17 +464,12 @@ public class FastSearchActivity extends BaseActivity {
             long maxMem = runtime.maxMemory();
             double usagePercent = (double) usedMem / maxMem * 100;
             
-            Log.d("FastSearchActivity", "搜索前内存检查 - 已用: " + (usedMem / 1024 / 1024) + 
-                  "MB, 最大: " + (maxMem / 1024 / 1024) + "MB, 使用率: " + String.format("%.2f", usagePercent) + "%");
-            
             if (usagePercent > 85) {
-                Log.w("FastSearchActivity", "内存使用率过高: " + String.format("%.2f", usagePercent) + "%");
                 System.gc();
                 SystemClock.sleep(200);
                 
                 usedMem = runtime.totalMemory() - runtime.freeMemory();
                 usagePercent = (double) usedMem / maxMem * 100;
-                Log.d("FastSearchActivity", "GC后内存检查 - 使用率: " + String.format("%.2f", usagePercent) + "%");
                 
                 if (usagePercent > 80) {
                     return false;
@@ -488,26 +477,18 @@ public class FastSearchActivity extends BaseActivity {
             }
             return true;
         } catch (Throwable th) {
-            Log.e("FastSearchActivity", "内存检查异常", th);
             return true;
         }
     }
     
     private void executeSearchBatches(final ArrayList<String> siteKey, final int batchStartIndex) {
         if (isSearchCancelled || batchStartIndex >= siteKey.size()) {
-            Log.d("FastSearchActivity", "搜索已取消或所有批次执行完成");
             finishSearch();
             return;
         }
         
         final int batchEndIndex = Math.min(batchStartIndex + BATCH_SIZE, siteKey.size());
         final List<String> batchKeys = siteKey.subList(batchStartIndex, batchEndIndex);
-        
-        Log.d("FastSearchActivity", "执行批次 " + (batchStartIndex / BATCH_SIZE + 1) + 
-              "，任务范围：" + batchStartIndex + " - " + (batchEndIndex - 1) + 
-              "，共 " + batchKeys.size() + " 个任务");
-        
-        MemoryMonitor.printMemoryLog(mContext, "开始执行批次 " + (batchStartIndex / BATCH_SIZE + 1));
         
         final CountDownLatch batchLatch = new CountDownLatch(batchKeys.size());
         final AtomicInteger batchErrorCount = new AtomicInteger(0);
@@ -517,36 +498,33 @@ public class FastSearchActivity extends BaseActivity {
             searchExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    String threadName = Thread.currentThread().getName();
                     try {
                         if (!isSearchCancelled) {
-                            Log.d("FastSearchActivity", "[线程：" + threadName + "] 执行搜索任务：" + sourceKey);
                             sourceViewModel.getSearch(sourceKey, searchTitle);
                         }
                     } catch (OutOfMemoryError e) {
                         batchErrorCount.incrementAndGet();
-                        handleOOM(threadName, sourceKey, e);
+                        handleOOM(Thread.currentThread().getName(), sourceKey, e);
                     } catch (Exception e) {
                         batchErrorCount.incrementAndGet();
-                        Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务异常：" + sourceKey, e);
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                         } catch (Exception ex) {
-                            ex.printStackTrace();
+                            Log.e("FastSearchActivity", "发布搜索结果事件异常", ex);
                         }
                     } catch (Throwable th) {
                         batchErrorCount.incrementAndGet();
-                        Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务严重异常：" + sourceKey, th);
                         if (th instanceof OutOfMemoryError) {
-                            handleOOM(threadName, sourceKey, (OutOfMemoryError) th);
+                            handleOOM(Thread.currentThread().getName(), sourceKey, (OutOfMemoryError) th);
                         } else {
                             try {
                                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                             } catch (Exception ex) {
-                                ex.printStackTrace();
+                                Log.e("FastSearchActivity", "发布搜索结果事件异常", ex);
                             }
                         }
                     } finally {
+                        allRunCount.decrementAndGet();
                         batchLatch.countDown();
                     }
                 }
@@ -557,13 +535,7 @@ public class FastSearchActivity extends BaseActivity {
             @Override
             public void run() {
                 try {
-                    boolean batchCompleted = batchLatch.await(5, TimeUnit.MINUTES);
-                    if (!batchCompleted) {
-                        Log.w("FastSearchActivity", "批次 " + (batchStartIndex / BATCH_SIZE + 1) + " 执行超时");
-                    }
-                    
-                    Log.d("FastSearchActivity", "批次 " + (batchStartIndex / BATCH_SIZE + 1) + 
-                          " 执行完成，错误数：" + batchErrorCount.get());
+                    batchLatch.await(5, TimeUnit.MINUTES);
                     
                     cleanupBetweenBatches();
                     
@@ -572,7 +544,6 @@ public class FastSearchActivity extends BaseActivity {
                         executeSearchBatches(siteKey, batchEndIndex);
                     }
                 } catch (InterruptedException e) {
-                    Log.e("FastSearchActivity", "批次等待被中断", e);
                     Thread.currentThread().interrupt();
                 }
             }
@@ -581,40 +552,32 @@ public class FastSearchActivity extends BaseActivity {
     
     private void finishSearch() {
         try {
+            if (searchAdapter != null && searchAdapter.getData().size() <= 0) {
+                try {
+                    showEmpty();
+                } catch (Exception e) {
+                    Log.e("FastSearchActivity", "显示空结果异常", e);
+                }
+            }
             if (searchExecutorService != null) {
                 searchExecutorService.shutdownNow();
                 searchExecutorService = null;
             }
             JsLoader.stopAll();
             System.gc();
-            Log.d("FastSearchActivity", "搜索任务全部完成");
         } catch (Throwable th) {
-            Log.e("FastSearchActivity", "完成搜索时异常", th);
+            Log.e("FastSearchActivity", "完成搜索异常", th);
         }
     }
     
     private void cleanupBetweenBatches() {
         try {
-            Log.d("FastSearchActivity", "执行批次间内存清理");
-            
-            Log.d("FastSearchActivity", "步骤1: 停止所有 Spider 请求");
             JsLoader.stopAll();
-            
-            Log.d("FastSearchActivity", "步骤2: 销毁所有 Spider 并清理缓存（释放 Native 内存）");
             JsLoader.destroyAllAndClear();
-            
-            Log.d("FastSearchActivity", "步骤3: 触发 Java GC");
             System.gc();
-            
-            Log.d("FastSearchActivity", "步骤4: 等待 GC 执行完成");
             SystemClock.sleep(300);
-            
-            Log.d("FastSearchActivity", "步骤5: 再次触发 GC，确保资源释放");
             System.gc();
             SystemClock.sleep(200);
-            
-            MemoryMonitor.printMemoryLog(mContext, "批次间内存清理完成");
-            
         } catch (Throwable th) {
             Log.e("FastSearchActivity", "批次间清理异常", th);
         }
@@ -622,18 +585,15 @@ public class FastSearchActivity extends BaseActivity {
     
     private void handleOOM(String threadName, String sourceKey, OutOfMemoryError e) {
         try {
-            Log.e("FastSearchActivity", "[线程：" + threadName + "] 搜索任务内存不足：" + sourceKey, e);
-            e.printStackTrace();
-            MemoryMonitor.printMemoryLog(mContext, "OOM 发生 - 快速搜索任务：" + sourceKey);
-        } catch (Throwable ex) {
-            android.util.Log.e("FastSearchActivity", "打印 OOM 信息时出错", ex);
-        }
-        
-        try {
             if (searchExecutorService != null && !searchExecutorService.isShutdown()) {
                 searchExecutorService.shutdownNow();
                 JsLoader.stopAll();
             }
+            
+            // 尝试释放更多资源
+            System.gc();
+            System.gc();
+            SystemClock.sleep(500);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -665,12 +625,10 @@ public class FastSearchActivity extends BaseActivity {
     }
 
     private void searchData(AbsXml absXml) {
-        Log.d("FastSearchActivity", "处理搜索结果");
         try {
             String lastSourceKey = "";
 
             if (absXml != null && absXml.movie != null && absXml.movie.videoList != null && absXml.movie.videoList.size() > 0) {
-                Log.d("FastSearchActivity", "搜索结果数量: " + absXml.movie.videoList.size());
                 try {
                     List<Movie.Video> data = new ArrayList<>();
                     for (Movie.Video video : absXml.movie.videoList) {
@@ -687,24 +645,20 @@ public class FastSearchActivity extends BaseActivity {
                                             try {
                                                 lastSourceKey = this.addWordAdapterIfNeed(video.sourceKey);
                                             } catch (Exception e) {
-                                                e.printStackTrace();
-                                                // 添加源名称到过滤器异常，继续执行
+                                                Log.e("FastSearchActivity", "添加适配器数据异常", e);
                                             }
                                         }
                                     }
                                 } catch (Exception e) {
-                                    e.printStackTrace();
-                                    // 结果存储异常，继续执行
+                                    Log.e("FastSearchActivity", "处理搜索结果异常", e);
                                 }
                             }
                         } catch (Exception e) {
-                            e.printStackTrace();
-                            // 单个视频处理异常，跳过该视频
+                            Log.e("FastSearchActivity", "处理视频项异常", e);
                         }
                     }
 
                     if (!data.isEmpty() && searchAdapter != null) {
-                        Log.d("FastSearchActivity", "添加搜索结果: " + data.size() + " 个视频");
                         try {
                             if (searchAdapter.getData().size() > 0) {
                                 searchAdapter.addData(data);
@@ -712,7 +666,7 @@ public class FastSearchActivity extends BaseActivity {
                                 try {
                                     showSuccess();
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                    Log.e("FastSearchActivity", "显示成功状态异常", e);
                                 }
                                 if (!isFilterMode && mGridView != null) {
                                     mGridView.setVisibility(View.VISIBLE);
@@ -720,63 +674,39 @@ public class FastSearchActivity extends BaseActivity {
                                 searchAdapter.setNewData(data);
                             }
                         } catch (Exception e) {
-                            e.printStackTrace();
-                            // 适配器操作异常，继续执行
+                            Log.e("FastSearchActivity", "更新适配器数据异常", e);
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    // 数据处理异常，继续执行
+                    Log.e("FastSearchActivity", "处理搜索结果异常", e);
                 }
             }
 
             try {
-                int count = allRunCount.decrementAndGet();
-                Log.d("FastSearchActivity", "搜索任务完成，剩余任务数: " + count);
+                int count = allRunCount.get();
                 if (count <= 0) {
-                    Log.d("FastSearchActivity", "所有搜索任务完成");
                     try {
                         if (searchAdapter != null && searchAdapter.getData().size() <= 0) {
-                            Log.d("FastSearchActivity", "无搜索结果");
                             try {
                                 showEmpty();
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                Log.e("FastSearchActivity", "显示空结果异常", e);
                             }
                         }
                         try {
                             cancel();
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            Log.e("FastSearchActivity", "取消搜索异常", e);
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
-                        // 搜索完成处理异常，继续执行
+                        Log.e("FastSearchActivity", "处理搜索完成异常", e);
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-                // 计数器操作异常，继续执行
+                Log.e("FastSearchActivity", "获取运行计数异常", e);
             }
         } catch (Exception e) {
-            Log.e("FastSearchActivity", "处理搜索结果异常", e);
-            e.printStackTrace();
-            // 整体异常，确保流程不中断
-            try {
-                int count = allRunCount.decrementAndGet();
-                if (count <= 0) {
-                    try {
-                        if (searchAdapter != null && searchAdapter.getData().size() <= 0) {
-                            showEmpty();
-                        }
-                        cancel();
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            Log.e("FastSearchActivity", "搜索数据处理异常", e);
         }
     }
 
@@ -796,7 +726,7 @@ public class FastSearchActivity extends BaseActivity {
                 JsLoader.stopAll();
             }
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.e("FastSearchActivity", "销毁活动异常", th);
         }
         EventBus.getDefault().unregister(this);
     }

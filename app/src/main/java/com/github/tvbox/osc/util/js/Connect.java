@@ -80,6 +80,8 @@ public class Connect {
             } else if (req.getBuffer() == 2) {
                 jsObject.set("content", Base64.encodeToString(bodyBytes, Base64.DEFAULT | Base64.NO_WRAP));
             }
+            LOG.i("[Connect] 调用 ctx.hold(jsObject)，增加引用计数，jsObject: " + jsObject);
+            ctx.hold(jsObject);
             return jsObject;
         } catch (Exception e) {
             return error(ctx);
@@ -91,6 +93,8 @@ public class Connect {
         JSObject jsHeader = ctx.createJSObject();
         jsObject.set("headers", jsHeader);
         jsObject.set("content", "");
+        LOG.i("[Connect] 调用 ctx.hold(jsObject)，增加引用计数，jsObject: " + jsObject);
+        ctx.hold(jsObject);
         return jsObject;
     }
 

@@ -10,7 +10,12 @@ public class JSFunction extends JSObject {
     }
 
     public Object call(Object... args) {
-        return getContext().call(this, objPointer, args);
+        try {
+            return getContext().call(this, objPointer, args);
+        } catch (Throwable t) {
+            // 捕获所有异常，防止传递到JNI层
+            return null;
+        }
     }
 
 }

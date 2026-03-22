@@ -641,7 +641,7 @@ public class SourceViewModel extends ViewModel {
                 try {
                     EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("SourceViewModel", "发布搜索结果事件异常", e);
                 }
                 return;
             }
@@ -649,26 +649,21 @@ public class SourceViewModel extends ViewModel {
             if (type == 3) {
                 try {
                     Spider sp = ApiConfig.get().getCSP(sourceBean);
+                    
                     if (sp != null) {
                         Future<String> future = pythonExecutorService.submit(new Callable<String>() {
                             @Override
                             public String call() throws Exception {
-                                String threadName = Thread.currentThread().getName();
-                                LOG.i("[线程: " + threadName + "] 执行 Python 插件搜索任务: " + sourceKey);
                                 try {
                                     return sp.searchContent(wd, false);
                                 } catch (OutOfMemoryError e) {
-                                    LOG.e("[线程: " + threadName + "] Python 插件搜索任务内存不足: " + sourceKey, e);
-                                    e.printStackTrace();
-                                    MemoryMonitor.printMemoryLog(App.getInstance(), "OOM 发生 - Python 插件搜索: " + sourceKey);
+                                    Log.e("SourceViewModel", "Python搜索OOM异常", e);
                                     return "";
                                 } catch (Exception e) {
-                                    LOG.e("[线程: " + threadName + "] Python 插件搜索任务异常: " + sourceKey, e);
-                                    e.printStackTrace();
+                                    Log.e("SourceViewModel", "Python搜索异常", e);
                                     return "";
                                 } catch (Throwable th) {
-                                    LOG.e("[线程: " + threadName + "] Python 插件搜索任务严重异常: " + sourceKey, th);
-                                    th.printStackTrace();
+                                    Log.e("SourceViewModel", "Python搜索未知异常", th);
                                     return "";
                                 }
                             }
@@ -677,11 +672,11 @@ public class SourceViewModel extends ViewModel {
                         try {
                             search = future.get(20, TimeUnit.SECONDS);
                         } catch (TimeoutException e) {
-                            e.printStackTrace();
+                            Log.e("SourceViewModel", "Python搜索超时", e);
                             future.cancel(true);
                             search = "";
                         } catch (InterruptedException | ExecutionException e) {
-                            e.printStackTrace();
+                            Log.e("SourceViewModel", "Python搜索执行异常", e);
                             search = "";
                         }
                         try {
@@ -691,30 +686,30 @@ public class SourceViewModel extends ViewModel {
                                 json(searchResult, "", sourceBean.getKey());
                             }
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            Log.e("SourceViewModel", "处理Python搜索结果异常", e);
                             try {
                                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                             } catch (Exception ex) {
-                                ex.printStackTrace();
+                                Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                             }
                         }
                     } else {
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            Log.e("SourceViewModel", "发布搜索结果事件异常", e);
                         }
                     }
                 } catch (Throwable th) {
-                    th.printStackTrace();
+                    Log.e("SourceViewModel", "Python搜索处理异常", th);
                     try {
                         json(searchResult, "", sourceBean.getKey());
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.e("SourceViewModel", "处理搜索结果异常", e);
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                         } catch (Exception ex) {
-                            ex.printStackTrace();
+                            Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                         }
                     }
                 }
@@ -736,7 +731,7 @@ public class SourceViewModel extends ViewModel {
                                                 throw new IllegalStateException("网络请求错误");
                                             }
                                         } catch (Exception e) {
-                                            e.printStackTrace();
+                                            Log.e("SourceViewModel", "网络响应转换异常", e);
                                             throw e;
                                         }
                                     }
@@ -750,11 +745,11 @@ public class SourceViewModel extends ViewModel {
                                                     try {
                                                         xml(searchResult, xml, sourceBean.getKey());
                                                     } catch (Exception e) {
-                                                        e.printStackTrace();
+                                                        Log.e("SourceViewModel", "处理XML搜索结果异常", e);
                                                         try {
                                                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                                                         } catch (Exception ex) {
-                                                            ex.printStackTrace();
+                                                            Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                                                         }
                                                     }
                                                 } else {
@@ -762,11 +757,11 @@ public class SourceViewModel extends ViewModel {
                                                     try {
                                                         json(searchResult, json, sourceBean.getKey());
                                                     } catch (Exception e) {
-                                                        e.printStackTrace();
+                                                        Log.e("SourceViewModel", "处理JSON搜索结果异常", e);
                                                         try {
                                                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                                                         } catch (Exception ex) {
-                                                            ex.printStackTrace();
+                                                            Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                                                         }
                                                     }
                                                 }
@@ -774,15 +769,15 @@ public class SourceViewModel extends ViewModel {
                                                 try {
                                                     EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                                                 } catch (Exception e) {
-                                                    e.printStackTrace();
+                                                    Log.e("SourceViewModel", "发布搜索结果事件异常", e);
                                                 }
                                             }
                                         } catch (Exception e) {
-                                            e.printStackTrace();
+                                            Log.e("SourceViewModel", "处理搜索响应异常", e);
                                             try {
                                                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                                             } catch (Exception ex) {
-                                                ex.printStackTrace();
+                                                Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                                             }
                                         }
                                     }
@@ -792,12 +787,12 @@ public class SourceViewModel extends ViewModel {
                                         try {
                                             super.onError(response);
                                         } catch (Exception e) {
-                                            e.printStackTrace();
+                                            Log.e("SourceViewModel", "处理搜索错误异常", e);
                                         }
                                         try {
                                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                                         } catch (Exception e) {
-                                            e.printStackTrace();
+                                            Log.e("SourceViewModel", "发布搜索结果事件异常", e);
                                         }
                                     }
                                 });
@@ -805,15 +800,15 @@ public class SourceViewModel extends ViewModel {
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            Log.e("SourceViewModel", "发布搜索结果事件异常", e);
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("SourceViewModel", "执行搜索请求异常", e);
                     try {
                         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                     } catch (Exception ex) {
-                        ex.printStackTrace();
+                        Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                     }
                 }
             } else if (type == 4) {
@@ -835,7 +830,7 @@ public class SourceViewModel extends ViewModel {
                                                 throw new IllegalStateException("网络请求错误");
                                             }
                                         } catch (Exception e) {
-                                            e.printStackTrace();
+                                            Log.e("SourceViewModel", "网络响应转换异常", e);
                                             throw e;
                                         }
                                     }
@@ -845,30 +840,29 @@ public class SourceViewModel extends ViewModel {
                                         try {
                                             if (response != null && response.body() != null) {
                                                 String json = response.body();
-                                                LOG.i(json);
                                                 try {
                                                     json(searchResult, json, sourceBean.getKey());
                                                 } catch (Exception e) {
-                                                    e.printStackTrace();
+                                                    Log.e("SourceViewModel", "处理JSON搜索结果异常", e);
                                                     try {
                                                         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                                                     } catch (Exception ex) {
-                                                        ex.printStackTrace();
+                                                        Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                                                     }
                                                 }
                                             } else {
                                                 try {
                                                     EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                                                 } catch (Exception e) {
-                                                    e.printStackTrace();
+                                                    Log.e("SourceViewModel", "发布搜索结果事件异常", e);
                                                 }
                                             }
                                         } catch (Exception e) {
-                                            e.printStackTrace();
+                                            Log.e("SourceViewModel", "处理搜索响应异常", e);
                                             try {
                                                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                                             } catch (Exception ex) {
-                                                ex.printStackTrace();
+                                                Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                                             }
                                         }
                                     }
@@ -878,12 +872,12 @@ public class SourceViewModel extends ViewModel {
                                         try {
                                             super.onError(response);
                                         } catch (Exception e) {
-                                            e.printStackTrace();
+                                            Log.e("SourceViewModel", "处理搜索错误异常", e);
                                         }
                                         try {
                                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                                         } catch (Exception e) {
-                                            e.printStackTrace();
+                                            Log.e("SourceViewModel", "发布搜索结果事件异常", e);
                                         }
                                     }
                                 });
@@ -891,45 +885,44 @@ public class SourceViewModel extends ViewModel {
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            Log.e("SourceViewModel", "发布搜索结果事件异常", e);
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("SourceViewModel", "执行搜索请求异常", e);
                     try {
                         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                     } catch (Exception ex) {
-                        ex.printStackTrace();
+                        Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                     }
                 }
             } else {
                 try {
                     searchResult.postValue(null);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("SourceViewModel", "发布搜索结果异常", e);
                     try {
                         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                     } catch (Exception ex) {
-                        ex.printStackTrace();
+                        Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                     }
                 }
             }
         } catch (OutOfMemoryError e) {
-            LOG.e("SourceViewModel", "getSearch 内存不足: " + sourceKey);
-            e.printStackTrace();
-            MemoryMonitor.printMemoryLog(App.getInstance(), "OOM 发生 - getSearch: " + sourceKey);
+            Log.e("SourceViewModel", "搜索OOM异常", e);
+            
             try {
                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
             } catch (Exception ex) {
-                ex.printStackTrace();
+                Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
             }
             throw e;
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("SourceViewModel", "搜索处理异常", e);
             try {
                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
             } catch (Exception ex) {
-                ex.printStackTrace();
+                Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
             }
         }
     }

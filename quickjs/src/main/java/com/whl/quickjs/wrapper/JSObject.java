@@ -22,11 +22,18 @@ public class JSObject {
     }
 
     public void setProperty(String name, String value) {
+        checkReleased();
+        if (name == null) {
+            return;
+        }
         context.setProperty(this, name, value);
     }
 
     public Object getProperty(String name) {
         checkReleased();
+        if (name == null) {
+            return null;
+        }
         return context.getProperty(this, name);
     }
 
@@ -71,11 +78,17 @@ public class JSObject {
 
     public Object get(String name) {
         checkReleased();
+        if (name == null) {
+            return null;
+        }
         return context.get(this, name);
     }
 
     public void set(String name, Object value) {
         checkReleased();
+        if (name == null) {
+            return;
+        }
         context.set(this, name, value);
     }
 
@@ -120,13 +133,33 @@ public class JSObject {
     }
 
     public JSArray getNames() {
-        JSFunction getOwnPropertyNames = (JSFunction) context.evaluate("Object.getOwnPropertyNames");
-        return (JSArray) getOwnPropertyNames.call(this);
+        checkReleased();
+        try {
+            JSFunction getOwnPropertyNames = (JSFunction) context.evaluate("Object.getOwnPropertyNames");
+            if (getOwnPropertyNames != null) {
+                return (JSArray) getOwnPropertyNames.call(this);
+            }
+        } catch (Throwable t) {
+            // 捕获所有异常，防止传递到JNI层
+        }
+        return null;
     }
 
     public Boolean getHas(String key) {
-        JSFunction hasOwnProperty = (JSFunction) context.evaluate("Object.hasOwnProperty");
-        return (Boolean) hasOwnProperty.call(key);
+        checkReleased();
+        if (key == null) {
+            return false;
+        }
+        try {
+            JSFunction hasOwnProperty = (JSFunction) context.evaluate("Object.hasOwnProperty");
+            if (hasOwnProperty != null) {
+                Object result = hasOwnProperty.call(key);
+                return result instanceof Boolean ? (Boolean) result : false;
+            }
+        } catch (Throwable t) {
+            // 捕获所有异常，防止传递到JNI层
+        }
+        return false;
     }
 
     /**
@@ -164,12 +197,26 @@ public class JSObject {
     public String toString() {
         checkReleased();
 
-        JSFunction toString = getJSFunction("toString");
-        return (String) toString.call();
+        try {
+            JSFunction toString = getJSFunction("toString");
+            if (toString != null) {
+                Object result = toString.call();
+                return result instanceof String ? (String) result : super.toString();
+            }
+        } catch (Throwable t) {
+            // 捕获所有异常，防止传递到JNI层
+        }
+        return super.toString();
     }
 
     public String toJsonString() {
-        return context.stringify(this);
+        checkReleased();
+        try {
+            return context.stringify(this);
+        } catch (Throwable t) {
+            // 捕获所有异常，防止传递到JNI层
+            return null;
+        }
     }
 
     public JSONObject toJsonObject() {
@@ -340,10 +387,20 @@ public class JSObject {
     }
 
     public String stringify() {
-        return context.stringify(this);
+        checkReleased();
+        try {
+            return context.stringify(this);
+        } catch (Throwable t) {
+            // 捕获所有异常，防止传递到JNI层
+            return null;
+        }
     }
 
     public void setProperty(String name, JSCallFunction value) {
+        checkReleased();
+        if (name == null) {
+            return;
+        }
         context.setProperty(this, name, value);
     }
 }

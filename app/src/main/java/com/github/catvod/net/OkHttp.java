@@ -1,6 +1,7 @@
 package com.github.catvod.net;
 
 import android.net.Uri;
+import android.util.Log;
 
 import androidx.collection.ArrayMap;
 
@@ -16,13 +17,16 @@ import java.util.concurrent.TimeUnit;
 
 import okhttp3.Cache;
 import okhttp3.Call;
+import okhttp3.Connection;
 import okhttp3.Dns;
+import okhttp3.EventListener;
 import okhttp3.FormBody;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 import okhttp3.dnsoverhttps.DnsOverHttps;
 
 public class OkHttp {
@@ -132,7 +136,34 @@ public class OkHttp {
     }
 
     private static OkHttpClient.Builder getBuilder() {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder().addInterceptor(new OkhttpInterceptor()).connectTimeout(TIMEOUT, TimeUnit.MILLISECONDS).readTimeout(TIMEOUT, TimeUnit.MILLISECONDS).writeTimeout(TIMEOUT, TimeUnit.MILLISECONDS).dns(dns()).hostnameVerifier(SSLCompat.VERIFIER).sslSocketFactory(new SSLCompat(), SSLCompat.TM);
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .addInterceptor(new OkhttpInterceptor())
+                .connectTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .readTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .writeTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .dns(dns())
+                .hostnameVerifier(SSLCompat.VERIFIER)
+                .sslSocketFactory(new SSLCompat(), SSLCompat.TM)
+                // 添加HTTP/2监控
+                .eventListener(new EventListener() {
+                    @Override
+                    public void connectionAcquired(Call call, Connection connection) {
+                        super.connectionAcquired(call, connection);
+                        Log.d("OkHttp", "Connection acquired: " + connection.protocol());
+                    }
+                    
+                    @Override
+                    public void connectionReleased(Call call, Connection connection) {
+                        super.connectionReleased(call, connection);
+                        Log.d("OkHttp", "Connection released: " + connection.protocol());
+                    }
+                    
+                    @Override
+                    public void responseHeadersEnd(Call call, Response response) {
+                        super.responseHeadersEnd(call, response);
+                        Log.d("OkHttp", "Response headers end: " + response.protocol() + " " + response.code() + " " + call.request().url().host());
+                    }
+                });
         builder.proxySelector(selector());
         return builder;
     }

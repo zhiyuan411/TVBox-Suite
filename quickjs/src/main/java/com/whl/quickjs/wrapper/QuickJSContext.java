@@ -45,6 +45,7 @@ public class QuickJSContext {
 
     public void setProperty(JSObject jsObj, String name, Object value) {
         checkSameThread();
+        checkDestroyed();
 
         setProperty(context, jsObj.getPointer(), name, value);
     }
@@ -54,11 +55,14 @@ public class QuickJSContext {
     }
 
     public Object parseJSON(String s) {
-        return null;
+        checkSameThread();
+        checkDestroyed();
+        return parseJSON(context, s);
     }
 
     public Object getProperty(JSObject jsObj, String name) {
         checkSameThread();
+        checkDestroyed();
         return getProperty(context, jsObj.getPointer(), name);
     }
 
@@ -67,10 +71,14 @@ public class QuickJSContext {
     }
 
     public boolean isLiveObject(JSObject jsObj) {
+        checkSameThread();
+        checkDestroyed();
         return isLiveObject(runtime, jsObj.getPointer());
     }
 
     public void setConsole(final Console console) {
+        checkSameThread();
+        checkDestroyed();
         if (console == null) {
             return;
         }
@@ -79,32 +87,45 @@ public class QuickJSContext {
         consoleObject.set("log", new JSCallFunction() {
             @Override
             public Object call(Object... args) {
-                StringBuilder value = new StringBuilder();
-                for (int i = 0; i < args.length; i++) {
-                    value.append(args[i]);
-                    if (i < args.length - 1) {
-                        value.append(" ");
+                try {
+                    StringBuilder value = new StringBuilder();
+                    for (int i = 0; i < args.length; i++) {
+                        value.append(args[i]);
+                        if (i < args.length - 1) {
+                            value.append(" ");
+                        }
                     }
+                    console.log(value.toString());
+                } catch (Throwable t) {
+                    // 捕获所有异常，防止传递到JNI层
                 }
-                console.log(value.toString());
                 return null;
             }
         });
     }
 
     public void setMaxStackSize(int maxStackSize) {
+        checkSameThread();
+        checkDestroyed();
         setMaxStackSize(runtime, maxStackSize);
     }
 
     public void runGC() {
+        checkSameThread();
+        checkDestroyed();
         runGC(runtime);
+        nativeCleaner.clean();
     }
 
     public void setMemoryLimit(int memoryLimitSize) {
+        checkSameThread();
+        checkDestroyed();
         setMemoryLimit(runtime, memoryLimitSize);
     }
 
     public void dumpMemoryUsage(File target) {
+        checkSameThread();
+        checkDestroyed();
         if (target == null || !target.exists()) {
             return;
         }
@@ -114,10 +135,14 @@ public class QuickJSContext {
 
     // will use stdout to print.
     public void dumpMemoryUsage() {
+        checkSameThread();
+        checkDestroyed();
         dumpMemoryUsage(runtime, null);
     }
 
     public void dumpObjects(File target) {
+        checkSameThread();
+        checkDestroyed();
         if (target == null || !target.exists()) {
             return;
         }
@@ -127,6 +152,8 @@ public class QuickJSContext {
 
     // will use stdout to print.
     public void dumpObjects() {
+        checkSameThread();
+        checkDestroyed();
         dumpObjects(runtime, null);
     }
 
@@ -231,6 +258,10 @@ public class QuickJSContext {
      * @param callFunctionId JSCallFunction 对象标识
      */
     public void removeCallFunction(int callFunctionId) {
+        if (destroyed) {
+            return;
+        }
+        checkSameThread();
         callFunctionMap.remove(callFunctionId);
     }
 
@@ -241,8 +272,11 @@ public class QuickJSContext {
      * @param args           JS 到 Java 的参数映射
      */
     public Object callFunctionBack(int callFunctionId, Object... args) {
+        if (destroyed) {
+            return null;
+        }
+        
         checkSameThread();
-        checkDestroyed();
 
         JSCallFunction callFunction = callFunctionMap.get(callFunctionId);
         if (callFunction == null) {
@@ -366,11 +400,15 @@ public class QuickJSContext {
     }
 
     public JSObject createJSObject() {
-        return (JSObject) parse("{}");
+        JSObject obj = (JSObject) parse("{}");
+        nativeCleaner.clean();
+        return obj;
     }
 
     public JSArray createJSArray() {
-        return (JSArray) parse("[]");
+        JSArray array = (JSArray) parse("[]");
+        nativeCleaner.clean();
+        return array;
     }
 
     public Object parse(String json) {
