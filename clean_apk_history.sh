@@ -41,7 +41,7 @@ if ! git diff-index --quiet HEAD --; then
 fi
 echo -e "${GREEN}[2/7] 检查工作区状态：干净${NC}"
 
-# 3. 【新增】检查本地提交是否已推送到远程
+# 3. 检查本地提交是否已推送到远程
 CURRENT_BRANCH=$(git branch --show-current)
 if [ -z "$CURRENT_BRANCH" ]; then
     echo -e "${RED}错误：当前处于 detached HEAD 状态，请切换到具体分支。${NC}"
@@ -73,6 +73,17 @@ if ! command -v git-filter-repo &> /dev/null; then
 fi
 echo -e "${GREEN}[4/7] 检查 git-filter-repo：已安装${NC}"
 
+# =========================================
+# 【核心修改 1/3】 清理前先保存远程仓库 URL
+# =========================================
+echo -e "${GREEN}[预处理] 正在保存远程仓库地址...${NC}"
+REMOTE_URL=$(git remote get-url $REMOTE_NAME)
+if [ -z "$REMOTE_URL" ]; then
+    echo -e "${RED}错误：无法获取远程仓库 '$REMOTE_NAME' 的 URL。${NC}"
+    exit 1
+fi
+echo -e "${GREEN}[预处理] 已保存地址: $REMOTE_URL${NC}"
+
 # 5. 构建命令参数并展示待删文件
 FILTER_ARGS=""
 echo ""
@@ -83,12 +94,9 @@ for file in "${FILES_TO_DELETE[@]}"; do
 done
 echo ""
 
-# 6. 第一次确认：是否开始清理历史
-read -p "⚠️  你是否已完整备份仓库？确认开始清理历史吗？(输入 YES 确认): " confirm
-if [ "$confirm" != "YES" ]; then
-    echo -e "${YELLOW}操作已取消。${NC}"
-    exit 0
-fi
+# =========================================
+# 【修改 1/3】 已删除备份确认提示，直接执行
+# =========================================
 
 # 执行清理
 echo ""
@@ -101,7 +109,23 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "${GREEN}[6/7] 历史清理完成！${NC}"
+# =========================================
+# 【核心修改 2/3】 清理后重新添加远程仓库 origin
+# =========================================
+echo ""
+echo -e "${GREEN}[6/7] 历史清理完成！正在恢复远程仓库配置...${NC}"
+# 检查 origin 是否还在，如果不在则添加
+if ! git remote get-url $REMOTE_NAME &> /dev/null; then
+    echo -e "${YELLOW}提示：检测到远程 '$REMOTE_NAME' 已被 git-filter-repo 移除，正在重新添加...${NC}"
+    git remote add $REMOTE_NAME $REMOTE_URL
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}错误：重新添加远程仓库失败。${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}远程仓库配置完好。${NC}"
+fi
+
 echo ""
 echo -e "${YELLOW}仓库清理前后大小对比：${NC}"
 du -sh .git
@@ -112,16 +136,21 @@ echo -e "${YELLOW}========================================${NC}"
 echo -e "${YELLOW}下一步：强制推送到远程仓库${NC}"
 echo -e "${YELLOW}========================================${NC}"
 echo -e "这将覆盖远程仓库的历史，${RED}无法撤销${NC}。"
-read -p "⚠️  确认要立即强制推送到 '$REMOTE_NAME' 吗？(输入 PUSH_NOW 确认): " push_confirm
 
-if [ "$push_confirm" == "PUSH_NOW" ]; then
+# =========================================
+# 【修改 2/3】 确认输入改为 Y/y（不区分大小写）
+# =========================================
+read -p "⚠️  确认要立即强制推送到 '$REMOTE_NAME' 吗？(输入 Y 确认): " push_confirm
+
+# 转换为小写进行判断
+if [[ "${push_confirm,,}" == "y" ]]; then
     echo ""
     echo -e "${GREEN}正在强制推送所有分支到远程...${NC}"
     git push $REMOTE_NAME --force --all
-    
+
     echo -e "${GREEN}正在强制推送所有标签到远程...${NC}"
     git push $REMOTE_NAME --force --tags
-    
+
     echo ""
     echo -e "${GREEN}[7/7] 全部完成！${NC}"
     echo -e "请通知团队成员删除旧仓库，重新 git clone。"
