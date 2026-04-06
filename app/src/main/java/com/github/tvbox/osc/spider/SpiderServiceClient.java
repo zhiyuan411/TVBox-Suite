@@ -9,6 +9,7 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import com.github.tvbox.osc.ISpiderService;
+import com.github.tvbox.osc.util.MemoryMonitor;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -99,14 +100,35 @@ public class SpiderServiceClient {
     
     /**
      * 主动重启子进程
-     * 解绑服务，等待系统清理，然后重新绑定
+     * 1. 获取旧进程 PID
+     * 2. 解绑服务
+     * 3. 强制杀死旧进程
+     * 4. 等待清理
+     * 5. 重新绑定新进程
      * @return 是否重启成功
      */
     public boolean restartService() {
         Log.d(TAG, "主动重启 SpiderService");
         try {
+            int oldPid = MemoryMonitor.getSpiderProcessPid(mContext);
+            Log.d(TAG, "旧 spider 进程 PID: " + oldPid);
+            
             unbindService();
-            Thread.sleep(200);
+            Log.d(TAG, "已解绑服务");
+            
+            if (oldPid != -1) {
+                try {
+                    Log.d(TAG, "强制杀死旧进程 PID: " + oldPid);
+                    android.os.Process.killProcess(oldPid);
+                } catch (Exception e) {
+                    Log.e(TAG, "杀死旧进程失败", e);
+                }
+            }
+            
+            Log.d(TAG, "等待进程清理...");
+            Thread.sleep(1000);
+            
+            Log.d(TAG, "重新绑定服务...");
             return bindService();
         } catch (Exception e) {
             Log.e(TAG, "重启 SpiderService 失败", e);

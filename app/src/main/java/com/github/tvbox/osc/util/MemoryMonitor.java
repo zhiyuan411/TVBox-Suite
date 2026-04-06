@@ -132,9 +132,10 @@ public class MemoryMonitor {
      * @param context Context
      * @param pssThresholdMB PSS 阈值（MB），例如 400
      * @param pssRatioThreshold PSS 占系统总内存比例阈值（0-100），例如 40
+     * @param lowMemoryRatioThreshold 可用内存比例阈值（0-100），例如 15
      * @return 是否满足轮换条件
      */
-    public static boolean shouldRotateSpiderProcess(Context context, int pssThresholdMB, int pssRatioThreshold) {
+    public static boolean shouldRotateSpiderProcess(Context context, int pssThresholdMB, int pssRatioThreshold, int lowMemoryRatioThreshold) {
         try {
             ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
             List<ActivityManager.RunningAppProcessInfo> processes = activityManager.getRunningAppProcesses();
@@ -150,6 +151,15 @@ public class MemoryMonitor {
                     ActivityManager.MemoryInfo systemMemInfo = new ActivityManager.MemoryInfo();
                     activityManager.getMemoryInfo(systemMemInfo);
                     
+                    double availMemRatio = (systemMemInfo.availMem * 100.0) / systemMemInfo.totalMem;
+                    Log.d(TAG, String.format(":spider 子进程内存检查 - 系统可用内存：%.2f%%, 阈值: %d%%",
+                            availMemRatio, lowMemoryRatioThreshold));
+                    
+                    if (availMemRatio < lowMemoryRatioThreshold) {
+                        Log.d(TAG, ":spider 子进程满足轮换条件 - 可用内存不足");
+                        return true;
+                    }
+                    
                     Debug.MemoryInfo[] processMemInfos = activityManager.getProcessMemoryInfo(new int[]{pid});
                     if (processMemInfos != null && processMemInfos.length > 0) {
                         Debug.MemoryInfo processMemInfo = processMemInfos[0];
@@ -163,7 +173,7 @@ public class MemoryMonitor {
                                 totalPssMB, pssRatio, pssThresholdMB, pssRatioThreshold));
                         
                         if (totalPssMB > pssThresholdMB && pssRatio > pssRatioThreshold) {
-                            Log.d(TAG, ":spider 子进程满足轮换条件");
+                            Log.d(TAG, ":spider 子进程满足轮换条件 - PSS过高");
                             return true;
                         }
                     }
@@ -195,6 +205,32 @@ public class MemoryMonitor {
             Log.i(TAG, "====================");
         } catch (Exception e) {
             Log.e(TAG, "打印内存日志失败：" + prefix, e);
+        }
+    }
+    
+    /**
+     * 获取 spider 子进程的 PID
+     * @param context Context
+     * @return spider 子进程的 PID，如果未运行返回 -1
+     */
+    public static int getSpiderProcessPid(Context context) {
+        try {
+            ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            List<ActivityManager.RunningAppProcessInfo> processes = activityManager.getRunningAppProcesses();
+            
+            if (processes == null) {
+                return -1;
+            }
+            
+            for (ActivityManager.RunningAppProcessInfo process : processes) {
+                if (process.processName != null && process.processName.endsWith(SPIDER_PROCESS_SUFFIX)) {
+                    return process.pid;
+                }
+            }
+            return -1;
+        } catch (Exception e) {
+            Log.e(TAG, "获取 :spider 子进程 PID 失败", e);
+            return -1;
         }
     }
     

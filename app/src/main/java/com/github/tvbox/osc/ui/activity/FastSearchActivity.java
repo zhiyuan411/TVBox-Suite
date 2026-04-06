@@ -82,6 +82,7 @@ public class FastSearchActivity extends BaseActivity {
     private String searchFilterKey = "";    // 过滤的key
     private HashMap<String, ArrayList<Movie.Video>> resultVods; // 搜索结果
     private int finishedCount = 0;
+    private boolean isSearchFinished = false; // 搜索是否完毕
     private final List<String> quickSearchWord = new ArrayList<>();
     private HashMap<String, String> mCheckSources = null;
 
@@ -364,9 +365,12 @@ public class FastSearchActivity extends BaseActivity {
         }
         
         if (mSearchTitle != null) {
-//            mSearchTitle.setText(String.format(getString(R.string.fs_results) + " : %d/%d", finishedCount, spNames.size()));
             finishedCount = searchAdapter.getData().size();
-            mSearchTitle.setText(String.format(getString(R.string.fs_results) + " : %d", finishedCount));
+            if (isSearchFinished) {
+                mSearchTitle.setText(String.format(getString(R.string.fs_results) + " : %d (搜索完毕)", finishedCount));
+            } else {
+                mSearchTitle.setText(String.format(getString(R.string.fs_results) + " : %d", finishedCount));
+            }
         }
         if (event.type == RefreshEvent.TYPE_SEARCH_RESULT) {
             try {
@@ -400,6 +404,7 @@ public class FastSearchActivity extends BaseActivity {
         isFilterMode = false;
         spNames.clear();
         finishedCount = 0;
+        isSearchFinished = false;
     
         searchResult();
     }
@@ -554,10 +559,10 @@ public class FastSearchActivity extends BaseActivity {
                     MemoryMonitor.printMemoryLog(mContext, "快速搜索 批次 " + batchNumber + "/" + totalBatches + " 结束");
                     
                     // ========== 子进程轮换逻辑 ==========
-                    // 检查是否满足轮换条件：
-                    // i) 总PSS>400MB
-                    // ii) 总PSS的内存占比>40%
-                    boolean shouldRotate = MemoryMonitor.shouldRotateSpiderProcess(mContext, 400, 40);
+                    // 检查是否满足轮换条件（任意条件满足即轮换）：
+                    // i) 总PSS>400MB 且 总PSS的内存占比>40%
+                    // ii) 系统可用内存<15%
+                    boolean shouldRotate = MemoryMonitor.shouldRotateSpiderProcess(mContext, 400, 40, 15);
                     
                     if (shouldRotate) {
                         Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "/" + totalBatches + "] 满足轮换条件，主动轮换子进程");
@@ -585,6 +590,8 @@ public class FastSearchActivity extends BaseActivity {
     
     private void finishSearch() {
         try {
+            isSearchFinished = true;
+            
             if (searchAdapter != null && searchAdapter.getData().size() <= 0) {
                 try {
                     showEmpty();
