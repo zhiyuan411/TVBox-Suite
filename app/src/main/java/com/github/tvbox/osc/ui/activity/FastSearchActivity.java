@@ -605,6 +605,8 @@ public class FastSearchActivity extends BaseActivity {
             }
             JsLoader.stopAll();
             System.gc();
+            
+            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
         } catch (Throwable th) {
             Log.e("FastSearchActivity", "完成搜索异常", th);
         }
