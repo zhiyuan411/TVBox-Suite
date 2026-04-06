@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel;
 import com.github.catvod.crawler.JsLoader;
 import com.github.catvod.crawler.Spider;
 import com.github.tvbox.osc.api.ApiConfig;
+import com.github.tvbox.osc.spider.SpiderServiceClient;
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.bean.AbsJson;
 import com.github.tvbox.osc.bean.AbsSortJson;
@@ -47,6 +48,7 @@ import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.HashMap;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -99,6 +101,8 @@ public class SourceViewModel extends ViewModel {
         return jsExecutorService;
     }
 
+    private SpiderServiceClient mSpiderClient;
+
     public void initExecutor() {
         if (searchExecutorService != null) {
             searchExecutorService.shutdownNow();
@@ -146,6 +150,7 @@ public class SourceViewModel extends ViewModel {
         detailResult = new MutableLiveData<>();
         playResult = new MutableLiveData<>();
         gson=new Gson();
+        mSpiderClient = SpiderServiceClient.getInstance(App.getInstance());
     }
 
     public static final ExecutorService spThreadPool = Executors.newSingleThreadExecutor();
@@ -187,8 +192,13 @@ public class SourceViewModel extends ViewModel {
                     Future<String> future = executor.submit(new Callable<String>() {
                         @Override
                         public String call() throws Exception {
-                            Spider sp = ApiConfig.get().getCSP(sourceBean);
-                            return sp.homeContent(true);
+                            return mSpiderClient.homeContent(
+                                sourceBean.getKey(),
+                                sourceBean.getApi(),
+                                sourceBean.getExt(),
+                                sourceBean.getJar(),
+                                true
+                            );
                         }
                     });
                     String sortJson = null;
@@ -350,8 +360,21 @@ public class SourceViewModel extends ViewModel {
                 @Override
                 public void run() {
                     try {
-                        Spider sp = ApiConfig.get().getCSP(homeSourceBean);
-                        json(listResult, sp.categoryContent(sortData.id, page + "", true, sortData.filterSelect), homeSourceBean.getKey());
+                        HashMap<String, String> extend = null;
+                        if (sortData.filterSelect != null && !sortData.filterSelect.isEmpty()) {
+                            extend = sortData.filterSelect;
+                        }
+                        String categoryJson = mSpiderClient.categoryContent(
+                            homeSourceBean.getKey(),
+                            homeSourceBean.getApi(),
+                            homeSourceBean.getExt(),
+                            homeSourceBean.getJar(),
+                            sortData.id,
+                            page + "",
+                            true,
+                            extend
+                        );
+                        json(listResult, categoryJson, homeSourceBean.getKey());
                     } catch (Throwable th) {
                         th.printStackTrace();
                         listResult.postValue(null);
@@ -455,8 +478,13 @@ public class SourceViewModel extends ViewModel {
                     Future<String> future = executor.submit(new Callable<String>() {
                         @Override
                         public String call() throws Exception {
-                            Spider sp = ApiConfig.get().getCSP(sourceBean);
-                            return sp.homeVideoContent();
+                            return mSpiderClient.homeContent(
+                                sourceBean.getKey(),
+                                sourceBean.getApi(),
+                                sourceBean.getExt(),
+                                sourceBean.getJar(),
+                                false
+                            );
                         }
                     });
                     String sortJson = null;
@@ -565,11 +593,16 @@ public class SourceViewModel extends ViewModel {
                     Future<String> future = executor.submit(new Callable<String>() {
                         @Override
                         public String call() {
-                            Spider sp = ApiConfig.get().getCSP(sourceBean);
                             List<String> ids = new ArrayList<>();
                             ids.add(id);
                             try {
-                                return sp.detailContent(ids);
+                                return mSpiderClient.detailContent(
+                                    sourceBean.getKey(),
+                                    sourceBean.getApi(),
+                                    sourceBean.getExt(),
+                                    sourceBean.getJar(),
+                                    ids
+                                );
                             } catch (Exception e) {
                                 LOG.i("echo--getDetail--error: " + e.getMessage());
                                 return "";
@@ -653,20 +686,22 @@ public class SourceViewModel extends ViewModel {
                         @Override
                         public String call() throws Exception {
                             try {
-                                Spider sp = ApiConfig.get().getCSP(sourceBean);
-                                if (sp != null) {
-                                    return sp.searchContent(wd, false);
-                                } else {
-                                    return "";
-                                }
+                                return mSpiderClient.searchContent(
+                                    sourceBean.getKey(),
+                                    sourceBean.getApi(),
+                                    sourceBean.getExt(),
+                                    sourceBean.getJar(),
+                                    wd,
+                                    false
+                                );
                             } catch (OutOfMemoryError e) {
-                                Log.e("SourceViewModel", "Python搜索OOM异常", e);
+                                Log.e("SourceViewModel", "搜索OOM异常", e);
                                 return "";
                             } catch (Exception e) {
-                                Log.e("SourceViewModel", "Python搜索异常", e);
+                                Log.e("SourceViewModel", "搜索异常", e);
                                 return "";
                             } catch (Throwable th) {
-                                Log.e("SourceViewModel", "Python搜索未知异常", th);
+                                Log.e("SourceViewModel", "搜索未知异常", th);
                                 return "";
                             }
                         }
@@ -675,11 +710,11 @@ public class SourceViewModel extends ViewModel {
                     try {
                         search = future.get(20, TimeUnit.SECONDS);
                     } catch (TimeoutException e) {
-                        Log.e("SourceViewModel", "Python搜索超时", e);
+                        Log.e("SourceViewModel", "搜索超时", e);
                         future.cancel(true);
                         search = "";
                     } catch (InterruptedException | ExecutionException e) {
-                        Log.e("SourceViewModel", "Python搜索执行异常", e);
+                        Log.e("SourceViewModel", "搜索执行异常", e);
                         search = "";
                     }
                     try {
@@ -689,7 +724,7 @@ public class SourceViewModel extends ViewModel {
                             json(searchResult, "", sourceBean.getKey());
                         }
                     } catch (Exception e) {
-                        Log.e("SourceViewModel", "处理Python搜索结果异常", e);
+                        Log.e("SourceViewModel", "处理搜索结果异常", e);
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                         } catch (Exception ex) {
@@ -697,7 +732,7 @@ public class SourceViewModel extends ViewModel {
                         }
                     }
                 } catch (Throwable th) {
-                    Log.e("SourceViewModel", "Python搜索处理异常", th);
+                    Log.e("SourceViewModel", "搜索处理异常", th);
                     try {
                         json(searchResult, "", sourceBean.getKey());
                     } catch (Exception e) {

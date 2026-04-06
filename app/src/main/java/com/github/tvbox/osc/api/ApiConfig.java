@@ -762,6 +762,26 @@ public class ApiConfig {
         }
     }
 
+    public Spider getCSP(String key, String api, String ext, String jar) {
+        try {
+            if (api == null || api.isEmpty()) {
+                LOG.e("ApiConfig", "getCSP: api 为空");
+                return new com.github.catvod.crawler.SpiderNull();
+            }
+            if (api.endsWith(".js") || api.contains(".js?")) {
+                return jsLoader.getSpider(key, api, ext, jar);
+            } else if (api.contains(".py")) {
+                return pyLoader.getSpider(key, api, ext);
+            } else {
+                return jarLoader.getSpider(key, api, ext, jar);
+            }
+        } catch (Throwable th) {
+            LOG.e("ApiConfig", "getCSP 异常: " + th.getMessage());
+            th.printStackTrace();
+            return new com.github.catvod.crawler.SpiderNull();
+        }
+    }
+
     public Spider getPyCSP(String url) {
         return pyLoader.getSpider(MD5.string2MD5(url), url, "");
     }

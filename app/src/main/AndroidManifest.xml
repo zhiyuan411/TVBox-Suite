@@ -105,6 +105,10 @@
             android:name=".server.PlayService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />    
+        <service
+            android:name=".service.SpiderService"
+            android:process=":spider"
+            android:exported="false" />
 
         <receiver android:name=".receiver.SearchReceiver"
             android:exported="true">

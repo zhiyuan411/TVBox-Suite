@@ -23,6 +23,7 @@ import com.github.tvbox.osc.bean.Movie;
 import com.github.tvbox.osc.bean.SourceBean;
 import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.event.ServerEvent;
+import com.github.tvbox.osc.spider.SpiderServiceClient;
 import com.github.tvbox.osc.ui.adapter.FastListAdapter;
 import com.github.tvbox.osc.ui.adapter.FastSearchAdapter;
 import com.github.tvbox.osc.ui.adapter.SearchWordAdapter;
@@ -491,20 +492,23 @@ public class FastSearchActivity extends BaseActivity {
         final List<String> batchKeys = siteKey.subList(batchStartIndex, batchEndIndex);
         final int batchNumber = (batchStartIndex / BATCH_SIZE) + 1;
         final int totalBatches = (siteKey.size() + BATCH_SIZE - 1) / BATCH_SIZE;
+        final int totalSources = siteKey.size();
         
         Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "/" + totalBatches + "] 开始，处理源：" + batchStartIndex + " - " + (batchEndIndex - 1) + "，共 " + batchKeys.size() + " 个源");
         
         final CountDownLatch batchLatch = new CountDownLatch(batchKeys.size());
         final AtomicInteger batchErrorCount = new AtomicInteger(0);
+        final AtomicInteger currentSourceIndex = new AtomicInteger(batchStartIndex);
         
-        for (final String key : batchKeys) {
-            final String sourceKey = key;
+        for (int i = 0; i < batchKeys.size(); i++) {
+            final String sourceKey = batchKeys.get(i);
+            final int sourceGlobalIndex = batchStartIndex + i + 1;
             searchExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
                     try {
                         String threadName = Thread.currentThread().getName();
-                        Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "][线程：" + threadName + "] 执行搜索任务：" + sourceKey);
+                        Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "][线程：" + threadName + "] 执行搜索任务：" + sourceKey + " (" + sourceGlobalIndex + "/" + totalSources + ")");
                         if (!isSearchCancelled) {
                             sourceViewModel.getSearch(sourceKey, searchTitle);
                         }
@@ -548,6 +552,23 @@ public class FastSearchActivity extends BaseActivity {
                     
                     // 打印内存和进程信息
                     MemoryMonitor.printMemoryLog(mContext, "快速搜索 批次 " + batchNumber + "/" + totalBatches + " 结束");
+                    
+                    // ========== 子进程轮换逻辑 ==========
+                    // 检查是否满足轮换条件：
+                    // i) 总PSS>400MB
+                    // ii) 总PSS的内存占比>40%
+                    boolean shouldRotate = MemoryMonitor.shouldRotateSpiderProcess(mContext, 400, 40);
+                    
+                    if (shouldRotate) {
+                        Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "/" + totalBatches + "] 满足轮换条件，主动轮换子进程");
+                        try {
+                            SpiderServiceClient.getInstance(mContext).restartService();
+                            Log.d("FastSearchActivity", "[快速搜索] 子进程轮换成功");
+                        } catch (Exception e) {
+                            Log.e("FastSearchActivity", "[快速搜索] 子进程轮换失败", e);
+                        }
+                    }
+                    // ====================================
                     
                     cleanupBetweenBatches();
                     
