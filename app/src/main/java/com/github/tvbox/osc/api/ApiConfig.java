@@ -737,12 +737,28 @@ public class ApiConfig {
     }
 
     public Spider getCSP(SourceBean sourceBean) {
-        if (sourceBean.getApi().endsWith(".js") || sourceBean.getApi().contains(".js?")){
-            return jsLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
-        }else if (sourceBean.getApi().contains(".py")) {
-            return pyLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt());
-        } else {
-            return jarLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
+        try {
+            if (sourceBean == null) {
+                LOG.e("ApiConfig", "getCSP: sourceBean 为 null");
+                return new com.github.catvod.crawler.SpiderNull();
+            }
+            String key = sourceBean.getKey();
+            String api = sourceBean.getApi();
+            if (api == null || api.isEmpty()) {
+                LOG.e("ApiConfig", "getCSP: sourceBean api 为空");
+                return new com.github.catvod.crawler.SpiderNull();
+            }
+            if (api.endsWith(".js") || api.contains(".js?")){
+                return jsLoader.getSpider(key, api, sourceBean.getExt(), sourceBean.getJar());
+            }else if (api.contains(".py")) {
+                return pyLoader.getSpider(key, api, sourceBean.getExt());
+            } else {
+                return jarLoader.getSpider(key, api, sourceBean.getExt(), sourceBean.getJar());
+            }
+        } catch (Throwable th) {
+            LOG.e("ApiConfig", "getCSP 异常: " + th.getMessage());
+            th.printStackTrace();
+            return new com.github.catvod.crawler.SpiderNull();
         }
     }
 

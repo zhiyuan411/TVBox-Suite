@@ -160,100 +160,122 @@ public class JsLoader {
     }
 
     public Spider getSpider(String key, String api, String ext, String jar) {
-        if (spiders.containsKey(key)){
-            return spiders.get(key);
-        }
-        
-        // 检查是否有相同API的Spider已存在，复用Runtime
-        String apiKey = com.github.tvbox.osc.util.MD5.string2MD5(api);
-        for (Map.Entry<String, Spider> entry : spiders.entrySet()) {
-            Spider existingSpider = entry.getValue();
-            if (existingSpider instanceof com.github.tvbox.osc.util.js.JsSpider) {
-                com.github.tvbox.osc.util.js.JsSpider jsSpider = (com.github.tvbox.osc.util.js.JsSpider) existingSpider;
-                if (jsSpider.getApiKey() != null && jsSpider.getApiKey().equals(apiKey)) {
-                    // 创建新的Spider实例但复用Runtime
-                    try {
-                        Class<?> classLoader = null;
-                        if (!jar.isEmpty()) {
-                            String[] urls = jar.split(";md5;");
-                            String jarUrl = urls[0];
-                            String jarKey = com.github.tvbox.osc.util.MD5.string2MD5(jarUrl);
-                            String jarMd5 = urls.length > 1 ? urls[1].trim() : "";
-                            classLoader = loadJarInternal(jarUrl, jarMd5, jarKey);
-                        }
-                        recentKey = key;
-                        
-                        // 预检查模板语法
-                        if (!preCheckTemplate(api)) {
-                            return new SpiderNull();
-                        }
-                        
-                        // 创建新的Spider实例
-                        Spider sp = new com.github.tvbox.osc.util.js.JsSpider(key, api, classLoader);
-                        sp.init(App.getInstance(), ext);
-                        
-                        if (sp instanceof com.github.tvbox.osc.util.js.JsSpider) {
-                            com.github.tvbox.osc.util.js.JsSpider jsSpiderNew = (com.github.tvbox.osc.util.js.JsSpider) sp;
-                            if (jsSpiderNew.isInitSuccess()) {
-                                spiders.put(key, sp);
-                                return sp;
-                            } else {
-                                // 显式调用 destroy 确保资源释放
-                                try {
-                                    jsSpiderNew.destroy();
-                                } catch (Exception e) {
-                                    Log.e("JsLoader", "销毁失败的 Spider 异常: " + e.getMessage());
-                                }
-                                return new SpiderNull();
-                            }
-                        }
-                    } catch (Throwable th) {
-                        Log.e("JsLoader", "创建 Spider 异常: " + th.getMessage());
-                    }
-                }
-            }
-        }
-        
-        // 没有可复用的Runtime，创建新的Spider
-        Class<?> classLoader = null;
-        if (!jar.isEmpty()) {
-            String[] urls = jar.split(";md5;");
-            String jarUrl = urls[0];
-            String jarKey = com.github.tvbox.osc.util.MD5.string2MD5(jarUrl);
-            String jarMd5 = urls.length > 1 ? urls[1].trim() : "";
-            classLoader = loadJarInternal(jarUrl, jarMd5, jarKey);
-        }
-        recentKey = key;
         try {
-            // 预检查模板语法
-            if (!preCheckTemplate(api)) {
+            if (key == null || key.isEmpty()) {
+                Log.e("JsLoader", "getSpider: key 为空");
                 return new SpiderNull();
             }
-            Spider sp = new com.github.tvbox.osc.util.js.JsSpider(key, api, classLoader);
-            sp.init(App.getInstance(), ext);
-            
-            // 只有初始化成功的 Spider 才添加到缓存中
-            if (sp instanceof com.github.tvbox.osc.util.js.JsSpider) {
-                com.github.tvbox.osc.util.js.JsSpider jsSpider = (com.github.tvbox.osc.util.js.JsSpider) sp;
-                if (jsSpider.isInitSuccess()) {
-                    spiders.put(key, sp);
-                    return sp;
-                } else {
-                    // 显式调用 destroy 确保资源释放
-                    try {
-                        jsSpider.destroy();
-                    } catch (Exception e) {
-                        Log.e("JsLoader", "销毁失败的 Spider 异常: " + e.getMessage());
-                    }
-                    return new SpiderNull();
+            if (api == null || api.isEmpty()) {
+                Log.e("JsLoader", "getSpider: api 为空");
+                return new SpiderNull();
+            }
+            if (spiders.containsKey(key)){
+                Spider cached = spiders.get(key);
+                if (cached != null) {
+                    return cached;
                 }
             }
             
-            // 对于非 JsSpider 类型，保持原有逻辑
-            spiders.put(key, sp);
-            return sp;
+            // 检查是否有相同API的Spider已存在，复用Runtime
+            String apiKey = com.github.tvbox.osc.util.MD5.string2MD5(api);
+            for (Map.Entry<String, Spider> entry : spiders.entrySet()) {
+                Spider existingSpider = entry.getValue();
+                if (existingSpider instanceof com.github.tvbox.osc.util.js.JsSpider) {
+                    com.github.tvbox.osc.util.js.JsSpider jsSpider = (com.github.tvbox.osc.util.js.JsSpider) existingSpider;
+                    if (jsSpider.getApiKey() != null && jsSpider.getApiKey().equals(apiKey)) {
+                        // 创建新的Spider实例但复用Runtime
+                        try {
+                            Class<?> classLoader = null;
+                            if (jar != null && !jar.isEmpty()) {
+                                String[] urls = jar.split(";md5;");
+                                if (urls.length > 0) {
+                                    String jarUrl = urls[0];
+                                    String jarKey = com.github.tvbox.osc.util.MD5.string2MD5(jarUrl);
+                                    String jarMd5 = urls.length > 1 ? urls[1].trim() : "";
+                                    classLoader = loadJarInternal(jarUrl, jarMd5, jarKey);
+                                }
+                            }
+                            recentKey = key;
+                            
+                            // 预检查模板语法
+                            if (!preCheckTemplate(api)) {
+                                return new SpiderNull();
+                            }
+                            
+                            // 创建新的Spider实例
+                            Spider sp = new com.github.tvbox.osc.util.js.JsSpider(key, api, classLoader);
+                            sp.init(App.getInstance(), ext);
+                            
+                            if (sp instanceof com.github.tvbox.osc.util.js.JsSpider) {
+                                com.github.tvbox.osc.util.js.JsSpider jsSpiderNew = (com.github.tvbox.osc.util.js.JsSpider) sp;
+                                if (jsSpiderNew.isInitSuccess()) {
+                                    spiders.put(key, sp);
+                                    return sp;
+                                } else {
+                                    // 显式调用 destroy 确保资源释放
+                                    try {
+                                        jsSpiderNew.destroy();
+                                    } catch (Exception e) {
+                                        Log.e("JsLoader", "销毁失败的 Spider 异常: " + e.getMessage());
+                                    }
+                                    return new SpiderNull();
+                                }
+                            }
+                        } catch (Throwable th) {
+                            Log.e("JsLoader", "创建 Spider 异常: " + th.getMessage());
+                            th.printStackTrace();
+                        }
+                    }
+                }
+            }
+            
+            // 没有可复用的Runtime，创建新的Spider
+            Class<?> classLoader = null;
+            if (jar != null && !jar.isEmpty()) {
+                String[] urls = jar.split(";md5;");
+                if (urls.length > 0) {
+                    String jarUrl = urls[0];
+                    String jarKey = com.github.tvbox.osc.util.MD5.string2MD5(jarUrl);
+                    String jarMd5 = urls.length > 1 ? urls[1].trim() : "";
+                    classLoader = loadJarInternal(jarUrl, jarMd5, jarKey);
+                }
+            }
+            recentKey = key;
+            try {
+                // 预检查模板语法
+                if (!preCheckTemplate(api)) {
+                    return new SpiderNull();
+                }
+                Spider sp = new com.github.tvbox.osc.util.js.JsSpider(key, api, classLoader);
+                sp.init(App.getInstance(), ext);
+                
+                // 只有初始化成功的 Spider 才添加到缓存中
+                if (sp instanceof com.github.tvbox.osc.util.js.JsSpider) {
+                    com.github.tvbox.osc.util.js.JsSpider jsSpider = (com.github.tvbox.osc.util.js.JsSpider) sp;
+                    if (jsSpider.isInitSuccess()) {
+                        spiders.put(key, sp);
+                        return sp;
+                    } else {
+                        // 显式调用 destroy 确保资源释放
+                        try {
+                            jsSpider.destroy();
+                        } catch (Exception e) {
+                            Log.e("JsLoader", "销毁失败的 Spider 异常: " + e.getMessage());
+                        }
+                        return new SpiderNull();
+                    }
+                }
+                
+                // 对于非 JsSpider 类型，保持原有逻辑
+                spiders.put(key, sp);
+                return sp;
+            } catch (Throwable th) {
+                Log.e("JsLoader", "创建 Spider 异常: " + th.getMessage());
+                th.printStackTrace();
+            }
         } catch (Throwable th) {
-            Log.e("JsLoader", "创建 Spider 异常: " + th.getMessage());
+            Log.e("JsLoader", "getSpider 整体异常: " + th.getMessage());
+            th.printStackTrace();
         }
         return new SpiderNull();
     }

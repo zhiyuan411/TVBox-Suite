@@ -42,6 +42,7 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.greenrobot.eventbus.EventBus;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
@@ -648,56 +649,51 @@ public class SourceViewModel extends ViewModel {
             int type = sourceBean.getType();
             if (type == 3) {
                 try {
-                    Spider sp = ApiConfig.get().getCSP(sourceBean);
-                    
-                    if (sp != null) {
-                        Future<String> future = pythonExecutorService.submit(new Callable<String>() {
-                            @Override
-                            public String call() throws Exception {
-                                try {
+                    Future<String> future = pythonExecutorService.submit(new Callable<String>() {
+                        @Override
+                        public String call() throws Exception {
+                            try {
+                                Spider sp = ApiConfig.get().getCSP(sourceBean);
+                                if (sp != null) {
                                     return sp.searchContent(wd, false);
-                                } catch (OutOfMemoryError e) {
-                                    Log.e("SourceViewModel", "Python搜索OOM异常", e);
-                                    return "";
-                                } catch (Exception e) {
-                                    Log.e("SourceViewModel", "Python搜索异常", e);
-                                    return "";
-                                } catch (Throwable th) {
-                                    Log.e("SourceViewModel", "Python搜索未知异常", th);
+                                } else {
                                     return "";
                                 }
-                            }
-                        });
-                        String search = null;
-                        try {
-                            search = future.get(20, TimeUnit.SECONDS);
-                        } catch (TimeoutException e) {
-                            Log.e("SourceViewModel", "Python搜索超时", e);
-                            future.cancel(true);
-                            search = "";
-                        } catch (InterruptedException | ExecutionException e) {
-                            Log.e("SourceViewModel", "Python搜索执行异常", e);
-                            search = "";
-                        }
-                        try {
-                            if (!TextUtils.isEmpty(search)) {
-                                json(searchResult, search, sourceBean.getKey());
-                            } else {
-                                json(searchResult, "", sourceBean.getKey());
-                            }
-                        } catch (Exception e) {
-                            Log.e("SourceViewModel", "处理Python搜索结果异常", e);
-                            try {
-                                EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
-                            } catch (Exception ex) {
-                                Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
+                            } catch (OutOfMemoryError e) {
+                                Log.e("SourceViewModel", "Python搜索OOM异常", e);
+                                return "";
+                            } catch (Exception e) {
+                                Log.e("SourceViewModel", "Python搜索异常", e);
+                                return "";
+                            } catch (Throwable th) {
+                                Log.e("SourceViewModel", "Python搜索未知异常", th);
+                                return "";
                             }
                         }
-                    } else {
+                    });
+                    String search = null;
+                    try {
+                        search = future.get(20, TimeUnit.SECONDS);
+                    } catch (TimeoutException e) {
+                        Log.e("SourceViewModel", "Python搜索超时", e);
+                        future.cancel(true);
+                        search = "";
+                    } catch (InterruptedException | ExecutionException e) {
+                        Log.e("SourceViewModel", "Python搜索执行异常", e);
+                        search = "";
+                    }
+                    try {
+                        if (!TextUtils.isEmpty(search)) {
+                            json(searchResult, search, sourceBean.getKey());
+                        } else {
+                            json(searchResult, "", sourceBean.getKey());
+                        }
+                    } catch (Exception e) {
+                        Log.e("SourceViewModel", "处理Python搜索结果异常", e);
                         try {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
-                        } catch (Exception e) {
-                            Log.e("SourceViewModel", "发布搜索结果事件异常", e);
+                        } catch (Exception ex) {
+                            Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                         }
                     }
                 } catch (Throwable th) {
@@ -1634,6 +1630,7 @@ public class SourceViewModel extends ViewModel {
     private AbsXml json(MutableLiveData<AbsXml> result, String json, String sourceKey) {
         try {
             if (TextUtils.isEmpty(json)) {
+                LOG.i("json: 输入 json 为空, sourceKey: " + sourceKey);
                 try {
                     if (searchResult == result) {
                         EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
@@ -1647,10 +1644,21 @@ public class SourceViewModel extends ViewModel {
                 }
                 return null;
             }
+            
+            try {
+                JSONObject testJson = new JSONObject(json);
+                if (testJson.isNull("list") || testJson.opt("list") == null) {
+                    LOG.i("json: list 字段为 null 或不存在, sourceKey: " + sourceKey);
+                }
+            } catch (JSONException e) {
+                LOG.i("json: 验证 json 结构异常: " + e.getMessage() + ", sourceKey: " + sourceKey);
+            }
+            
             try {
                 AbsJson absJson = gson.fromJson(json, new TypeToken<AbsJson>() {
                 }.getType());
                 if (absJson == null) {
+                    LOG.i("json: gson.fromJson 返回 null, sourceKey: " + sourceKey);
                     try {
                         if (searchResult == result) {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
@@ -1667,6 +1675,7 @@ public class SourceViewModel extends ViewModel {
                 try {
                     AbsXml data = absJson.toAbsXml();
                     if (data == null) {
+                        LOG.i("json: absJson.toAbsXml 返回 null, sourceKey: " + sourceKey);
                         try {
                             if (searchResult == result) {
                                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
@@ -1683,8 +1692,8 @@ public class SourceViewModel extends ViewModel {
                     try {
                         absXml(data, sourceKey);
                     } catch (Exception e) {
+                        LOG.e("json: absXml 处理异常: " + e.getMessage() + ", sourceKey: " + sourceKey);
                         e.printStackTrace();
-                        // absXml处理异常，继续执行
                     }
                     try {
                         if (searchResult == result) {
@@ -1696,25 +1705,26 @@ public class SourceViewModel extends ViewModel {
                                 try {
                                     data = checkPush(data);
                                 } catch (Exception e) {
+                                    LOG.e("json: checkPush 异常: " + e.getMessage() + ", sourceKey: " + sourceKey);
                                     e.printStackTrace();
-                                    // checkPush异常，继续执行
                                 }
                                 try {
                                     checkThunder(data, 0);
                                 } catch (Exception e) {
+                                    LOG.e("json: checkThunder 异常: " + e.getMessage() + ", sourceKey: " + sourceKey);
                                     e.printStackTrace();
-                                    // checkThunder异常，继续执行
                                 }
                             } else {
                                 result.postValue(data);
                             }
                         }
                     } catch (Exception e) {
+                        LOG.e("json: 事件发送或结果处理异常: " + e.getMessage() + ", sourceKey: " + sourceKey);
                         e.printStackTrace();
-                        // 事件发送或结果处理异常，继续执行
                     }
                     return data;
                 } catch (Exception e) {
+                    LOG.e("json: absJson.toAbsXml 异常: " + e.getMessage() + ", sourceKey: " + sourceKey);
                     e.printStackTrace();
                     try {
                         if (searchResult == result) {
@@ -1730,6 +1740,7 @@ public class SourceViewModel extends ViewModel {
                     return null;
                 }
             } catch (Exception e) {
+                LOG.e("json: gson.fromJson 异常: " + e.getMessage() + ", sourceKey: " + sourceKey);
                 e.printStackTrace();
                 try {
                     if (searchResult == result) {
@@ -1745,6 +1756,7 @@ public class SourceViewModel extends ViewModel {
                 return null;
             }
         } catch (Exception e) {
+            LOG.e("json: 顶层异常: " + e.getMessage() + ", sourceKey: " + sourceKey);
             e.printStackTrace();
             try {
                 if (searchResult == result) {

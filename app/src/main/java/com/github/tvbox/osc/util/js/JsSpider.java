@@ -59,6 +59,7 @@ public class JsSpider extends Spider {
     private boolean cat;
     private boolean initialized = false;
     private boolean initSuccess = false;
+    private volatile boolean isDestroyed = false;
     private final Object initLock = new Object();
 
     public JsSpider(String key, String api, Class<?> cls) throws Exception {
@@ -91,6 +92,12 @@ public class JsSpider extends Spider {
 
     private Object call(String func, Object... args) {
         try {
+            // 防御性编程：检查是否已销毁
+            if (isDestroyed) {
+                LOG.i("[JsSpider-" + key + "] 已销毁，跳过 call: " + func);
+                return "";
+            }
+            
             // 防御性编程：检查必要对象是否有效
             if (jsObject == null || ctx == null) {
                 return "";
@@ -187,64 +194,106 @@ public class JsSpider extends Spider {
     @Override
     public String homeContent(boolean filter) {
         try {
+            if (!initSuccess || jsObject == null || ctx == null) {
+                LOG.i("JsSpider 未初始化成功，跳过 homeContent: " + key);
+                return "{}";
+            }
             return (String) call("home", filter);
         }catch (Exception e){
-           return null;
+           return "{}";
+        }catch (Throwable th){
+           return "{}";
         }
     }
 
     @Override
     public String homeVideoContent() {
         try {
+            if (!initSuccess || jsObject == null || ctx == null) {
+                LOG.i("JsSpider 未初始化成功，跳过 homeVideoContent: " + key);
+                return "{}";
+            }
             return (String) call("homeVod");
         }catch (Exception e){
-            return null;
+            return "{}";
+        }catch (Throwable th){
+            return "{}";
         }
     }
 
     @Override
     public String categoryContent(String tid, String pg, boolean filter, HashMap<String, String> extend)  {
         try {
+            if (!initSuccess || jsObject == null || ctx == null) {
+                LOG.i("JsSpider 未初始化成功，跳过 categoryContent: " + key);
+                return "{}";
+            }
             JSObject obj = submit(() -> new JSUtils<String>().toObj(ctx, extend)).get();
             return (String) call("category", tid, pg, filter, obj);
         }catch (Exception e){
-            return null;
+            return "{}";
+        }catch (Throwable th){
+            return "{}";
         }
     }
 
     @Override
     public String detailContent(List<String> ids)  {
         try {
+            if (!initSuccess || jsObject == null || ctx == null) {
+                LOG.i("JsSpider 未初始化成功，跳过 detailContent: " + key);
+                return "{}";
+            }
             return (String) call("detail", ids.get(0));
         }catch (Exception e){
-            return null;
+            return "{}";
+        }catch (Throwable th){
+            return "{}";
         }
     }
 
     @Override
     public String searchContent(String key, boolean quick)  {
         try {
+            if (!initSuccess || jsObject == null || ctx == null) {
+                LOG.i("JsSpider 未初始化成功，跳过 searchContent: " + this.key);
+                return "{}";
+            }
             return (String) call("search", key, quick);
         }catch (Exception e){
-            return null;
+            return "{}";
+        }catch (Throwable th){
+            return "{}";
         }
     }
     @Override
     public String searchContent(String key, boolean quick, String pg)  {
         try {
+            if (!initSuccess || jsObject == null || ctx == null) {
+                LOG.i("JsSpider 未初始化成功，跳过 searchContent(pg): " + this.key);
+                return "{}";
+            }
             return (String) call("search", key, quick, pg);
         }catch (Exception e){
-            return null;
+            return "{}";
+        }catch (Throwable th){
+            return "{}";
         }
     }
 
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) {
         try {
+            if (!initSuccess || jsObject == null || ctx == null) {
+                LOG.i("JsSpider 未初始化成功，跳过 playerContent: " + key);
+                return "{}";
+            }
             JSArray array = submit(() -> new JSUtils<String>().toArray(ctx, vipFlags)).get();
             return (String) call("play", flag, id, array);
         }catch (Exception e){
-            return null;
+            return "{}";
+        }catch (Throwable th){
+            return "{}";
         }
     }
 
@@ -291,14 +340,20 @@ public class JsSpider extends Spider {
 
     @Override
     public void destroy() {
+        // 首先设置销毁标志，防止新的操作
+        isDestroyed = true;
+        
         boolean releaseSuccess = false;
         try {
             Future<Void> future = submit(() -> {
-                // 释放所有 JSObject 资源
-                releaseAllJsObjects(Thread.currentThread().getName());
-                
-                // 运行 GC 并销毁 ctx（关键：释放 Native 内存）
-                destroyContext(Thread.currentThread().getName());
+                // 再次检查销毁标志
+                if (isDestroyed) {
+                    // 释放所有 JSObject 资源
+                    releaseAllJsObjects(Thread.currentThread().getName());
+                    
+                    // 运行 GC 并销毁 ctx（关键：释放 Native 内存）
+                    destroyContext(Thread.currentThread().getName());
+                }
                 
                 return null;
             });
@@ -749,20 +804,30 @@ public class JsSpider extends Spider {
                     String ss = FileUtils.loadModule(moduleName);
                     if (TextUtils.isEmpty(ss)) {
                         LOG.i("echo-getModuleBytecode empty :"+ moduleName);
-                        return null;
+                        return "export default {};".getBytes();
                     }
                     
                     // 验证内容是否为有效的JS代码，避免编译无效内容导致JNI错误
                     if (ss.startsWith("<")) {
                         LOG.i("echo-getModuleBytecode invalid JS content (starts with '<'):"+ moduleName);
-                        return null;
+                        return "export default {};".getBytes();
                     }
                     
                     if(ss.startsWith("//DRPY")){
-                        return Base64.decode(ss.replace("//DRPY",""), Base64.URL_SAFE);
+                        try {
+                            return Base64.decode(ss.replace("//DRPY",""), Base64.URL_SAFE);
+                        } catch (Throwable th) {
+                            LOG.i("echo-getModuleBytecode DRPY decode error:"+ moduleName + " - " + th.getMessage());
+                            return "export default {};".getBytes();
+                        }
                     } else if(ss.startsWith("//bb")){
-                        byte[] b = Base64.decode(ss.replace("//bb",""), 0);
-                        return byteFF(b);
+                        try {
+                            byte[] b = Base64.decode(ss.replace("//bb",""), 0);
+                            return byteFF(b);
+                        } catch (Throwable th) {
+                            LOG.i("echo-getModuleBytecode bb decode error:"+ moduleName + " - " + th.getMessage());
+                            return "export default {};".getBytes();
+                        }
                     } else {
                         // 捕获编译过程中的异常，避免JNI错误
                         try {
@@ -777,21 +842,26 @@ public class JsSpider extends Spider {
                                     FileUtils.setCacheByte("crypto-js", compiled);
                                 }
                             }
-                            return ctx.compileModule(ss, moduleName);
+                            byte[] result = ctx.compileModule(ss, moduleName);
+                            if (result == null) {
+                                LOG.i("echo-getModuleBytecode compiled null, return empty module :"+ moduleName);
+                                return "export default {};".getBytes();
+                            }
+                            return result;
                         } catch (com.whl.quickjs.wrapper.QuickJSException e) {
                             // 特殊处理QuickJSException，避免JNI错误
                             LOG.i("echo-getModuleBytecode QuickJS compile error:"+ moduleName + " - " + e.getMessage());
-                            return null;
+                            return "export default {};".getBytes();
                         } catch (Throwable th) {
                             // 捕获所有其他异常，确保不会导致JNI错误
                             LOG.i("echo-getModuleBytecode compile error:"+ moduleName + " - " + th.getMessage());
-                            return null;
+                            return "export default {};".getBytes();
                         }
                     }
                 } catch (Throwable th) {
                     // 捕获所有异常，确保即使获取模块内容失败也不会导致JNI错误
                     LOG.i("echo-getModuleBytecode error:"+ moduleName + " - " + th.getMessage());
-                    return null;
+                    return "export default {};".getBytes();
                 }
             }
 
@@ -806,7 +876,12 @@ public class JsSpider extends Spider {
                 // 日志截断处理，避免过长日志影响可读性
                 if (s != null) {
                     if (s.length() > 200) {
-                        s = s.substring(0, 200) + "... [截断，原始长度: " + s.length() + "]";
+                        try {
+                            s = s.substring(0, 200) + "... [截断，原始长度: " + s.length() + "]";
+                        } catch (IndexOutOfBoundsException e) {
+                            LOG.i("QuJs: 日志截断异常: " + e.getMessage());
+                            s = s + " [截断异常，原始长度: " + (s != null ? s.length() : 0) + "]";
+                        }
                     }
                     // 添加线程标识，与本类中其他位置格式一致
                     String threadName = Thread.currentThread().getName();
@@ -908,9 +983,16 @@ public class JsSpider extends Spider {
                 try {
                     if ( array.optInt(4) == 1) {
                         String content = array.optString(2);
-                        if (content.contains("base64,")) content = content.substring(content.indexOf("base64,") + 7);
+                        if (content != null && content.contains("base64,")) {
+                            int base64Index = content.indexOf("base64,");
+                            if (base64Index >= 0 && base64Index + 7 <= content.length()) {
+                                content = content.substring(base64Index + 7);
+                            }
+                        }
                         result[2] = new ByteArrayInputStream(Base64.decode(content, Base64.DEFAULT));
                     }
+                } catch (IndexOutOfBoundsException e) {
+                    LOG.i("处理 base64 内容字符串索引异常: " + e.getMessage());
                 } catch (Exception e) {
                     LOG.i("处理 base64 内容异常: " + e.getMessage());
                 }
@@ -1027,11 +1109,18 @@ public class JsSpider extends Spider {
         
         // 检查内容长度是否足够
         if (content.length() < 4) {
+            LOG.i("tryDecodeCompressedContent: 内容长度不足4: " + content.length());
             return null;
         }
         
         // 获取前4个字符
-        String prefix = content.substring(0, 4);
+        String prefix;
+        try {
+            prefix = content.substring(0, 4);
+        } catch (IndexOutOfBoundsException e) {
+            LOG.i("tryDecodeCompressedContent: substring(0,4) 异常: " + e.getMessage());
+            return null;
+        }
         
         // 根据前缀判断是否可能是压缩格式的Base64编码
         boolean isCompressedFormat = prefix.equals("H4sI") || // gzip

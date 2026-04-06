@@ -24,7 +24,10 @@ public class OkhttpInterceptor implements Interceptor {
         Response response = chain.proceed(chain.request());
         String encoding = response.header(HttpHeaders.CONTENT_ENCODING);
         if (response.body() == null || encoding == null || !encoding.equals("deflate")) return response;
-        InflaterInputStream is = new InflaterInputStream(response.body().byteStream(), new Inflater(true));
+        
+        final Inflater inflater = new Inflater(true);
+        final InflaterInputStream is = new InflaterInputStream(response.body().byteStream(), inflater);
+        
         return response.newBuilder().headers(response.headers()).body(new ResponseBody() {
             @Nullable
             @Override
@@ -41,6 +44,16 @@ public class OkhttpInterceptor implements Interceptor {
             @Override
             public BufferedSource source() {
                 return Okio.buffer(Okio.source(is));
+            }
+            
+            @Override
+            public void close() {
+                super.close();
+                try {
+                    is.close();
+                } catch (IOException ignored) {
+                }
+                inflater.end();
             }
         }).build();
     }

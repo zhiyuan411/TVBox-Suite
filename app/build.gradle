@@ -71,9 +71,14 @@ android {
         }
     }
 
+    // 从JDK8升级至17，如果有依赖库重新编译兼容问题，需要进行降级恢复
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    // 从JDK8升级至17，如果有依赖库重新编译兼容问题，需要删除此部分
+    kotlinOptions {
+        jvmTarget = '17'
     }
 
     lintOptions {

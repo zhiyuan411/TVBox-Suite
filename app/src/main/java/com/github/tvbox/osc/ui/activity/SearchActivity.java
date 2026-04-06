@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.BounceInterpolator; //添加放大效果
+import android.util.Log;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -56,6 +57,7 @@ import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.MemoryMonitor;
 import com.github.tvbox.osc.util.SearchHelper;
 import com.github.tvbox.osc.util.SettingsUtil;
+import com.github.tvbox.osc.util.UA;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -78,6 +80,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -633,33 +636,39 @@ public class SearchActivity extends BaseActivity {
             wordAdapter.setNewData(hots);
             return;
         }
-        OkGo.<String>get("https://node.video.qq.com/x/api/hot_search")
-                .params("channdlId", "0")
-                .params("_", System.currentTimeMillis())
+        final List<String> doubanTitles = new ArrayList<>();
+        final List<String> iqiyiTitles = new ArrayList<>();
+        final List<String> tencentTitles = new ArrayList<>();
+        final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(3);
+        
+        Calendar cal = Calendar.getInstance();
+        int year = cal.get(Calendar.YEAR);
+        String doubanHotURL = "https://movie.douban.com/j/new_search_subjects?sort=U&range=0,10&tags=&playable=1&start=0&year_range=" + year + "," + year;
+        OkGo.<String>get(doubanHotURL)
+                .headers("User-Agent", UA.random())
                 .execute(new AbsCallback<String>() {
                     @Override
                     public void onSuccess(Response<String> response) {
                         try {
-                            JsonObject mapResult = JsonParser.parseString(response.body())
-                                    .getAsJsonObject()
-                                    .get("data").getAsJsonObject()
-                                    .get("mapResult").getAsJsonObject();
-                            List<String> emoji;
-                            if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.N)
-                                emoji = Arrays.asList(" ❶ "," ❷ "," ❸ "," ❹ "," ❺ "," ❻ "," ❼ "," ❽ "," ❾ "," ❿ "," ⑪ "," ⑫ "," ⑬ "," ⑭ "," ⑮ "," ⑯ "," ⑰ "," ⑱ "," ⑲ "," ⑳ ");
-                             else
-                                emoji = Arrays.asList("\uD83E\uDD47","\uD83E\uDD48","\uD83E\uDD49"," ❹ "," ❺ "," ❻ "," ❼ "," ❽ "," ❾ "," ❿ "," ⑪ "," ⑫ "," ⑬ "," ⑭ "," ⑮ "," ⑯ "," ⑰ "," ⑱ "," ⑲ "," ⑳ ");
-                            JsonArray itemList = mapResult.get("0").getAsJsonObject()
-                                    .get("listInfo").getAsJsonArray();
-                            for (int i = 0; i < 10; i++) {
-                                JsonObject obj = itemList.get(i).getAsJsonObject();
-                                String hotKey = obj.get("title").getAsString().trim().replaceAll("<|>|《|》|-", "").split(" ")[0];
-                                hots.add(emoji.get(i) + "\uFEFF" + hotKey);
+                            JsonObject infoJson = JsonParser.parseString(response.body()).getAsJsonObject();
+                            JsonArray array = infoJson.getAsJsonArray("data");
+                            int count = Math.min(10, array.size());
+                            for (int i = 0; i < count; i++) {
+                                JsonObject obj = array.get(i).getAsJsonObject();
+                                String hotKey = obj.get("title").getAsString();
+                                doubanTitles.add(hotKey);
                             }
-                            wordAdapter.setNewData(hots);
                         } catch (Throwable th) {
                             th.printStackTrace();
+                        } finally {
+                            latch.countDown();
                         }
+                    }
+
+                    @Override
+                    public void onError(Response<String> response) {
+                        super.onError(response);
+                        latch.countDown();
                     }
 
                     @Override
@@ -667,6 +676,136 @@ public class SearchActivity extends BaseActivity {
                         return response.body().string();
                     }
                 });
+        
+        String iqiyiHotURL = "https://pcw-api.iqiyi.com/search/recommend/list?channel_id=1&data_type=1&mode=24&page_num=1&page_size=10";
+        OkGo.<String>get(iqiyiHotURL)
+                .headers("User-Agent", UA.random())
+                .execute(new AbsCallback<String>() {
+                    @Override
+                    public void onSuccess(Response<String> response) {
+                        try {
+                            JsonObject infoJson = JsonParser.parseString(response.body()).getAsJsonObject();
+                            JsonArray array = infoJson.getAsJsonObject("data").getAsJsonArray("list");
+                            int count = Math.min(10, array.size());
+                            for (int i = 0; i < count; i++) {
+                                JsonObject obj = array.get(i).getAsJsonObject();
+                                String hotKey = obj.get("name").getAsString();
+                                iqiyiTitles.add(hotKey);
+                            }
+                        } catch (Throwable th) {
+                            th.printStackTrace();
+                        } finally {
+                            latch.countDown();
+                        }
+                    }
+
+                    @Override
+                    public void onError(Response<String> response) {
+                        super.onError(response);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                        return response.body().string();
+                    }
+                });
+        
+        String tencentHotURL = "https://pbaccess.video.qq.com/trpc.universal_backend_service.hot_word_info.HttpHotWordRecall/GetHotWords?appID=3172&appKey=lGhFIPeD3HsO9xEp&platform=2&channelID=0&v=2958966";
+        OkGo.<String>get(tencentHotURL)
+                .headers("User-Agent", UA.random())
+                .execute(new AbsCallback<String>() {
+                    @Override
+                    public void onSuccess(Response<String> response) {
+                        try {
+                            JsonObject infoJson = JsonParser.parseString(response.body()).getAsJsonObject();
+                            if (infoJson.has("data") && infoJson.get("data").isJsonObject()) {
+                                JsonObject dataObj = infoJson.getAsJsonObject("data");
+                                if (dataObj.has("hotWordList") && dataObj.get("hotWordList").isJsonArray()) {
+                                    JsonArray array = dataObj.getAsJsonArray("hotWordList");
+                                    int count = Math.min(10, array.size());
+                                    for (int i = 0; i < count; i++) {
+                                        JsonObject obj = array.get(i).getAsJsonObject();
+                                        String hotKey = obj.has("searchWord") ? obj.get("searchWord").getAsString() : "";
+                                        if (!hotKey.isEmpty()) {
+                                            tencentTitles.add(hotKey);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Throwable th) {
+                            th.printStackTrace();
+                        } finally {
+                            latch.countDown();
+                        }
+                    }
+
+                    @Override
+                    public void onError(Response<String> response) {
+                        super.onError(response);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                        return response.body().string();
+                    }
+                });
+        
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    latch.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                    
+                    List<String> emoji;
+                    if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.N)
+                        emoji = Arrays.asList(" ❶ "," ❷ "," ❸ "," ❹ "," ❺ "," ❻ "," ❼ "," ❽ "," ❾ "," ❿ "," ⑪ "," ⑫ "," ⑬ "," ⑭ "," ⑮ "," ⑯ "," ⑰ "," ⑱ "," ⑲ "," ⑳ "," ㉑ "," ㉒ "," ㉓ "," ㉔ "," ㉕ "," ㉖ "," ㉗ "," ㉘ "," ㉙ "," ㉚ ");
+                     else
+                        emoji = Arrays.asList("\uD83E\uDD47","\uD83E\uDD48","\uD83E\uDD49"," ❹ "," ❺ "," ❻ "," ❼ "," ❽ "," ❾ "," ❿ "," ⑪ "," ⑫ "," ⑬ "," ⑭ "," ⑮ "," ⑯ "," ⑰ "," ⑱ "," ⑲ "," ⑳ "," ㉑ "," ㉒ "," ㉓ "," ㉔ "," ㉕ "," ㉖ "," ㉗ "," ㉘ "," ㉙ "," ㉚ ");
+                    
+                    java.util.Set<String> uniqueTitles = new java.util.HashSet<>();
+                    List<String> mergedTitles = new ArrayList<>();
+                    
+                    for (String title : doubanTitles) {
+                        if (!uniqueTitles.contains(title)) {
+                            uniqueTitles.add(title);
+                            mergedTitles.add(title);
+                        }
+                    }
+                    
+                    for (String title : iqiyiTitles) {
+                        if (!uniqueTitles.contains(title)) {
+                            uniqueTitles.add(title);
+                            mergedTitles.add(title);
+                        }
+                    }
+                    
+                    for (String title : tencentTitles) {
+                        if (!uniqueTitles.contains(title)) {
+                            uniqueTitles.add(title);
+                            mergedTitles.add(title);
+                        }
+                    }
+                    
+                    final List<String> finalHotWords = new ArrayList<>();
+                    int displayCount = Math.min(emoji.size(), mergedTitles.size());
+                    for (int i = 0; i < displayCount; i++) {
+                        finalHotWords.add(emoji.get(i) + "\uFEFF" + mergedTitles.get(i));
+                    }
+                    
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            hots.addAll(finalHotWords);
+                            wordAdapter.setNewData(hots);
+                        }
+                    });
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }).start();
     }
 
     private void refreshQRCode() {
@@ -708,7 +847,8 @@ public class SearchActivity extends BaseActivity {
 
     private void search(String title) {
         // 搜索开始时打印内存监控信息
-        MemoryMonitor.printMemoryLog(mContext, "搜索开始：" + title);
+        Log.d("SearchActivity", "[普通搜索] 开始搜索，标题：" + title);
+        MemoryMonitor.printMemoryLog(mContext, "普通搜索开始：" + title);
         
         cancel();
         showLoading();
@@ -774,12 +914,12 @@ public class SearchActivity extends BaseActivity {
                 @Override
                 public void run() {
                     String threadName = Thread.currentThread().getName();
-                    android.util.Log.d("SearchActivity", "[线程：" + threadName + "] 执行搜索任务：" + sourceKey);
+                    android.util.Log.d("SearchActivity", "[普通搜索][线程：" + threadName + "] 执行搜索任务：" + sourceKey);
                     try {
                         sourceViewModel.getSearch(sourceKey, searchTitle);
                     } catch (OutOfMemoryError e) {
                         // OOM 错误处理：先打印内存信息
-                        android.util.Log.e("SearchActivity", "[线程：" + threadName + "] 搜索任务内存不足：" + sourceKey, e);
+                        android.util.Log.e("SearchActivity", "[普通搜索][线程：" + threadName + "] 搜索任务内存不足：" + sourceKey, e);
                         e.printStackTrace();
                         MemoryMonitor.printMemoryLog(mContext, "OOM 发生 - 搜索任务：" + sourceKey);
                         

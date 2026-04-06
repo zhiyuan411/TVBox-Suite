@@ -21,11 +21,11 @@ public class Async {
         try {
             // 防御性编程：检查必要对象
             if (object == null) {
-                future.setException(new NullPointerException("JSObject is null"));
+                future.set(null);
                 return future;
             }
             if (name == null || name.isEmpty()) {
-                future.setException(new IllegalArgumentException("Function name is empty"));
+                future.set(null);
                 return future;
             }
             
@@ -47,30 +47,45 @@ public class Async {
                 future.set(result);
             }
         } catch (com.whl.quickjs.wrapper.QuickJSException e) {
-            // 特殊处理 QuickJSException，避免 JNI 层异常
-            future.setException(new RuntimeException("JavaScript execution error: " + e.getMessage()));
+            // 特殊处理 QuickJSException，避免 JNI 层异常，直接返回 null
+            future.set(null);
         } catch (Throwable t) {
-            future.setException(t);
+            // 捕获所有其他异常，避免崩溃
+            future.set(null);
         }
         return future;
     }
 
     private void then(Object result) {
-        JSObject promise = (JSObject) result;
-        JSFunction thenFn = promise.getJSFunction("then");
-        if (thenFn != null) {
-            thenFn.call(callback);
-        } else {
-            // If there's no then, complete immediately
-            future.set(result);
+        try {
+            if (result == null) {
+                future.set(null);
+                return;
+            }
+            JSObject promise = (JSObject) result;
+            JSFunction thenFn = promise.getJSFunction("then");
+            if (thenFn != null) {
+                thenFn.call(callback);
+            } else {
+                // If there's no then, complete immediately
+                future.set(result);
+            }
+        } catch (Throwable t) {
+            // 捕获所有异常，避免 Promise 处理时导致崩溃
+            future.set(null);
         }
     }
 
     private final JSCallFunction callback = new JSCallFunction() {
         @Override
         public Object call(Object... args) {
-            // args[0] holds the resolved value from the JS promise
-            future.set(args.length > 0 ? args[0] : null);
+            try {
+                // args[0] holds the resolved value from the JS promise
+                future.set(args.length > 0 ? args[0] : null);
+            } catch (Throwable t) {
+                // 捕获所有异常，避免 Promise 回调时导致崩溃
+                future.set(null);
+            }
             return null;
         }
     };

@@ -383,7 +383,7 @@ public class FastSearchActivity extends BaseActivity {
 
     private void search(String title) {
         // 搜索开始时打印内存监控信息            
-        Log.d("FastSearchActivity", "开始搜索：" + title);
+        Log.d("FastSearchActivity", "[快速搜索] 开始搜索，标题：" + title);
         cancel();
         showLoading();
         this.searchTitle = title;
@@ -489,6 +489,10 @@ public class FastSearchActivity extends BaseActivity {
         
         final int batchEndIndex = Math.min(batchStartIndex + BATCH_SIZE, siteKey.size());
         final List<String> batchKeys = siteKey.subList(batchStartIndex, batchEndIndex);
+        final int batchNumber = (batchStartIndex / BATCH_SIZE) + 1;
+        final int totalBatches = (siteKey.size() + BATCH_SIZE - 1) / BATCH_SIZE;
+        
+        Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "/" + totalBatches + "] 开始，处理源：" + batchStartIndex + " - " + (batchEndIndex - 1) + "，共 " + batchKeys.size() + " 个源");
         
         final CountDownLatch batchLatch = new CountDownLatch(batchKeys.size());
         final AtomicInteger batchErrorCount = new AtomicInteger(0);
@@ -499,6 +503,8 @@ public class FastSearchActivity extends BaseActivity {
                 @Override
                 public void run() {
                     try {
+                        String threadName = Thread.currentThread().getName();
+                        Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "][线程：" + threadName + "] 执行搜索任务：" + sourceKey);
                         if (!isSearchCancelled) {
                             sourceViewModel.getSearch(sourceKey, searchTitle);
                         }
@@ -537,6 +543,12 @@ public class FastSearchActivity extends BaseActivity {
                 try {
                     batchLatch.await(5, TimeUnit.MINUTES);
                     
+                    // 批次结束时打印信息
+                    Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "/" + totalBatches + "] 完成，错误数：" + batchErrorCount.get());
+                    
+                    // 打印内存和进程信息
+                    MemoryMonitor.printMemoryLog(mContext, "快速搜索 批次 " + batchNumber + "/" + totalBatches + " 结束");
+                    
                     cleanupBetweenBatches();
                     
                     if (!isSearchCancelled) {
@@ -573,11 +585,8 @@ public class FastSearchActivity extends BaseActivity {
     private void cleanupBetweenBatches() {
         try {
             JsLoader.stopAll();
-            JsLoader.destroyAllAndClear();
             System.gc();
-            SystemClock.sleep(300);
-            System.gc();
-            SystemClock.sleep(200);
+            SystemClock.sleep(100);
         } catch (Throwable th) {
             Log.e("FastSearchActivity", "批次间清理异常", th);
         }

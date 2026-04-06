@@ -156,36 +156,105 @@ public class JarLoader {
     }
 
     public Spider getSpider(String key, String cls, String ext, String jar) {
-        if (spiders.containsKey(key)) {
-            Log.i("JarLoader", "echo-getSpider spider缓存: " + key);
-            return spiders.get(key);
-        }
-        String clsKey = cls.replace("csp_", "");
-        String jarUrl = "";
-        String jarMd5 = "";
-        String jarKey;
-        if (jar.isEmpty()) {
-            jarKey = "main";
-        } else {
-            String[] urls = jar.split(";md5;");
-            jarUrl = urls[0];
-            jarKey = MD5.string2MD5(jarUrl);
-            jarMd5 = urls.length > 1 ? urls[1].trim() : "";
-        }
-        recentJarKey = jarKey;
-        assert jarKey != null;
-        DexClassLoader classLoader = jarKey.equals("main")? classLoaders.get("main"):loadJarInternal(jarUrl, jarMd5, jarKey);
-        if (classLoader == null) return new SpiderNull();
         try {
-            Log.i("JarLoader", "echo-getSpider 加载spider: " + key);
-            Spider sp = (Spider) classLoader.loadClass("com.github.catvod.spider." + clsKey).newInstance();
-            sp.init(App.getInstance(), ext);
-            if (!jar.isEmpty()) {
-                sp.homeContent(false); // 增加此行 应该可以解决部分写的有问题源的历史记录问题 但会增加这个源的首次加载时间 不需要可以已删掉
+            if (key == null || key.isEmpty()) {
+                Log.i("JarLoader", "echo-getSpider key 为空");
+                return new SpiderNull();
             }
-            spiders.put(key, sp);
-            return sp;
+            if (cls == null || cls.isEmpty()) {
+                Log.i("JarLoader", "echo-getSpider cls 为空");
+                return new SpiderNull();
+            }
+            if (spiders.containsKey(key)) {
+                Log.i("JarLoader", "echo-getSpider spider缓存: " + key);
+                Spider cachedSpider = spiders.get(key);
+                if (cachedSpider != null) {
+                    return cachedSpider;
+                }
+            }
+            String clsKey;
+            try {
+                clsKey = cls.replace("csp_", "");
+            } catch (Throwable th) {
+                Log.i("JarLoader", "echo-getSpider cls.replace 异常: " + th.getMessage());
+                return new SpiderNull();
+            }
+            String jarUrl = "";
+            String jarMd5 = "";
+            String jarKey;
+            try {
+                if (jar == null || jar.isEmpty()) {
+                    jarKey = "main";
+                } else {
+                    String[] urls = jar.split(";md5;");
+                    if (urls.length > 0) {
+                        jarUrl = urls[0];
+                        jarKey = MD5.string2MD5(jarUrl);
+                        jarMd5 = urls.length > 1 ? urls[1].trim() : "";
+                    } else {
+                        jarKey = "main";
+                    }
+                }
+            } catch (Throwable th) {
+                Log.i("JarLoader", "echo-getSpider 处理 jar 参数异常: " + th.getMessage());
+                return new SpiderNull();
+            }
+            recentJarKey = jarKey;
+            DexClassLoader classLoader;
+            try {
+                classLoader = jarKey.equals("main") ? classLoaders.get("main") : loadJarInternal(jarUrl, jarMd5, jarKey);
+            } catch (Throwable th) {
+                Log.i("JarLoader", "echo-getSpider 获取 classLoader 异常: " + th.getMessage());
+                return new SpiderNull();
+            }
+            if (classLoader == null) {
+                Log.i("JarLoader", "echo-getSpider classLoader 为 null");
+                return new SpiderNull();
+            }
+            try {
+                Log.i("JarLoader", "echo-getSpider 加载spider: " + key);
+                Class<?> spiderClazz = classLoader.loadClass("com.github.catvod.spider." + clsKey);
+                if (spiderClazz == null) {
+                    Log.i("JarLoader", "echo-getSpider loadClass 返回 null");
+                    return new SpiderNull();
+                }
+                Spider sp = (Spider) spiderClazz.newInstance();
+                if (sp == null) {
+                    Log.i("JarLoader", "echo-getSpider newInstance 返回 null");
+                    return new SpiderNull();
+                }
+                try {
+                    sp.init(App.getInstance(), ext);
+                } catch (Throwable th) {
+                    Log.i("JarLoader", "echo-getSpider sp.init 异常: " + th.getMessage());
+                }
+                if (jar != null && !jar.isEmpty()) {
+                    try {
+                        sp.homeContent(false); 
+                    } catch (Throwable th) {
+                        Log.i("JarLoader", "echo-getSpider sp.homeContent 异常: " + th.getMessage());
+                    }
+                }
+                spiders.put(key, sp);
+                return sp;
+            } catch (OutOfMemoryError e) {
+                Log.i("JarLoader", "echo-getSpider OOM 异常: " + e.getMessage());
+            } catch (LinkageError e) {
+                Log.i("JarLoader", "echo-getSpider LinkageError 异常: " + e.getMessage());
+            } catch (Error e) {
+                Log.i("JarLoader", "echo-getSpider Error 异常: " + e.getMessage());
+                e.printStackTrace();
+            } catch (Throwable th) {
+                Log.i("JarLoader", "echo-getSpider 异常: " + th.getMessage());
+                th.printStackTrace();
+            }
+        } catch (OutOfMemoryError e) {
+            Log.i("JarLoader", "echo-getSpider 整体 OOM 异常: " + e.getMessage());
+        } catch (Error e) {
+            Log.i("JarLoader", "echo-getSpider 整体 Error 异常: " + e.getMessage());
+            e.printStackTrace();
         } catch (Throwable th) {
+            Log.i("JarLoader", "echo-getSpider 整体异常: " + th.getMessage());
             th.printStackTrace();
         }
         return new SpiderNull();
@@ -196,7 +265,10 @@ public class JarLoader {
             DexClassLoader classLoader = classLoaders.get("main");
             String clsKey = "Json" + key;
             String hotClass = "com.github.catvod.parser." + clsKey;
-            assert classLoader != null;
+            if (classLoader == null) {
+                Log.i("JarLoader", "jsonExt: classLoader 为 null");
+                return null;
+            }
             Class<?> jsonParserCls = classLoader.loadClass(hotClass);
             Method mth = jsonParserCls.getMethod("parse", LinkedHashMap.class, String.class);
             return (JSONObject) mth.invoke(null, jxs, url);
@@ -211,7 +283,10 @@ public class JarLoader {
             DexClassLoader classLoader = classLoaders.get("main");
             String clsKey = "Mix" + key;
             String hotClass = "com.github.catvod.parser." + clsKey;
-            assert classLoader != null;
+            if (classLoader == null) {
+                Log.i("JarLoader", "jsonExt: classLoader 为 null");
+                return null;
+            }
             Class<?> jsonParserCls = classLoader.loadClass(hotClass);
             Method mth = jsonParserCls.getMethod("parse", LinkedHashMap.class, String.class, String.class, String.class);
             return (JSONObject) mth.invoke(null, jxs, name, flag, url);
