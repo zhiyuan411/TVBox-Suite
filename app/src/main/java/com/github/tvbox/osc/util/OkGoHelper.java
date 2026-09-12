@@ -38,6 +38,16 @@ import xyz.doikki.videoplayer.exo.ExoMediaSourceHelper;
 public class OkGoHelper {
     public static final long DEFAULT_MILLISECONDS = 10000;      //默认的超时时间
 
+    // ============ 直播源文件下载专用超时（长超时）============
+    // 直播源（tv.txt / tv.m3u）体积远大于普通接口响应；放在低带宽服务器上时，
+    // 下载耗时很容易超过上面的 10 秒，因此为直播单独放宽，且仅作用于直播源文件下载。
+    // 说明：这是"健壮性常量"而非"用户偏好"（设长只多等、设短会失败，没有调优价值），
+    //       故不提供设置项；需要调整时直接修改下面三个常量即可。
+    public static final long LIVE_CONNECT_MILLISECONDS = 20000; // 连接超时 20 秒
+    public static final long LIVE_READ_MILLISECONDS = 90000;    // 读取超时 90 秒（3Mbps 下约可下载 30MB）
+    public static final long LIVE_WRITE_MILLISECONDS = 20000;   // 写入超时 20 秒
+    // ========================================================
+
     //https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200
     public static HashMap<Integer, String > httpPhaseMap  = new HashMap<Integer, String>(){{
         put(200,"OK");
@@ -148,6 +158,7 @@ public class OkGoHelper {
 
     static OkHttpClient defaultClient = null;
     static OkHttpClient noRedirectClient = null;
+    static OkHttpClient liveClient = null;      // 直播源文件下载专用（长超时）
 
     public static OkHttpClient getDefaultClient() {
         return defaultClient;
@@ -155,6 +166,11 @@ public class OkGoHelper {
 
     public static OkHttpClient getNoRedirectClient() {
         return noRedirectClient;
+    }
+
+    /** 直播源文件（tv.txt / tv.m3u）下载专用客户端：配置与默认客户端一致，仅放宽超时。 */
+    public static OkHttpClient getLiveClient() {
+        return liveClient;
     }
 
     public static void init() {
@@ -189,6 +205,12 @@ public class OkGoHelper {
         OkGo.getInstance().setOkHttpClient(okHttpClient);
 
         defaultClient = okHttpClient;
+        // 直播专用长超时客户端：复用同样的 SSL / DNS / 拦截器配置，仅放宽超时
+        liveClient = okHttpClient.newBuilder()
+                .connectTimeout(LIVE_CONNECT_MILLISECONDS, TimeUnit.MILLISECONDS)
+                .readTimeout(LIVE_READ_MILLISECONDS, TimeUnit.MILLISECONDS)
+                .writeTimeout(LIVE_WRITE_MILLISECONDS, TimeUnit.MILLISECONDS)
+                .build();
         builder.followRedirects(false);
         builder.followSslRedirects(false);
         noRedirectClient = builder.build();

@@ -81,6 +81,19 @@ FILTER_DOMAIN_BLACKLIST = [
 FILTER_OUTPUT_DIR = None
 # =====================================================================================
 
+# ================= [4.1] iptv-org 公开直播源合并 =================
+# 说明：抓取后解析为 lives（group/channels）格式，并入 validate_lives 的 valid_lives，
+#       与原有产出复用同一套 merge_lives_groups() 完成"同组同频道合并 + URL 去重"；
+#       随后一并写入 tv.txt / tv.m3u，因此会自动参与后续的 prune_streams 可用性校验。
+IPTV_ORG_ENABLED = True                 # 总开关（False 时完全跳过）
+IPTV_ORG_M3U_URL = "https://iptv-org.github.io/iptv/index.m3u"
+# 备选地址（想换源时，把上面一行整体替换为其中之一即可）：
+#   https://iptv-org.github.io/iptv/countries/cn.m3u     # 仅中国频道（约 28KB）
+#   https://iptv-org.github.io/iptv/languages/zho.m3u    # 仅中文频道（约 43KB）
+# 体积参考（实测 Content-Length）：index.m3u 约 2.5MB / cn.m3u 约 28KB / zho.m3u 约 43KB
+IPTV_ORG_FETCH_TIMEOUT = 60             # 抓取超时(秒)：index.m3u 约 2.5MB，默认 10s 不够
+# ================================================================
+
 # ================= [新增] 定义多余字段列表 =================
 EXTRA_FIELDS = [
     'flags', 'warningText', 'doh', 'logo', 'urls', 'notice',
@@ -590,6 +603,44 @@ def parse_m3u_content(content):
     except Exception as e:
         detail(f"[Convert] m3u解析失败: {e}")
         return None
+
+
+def fetch_iptv_org_lives():
+    """抓取 iptv-org/iptv 的公开 m3u，解析为 lives（group/channels）格式。
+
+    注意：这里直接用 requests 取，而**不能**用 get_url_content()——后者会把
+    Content-Type 含 'audio/' 的响应判为非文本并跳过，而本地址返回的正是
+    audio/x-mpegurl（实测），用 get_url_content 会静默返回 None。
+
+    解析结果与 convert_to_group_format() 结构一致，可直接并入 valid_lives，
+    再交由 merge_lives_groups() 完成"同组同频道合并 + URL 去重"。
+
+    :return: lives 列表；关闭开关 / 抓取失败 / 解析为空时返回 None
+    """
+    if not IPTV_ORG_ENABLED or not IPTV_ORG_M3U_URL:
+        return None
+    print(f"[IptvOrg] 开始抓取: {IPTV_ORG_M3U_URL}")
+    try:
+        resp = requests.get(IPTV_ORG_M3U_URL, timeout=IPTV_ORG_FETCH_TIMEOUT)
+        resp.raise_for_status()
+        content = resp.text
+    except Exception as e:
+        detail(f"[IptvOrg] 抓取失败: {e}")
+        print(f"[IptvOrg] 抓取失败，跳过合并: {e}")
+        return None
+
+    lives = parse_m3u_content(content)
+    if not lives:
+        detail("[IptvOrg] m3u 解析结果为空")
+        print("[IptvOrg] 解析结果为空，跳过合并")
+        return None
+
+    n_ch = sum(len(g.get('channels', []) or []) for g in lives)
+    n_url = sum(len(ch.get('urls', []) or [])
+                for g in lives for ch in (g.get('channels', []) or []))
+    print(f"[IptvOrg] 解析完成：{len(lives)} 个分组 / {n_ch} 个频道 / {n_url} 个流地址")
+    return lives
+
 
 def parse_txt_content(content):
     """
@@ -1297,6 +1348,13 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
             detail(f"[DEBUG] 转换后的 valid_lives 输出成功")
         except Exception as e:
             detail(f"[DEBUG] 输出转换后的 valid_lives 失败: {e}")
+    
+    # [4.1] 合并 iptv-org 公开直播源：并入后与原有 lives 走同一套 merge_lives_groups()，
+    #       自动完成"同组同频道合并 + URL 去重"（去重逻辑与原有源完全一致）
+    iptv_lives = fetch_iptv_org_lives()
+    if iptv_lives:
+        valid_lives.extend(iptv_lives)
+        print(f"[IptvOrg] 已并入 {len(iptv_lives)} 个分组，合并前 lives 共 {len(valid_lives)} 个元素")
     
     # 合并结果
     merged_lives = merge_lives_groups(valid_lives)

@@ -54,6 +54,7 @@ import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.HawkUtils;
 import com.github.tvbox.osc.util.JavaUtil;
+import com.github.tvbox.osc.util.OkGoHelper;
 import com.github.tvbox.osc.util.live.TxtSubscribe;
 import com.google.gson.JsonArray;
 import com.lzy.okgo.OkGo;
@@ -1753,44 +1754,54 @@ public class LivePlayActivity extends BaseActivity {
             return;
         }
         showLoading();
-        OkGo.<String>get(url).execute(new AbsCallback<String>() {
+        // 直播源文件（tv.txt / tv.m3u）体积远大于普通接口响应，放在低带宽服务器上时
+        // 下载耗时会远超默认的 10 秒，因此这里走"直播专用长超时客户端"（见 OkGoHelper），
+        // 避免与普通接口共用 10 秒超时而被掐断。
+        okhttp3.Request request = new okhttp3.Request.Builder().url(url).get().build();
+        OkGoHelper.getLiveClient().newCall(request).enqueue(new okhttp3.Callback() {
 
             @Override
-            public String convertResponse(okhttp3.Response response) throws Throwable {
-                return response.body().string();
-            }
-
-            @Override
-            public void onSuccess(Response<String> response) {
-                JsonArray livesArray;
-                LinkedHashMap<String, LinkedHashMap<String, ArrayList<String>>> linkedHashMap = new LinkedHashMap<>();
-                TxtSubscribe.parse(linkedHashMap, response.body());
-                livesArray = TxtSubscribe.live2JsonArray(linkedHashMap);
-
-                ApiConfig.get().loadLives(livesArray);
-                List<LiveChannelGroup> list = ApiConfig.get().getChannelGroupList();
-                if (list.isEmpty()) {
-                    Toast.makeText(App.getInstance(), getString(R.string.act_live_play_empty_channel), Toast.LENGTH_SHORT).show();
-                    finish();
-                    return;
-                }
-                liveChannelGroupList.clear();
-                liveChannelGroupList.addAll(list);
-
+            public void onFailure(okhttp3.Call call, java.io.IOException e) {
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        LivePlayActivity.this.showSuccess();
-                        initLiveState();
+                        Toast.makeText(App.getInstance(), getString(R.string.act_live_play_network_error), Toast.LENGTH_LONG).show();
+                        finish();
                     }
                 });
             }
 
             @Override
-            public void onError(Response<String> response) {
-                super.onError(response);
-                Toast.makeText(App.getInstance(), getString(R.string.act_live_play_network_error), Toast.LENGTH_LONG).show();
-                finish();
+            public void onResponse(okhttp3.Call call, okhttp3.Response response) {
+                String body = "";
+                try {
+                    okhttp3.ResponseBody responseBody = response.body();
+                    if (responseBody != null) {
+                        body = responseBody.string();   // string() 内部会自动关闭
+                    }
+                } catch (Throwable th) {
+                    th.printStackTrace();
+                }
+                // 解析是纯 CPU 操作（文件越大耗时越明显），放在后台线程完成，避免卡 UI
+                LinkedHashMap<String, LinkedHashMap<String, ArrayList<String>>> linkedHashMap = new LinkedHashMap<>();
+                TxtSubscribe.parse(linkedHashMap, body);
+                final JsonArray livesArray = TxtSubscribe.live2JsonArray(linkedHashMap);
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        ApiConfig.get().loadLives(livesArray);
+                        List<LiveChannelGroup> list = ApiConfig.get().getChannelGroupList();
+                        if (list.isEmpty()) {
+                            Toast.makeText(App.getInstance(), getString(R.string.act_live_play_empty_channel), Toast.LENGTH_SHORT).show();
+                            finish();
+                            return;
+                        }
+                        liveChannelGroupList.clear();
+                        liveChannelGroupList.addAll(list);
+                        LivePlayActivity.this.showSuccess();
+                        initLiveState();
+                    }
+                });
             }
         });
     }
