@@ -11,6 +11,7 @@ import time
 import sys
 import json
 import os
+import threading
 from datetime import datetime
 
 
@@ -38,30 +39,34 @@ import re as _re
 
 _DETAIL_HANDLE = None
 _DETAIL_PATH = None
+_DETAIL_LOCK = threading.Lock()   # [4.1] 并发改造后 detail() 会被多线程调用，需加锁
 
 
 def _ensure_detail():
     """懒初始化详情日志文件（<cwd>/logs/merge_detail.log，每次运行覆盖）。"""
     global _DETAIL_HANDLE, _DETAIL_PATH
     if _DETAIL_HANDLE is None:
-        try:
-            d = logs_dir()
-            _DETAIL_PATH = os.path.join(d, "merge_detail.log")
-            _DETAIL_HANDLE = open(_DETAIL_PATH, "w", encoding="utf-8")
-        except Exception:
-            _DETAIL_HANDLE = None
-            _DETAIL_PATH = None
+        with _DETAIL_LOCK:
+            if _DETAIL_HANDLE is None:      # 双重检查，避免并发下重复打开
+                try:
+                    d = logs_dir()
+                    _DETAIL_PATH = os.path.join(d, "merge_detail.log")
+                    _DETAIL_HANDLE = open(_DETAIL_PATH, "w", encoding="utf-8")
+                except Exception:
+                    _DETAIL_HANDLE = None
+                    _DETAIL_PATH = None
     return _DETAIL_HANDLE
 
 
 def detail(msg):
-    """把逐条明细写入详情日志文件（不打到控制台）。失败静默。"""
+    """把逐条明细写入详情日志文件（不打到控制台）。失败静默。线程安全。"""
     h = _ensure_detail()
     if h is None:
         return
     try:
-        h.write(str(msg).rstrip("\n") + "\n")
-        h.flush()
+        with _DETAIL_LOCK:
+            h.write(str(msg).rstrip("\n") + "\n")
+            h.flush()
     except Exception:
         pass
 

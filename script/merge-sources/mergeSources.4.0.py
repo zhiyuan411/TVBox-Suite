@@ -41,6 +41,17 @@ URL_REPLACEMENTS = [
 FETCH_WORKERS = 20
 # =========================================================
 
+# ================= [4.1] 校验lives 转换（联网）的并发数与超时 =================
+# convert_to_group_format() 对 .m3u/.txt 源会发起网络请求；原先在主循环里**串行**逐个等待，
+# 实测 152 个元素耗时 4分49秒，是 mergeSources 内部最大瓶颈。改为并发后按"元素数/并发数"收敛。
+CONVERT_WORKERS = 20
+# 转换抓取专用超时：需要**下载完整 m3u/txt 源**，不同于 urlcheck 那种"只探测连通性"的 3/5，
+# 因此取值更宽松；且只作用于 convert_to_group_format()，不影响主抓取阶段
+# （主抓取仍用 get_url_content 的默认 10s）。
+CONVERT_CONNECT_TIMEOUT = 10   # 连接超时(秒)
+CONVERT_READ_TIMEOUT = 30      # 读取超时(秒)，按"两次数据包间隔"计，非总时长
+# =====================================================================
+
 # ================= [4.1] lives 内容过滤（空分组 / 分组黑名单 / 域名黑名单） =================
 # 说明：过滤发生在 lives 合并之后、输出 tv.txt / tv.m3u 之前；
 #       被过滤的内容会按类型落盘为**可直接复用的 tv.txt / tv.m3u**（目录与运行日志相同）。
@@ -220,7 +231,7 @@ def get_local_file_content(file_path):
         print(f"Error reading local file {file_path}: {e}")
         return None
 
-def get_url_content(url, timeout=10):
+def get_url_content(url, timeout=(10, 10)):   # timeout 可为 int，或 (连接超时, 读取超时) 元组
     try:
         # 预处理 URL
         processed_url = preprocess_url(url)
@@ -729,14 +740,14 @@ def convert_to_group_format(element):
     
     if url_lower.endswith('.m3u'):
         # 处理m3u类型
-        content = get_url_content(url)
+        content = get_url_content(url, timeout=(CONVERT_CONNECT_TIMEOUT, CONVERT_READ_TIMEOUT))
         if content:
             return parse_m3u_content(content)
         return None
     
     elif url_lower.endswith('.txt'):
         # 处理txt类型，根据内容判断实际格式
-        content = get_url_content(url)
+        content = get_url_content(url, timeout=(CONVERT_CONNECT_TIMEOUT, CONVERT_READ_TIMEOUT))
         if content:
             # 根据内容特征判断是m3u还是txt格式
             if content.strip().startswith('#EXTM3U'):
@@ -1318,26 +1329,45 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
         return []
     
     valid_lives = []
-    # [4.0][日志] 该循环对非法元素调用 convert_to_group_format()，
-    # 其中 url 以 .m3u/.txt/.m3u8 结尾的元素会发起网络拉取（10s 超时，串行），是主要耗时点。
-    conv_pg = Progress(len(lives), prefix="[mergeSources] 校验lives", interval=2.0)
+    # [4.1][并发] 第 1 步：纯结构校验（**不涉及网络**），标记出需要联网转换的元素
+    marks = []            # True=结构合法直接收录；False=需尝试转换
+    check_pg = Progress(len(lives), prefix="[mergeSources] 校验lives", interval=2.0)
     for element in lives:
-        if validate_lives_element(element):
+        marks.append(validate_lives_element(element))
+        check_pg.update(1)
+    check_pg.finish()
+
+    # [4.1][并发] 第 2 步：对不合法元素**并发**调用 convert_to_group_format()。
+    # 该函数对 .m3u/.txt 源会发起网络请求；原先在主循环里串行逐个等待
+    # （实测 152 个元素耗时 4分49秒），是 mergeSources 内部最大瓶颈，改为并发后按
+    # "元素数 / 并发数" 收敛。ex.map 按输入顺序返回结果，故产物顺序与改造前完全一致。
+    pending = [i for i, ok in enumerate(marks) if not ok]
+    converted_map = {}    # {元素下标: 转换结果(list / dict / None)}
+    if pending:
+        detail(f"[Validate] {len(pending)} 个元素待尝试转换（并发 {CONVERT_WORKERS}）")
+        conv_pg = Progress(len(pending), prefix="[mergeSources] 转换lives", interval=2.0)
+        with ThreadPoolExecutor(max_workers=CONVERT_WORKERS) as ex:
+            results = list(ex.map(lambda i: convert_to_group_format(lives[i]), pending))
+        for i, res in zip(pending, results):
+            converted_map[i] = res
+            conv_pg.update(1)
+        conv_pg.finish()
+
+    # [4.1][并发] 第 3 步：按原始顺序汇总（顺序与改造前一致，保证产物稳定）
+    for i, element in enumerate(lives):
+        if marks[i]:
             valid_lives.append(element)
+            continue
+        detail("[Validate] 尝试转换非合法元素为group格式")
+        converted = converted_map.get(i)
+        if converted and isinstance(converted, list):
+            detail(f"[Validate] 转换成功，添加 {len(converted)} 个group元素")
+            valid_lives.extend(converted)
+        elif converted:
+            detail("[Validate] 转换成功，添加1个group元素")
+            valid_lives.append(converted)
         else:
-            # 尝试转换为group格式（可能触发网络拉取）
-            detail("[Validate] 尝试转换非合法元素为group格式")
-            converted = convert_to_group_format(element)
-            if converted and isinstance(converted, list):
-                detail(f"[Validate] 转换成功，添加 {len(converted)} 个group元素")
-                valid_lives.extend(converted)
-            elif converted:
-                detail("[Validate] 转换成功，添加1个group元素")
-                valid_lives.append(converted)
-            else:
-                detail("[Validate] 转换失败，跳过该元素")
-        conv_pg.update(1)
-    conv_pg.finish()
+            detail("[Validate] 转换失败，跳过该元素")
     
     # 当调试模式为true时，输出转换后的valid_lives
     if DEBUG_MODE:
