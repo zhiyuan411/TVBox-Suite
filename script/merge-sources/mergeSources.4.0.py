@@ -5,6 +5,7 @@ import datetime
 import json
 import sys
 import re
+import os
 import requests
 from pathlib import Path
 from urllib.parse import urljoin  # [新增] 用于标准路径拼接
@@ -39,6 +40,46 @@ URL_REPLACEMENTS = [
 # ================= [4.0] 并行抓取链接内容的工作线程数 =================
 FETCH_WORKERS = 20
 # =========================================================
+
+# ================= [4.1] lives 内容过滤（空分组 / 分组黑名单 / 域名黑名单） =================
+# 说明：过滤发生在 lives 合并之后、输出 tv.txt / tv.m3u 之前；
+#       被过滤的内容会按类型落盘为**可直接复用的 tv.txt / tv.m3u**（目录与运行日志相同）。
+
+# 空分组规则开关：为 True 时丢弃 group 为空（或为占位值）的分组。
+# 依据样本：web/tv.txt 中"未分组"桶占 39940 个频道 / 74.7% 体积，是脏数据最集中的地方。
+FILTER_EMPTY_GROUP = True
+# 被视为"空分组"的取值（不区分大小写；空串表示 group 缺失或纯空白）
+FILTER_EMPTY_GROUP_VALUES = ['', '未分组', 'undefined', 'null', 'none']
+
+# 分组黑名单：命中（子串匹配，不区分大小写）则整组丢弃。
+# 依据样本统计，以下分组的内容为成人向（合计约 9321 个频道 / 11.9% 体积）：
+#   Adultos(4448)  私密169169(2878)  头条(1219)  麻豆(431)  VIPxjvip(277)  性世界(50)
+FILTER_GROUP_BLACKLIST = [
+    'Adultos',
+    '麻豆',
+    '私密169169',
+    '头条',
+    'VIPxjvip',
+    '性世界',
+]
+
+# 域名黑名单：URL 命中（子串匹配，不区分大小写）则丢弃该 URL。
+# 依据样本统计（web/tv.txt，共 61386 个 URL），以下域名承载约 81% 的 URL，
+# 且其归属分组均为成人向，故按"主域名"书写以覆盖其所有子域：
+#   cdn2020.com    43570 个  (t33/t26 等子域，归属 未分组/私密169169/麻豆/头条/乌鸦)
+#   vrpro.fun       4516 个  (mp4 点播，归属 Adultos 系列分组)
+#   97img.com       1413 个  (t0.97img.com，归属 头条/麻豆/性世界)
+#   imgstream2.com   343 个  (v.imgstream2.com，归属 私密169169)
+FILTER_DOMAIN_BLACKLIST = [
+    'cdn2020.com',
+    'vrpro.fun',
+    '97img.com',
+    'imgstream2.com',
+]
+
+# 被过滤内容的落盘目录：None 表示与运行日志同目录（<cwd>/logs）
+FILTER_OUTPUT_DIR = None
+# =====================================================================================
 
 # ================= [新增] 定义多余字段列表 =================
 EXTRA_FIELDS = [
@@ -688,6 +729,152 @@ def get_most_frequent(stats_dict):
     # 首先按次数排序，次数相同时按长度排序，长度相同时按名称排序
     return max(stats_dict.items(), key=lambda x: (x[1], -len(x[0]), x[0]))[0]
 
+# ================= [4.1] 频道名清洗 =================
+# 部分订阅源把 tvg 属性塞进了 name 字段，例如：
+#   'tvgid="东南卫视" tvgname="东南卫视" tvglogo="..." grouptitle="卫视",东南卫视'
+# 原样写出会导致：
+#   - tv.txt 变成"三段式"（name 内含逗号），下游按第一个逗号切分的解析器会错位；
+#   - tv.m3u 的 EXTINF 引号嵌套（tvg-name="tvgid="xxx" ..."），产物非法且体积膨胀。
+_TVG_ATTR_RE = re.compile(r'(?:tvgid|tvgname|tvglogo|grouptitle)\s*=\s*"[^"]*"', re.I)
+
+
+def clean_channel_name(name):
+    """清洗频道名：剥离内嵌的 tvg 属性，并移除会破坏 tv.txt / tv.m3u 格式的逗号与双引号。"""
+    if name is None:
+        return '未命名'
+    if not isinstance(name, str):
+        name = str(name)
+    raw = name.strip()
+    if not raw:
+        return '未命名'
+    # 1) 剥离内嵌的 tvg 属性（tvgid / tvgname / tvglogo / grouptitle="..."）
+    s = _TVG_ATTR_RE.sub(' ', raw)
+    # 2) 若剥离后无有效内容（例如 name 只有 tvg 属性），退回原始值
+    if not s.strip():
+        s = raw
+    # 3) 移除双引号（破坏 m3u 的 tvg-name="..."）与逗号（破坏 txt 按逗号切分）
+    s = s.replace('"', ' ').replace(',', ' ')
+    # 4) 折叠空白
+    s = re.sub(r'\s+', ' ', s).strip()
+    return s or '未命名'
+
+
+# ================= [4.1] lives 内容过滤（空分组 / 分组黑名单 / 域名黑名单） =================
+
+def _filter_output_dir():
+    """被过滤内容的落盘目录（默认与运行日志同目录）。"""
+    d = FILTER_OUTPUT_DIR if FILTER_OUTPUT_DIR else logs_dir()
+    try:
+        os.makedirs(d, exist_ok=True)
+    except Exception:
+        pass
+    return d
+
+
+def _is_empty_group(group):
+    if group is None:
+        return True
+    g = str(group).strip().lower()
+    return g in [str(v).strip().lower() for v in FILTER_EMPTY_GROUP_VALUES]
+
+
+def _is_group_blacklisted(group):
+    if not FILTER_GROUP_BLACKLIST or group is None:
+        return False
+    g = str(group).lower()
+    for kw in FILTER_GROUP_BLACKLIST:
+        if kw and str(kw).lower() in g:
+            return True
+    return False
+
+
+def _is_domain_blacklisted(url):
+    if not FILTER_DOMAIN_BLACKLIST or not url:
+        return False
+    u = str(url).lower()
+    for d in FILTER_DOMAIN_BLACKLIST:
+        if d and str(d).lower() in u:
+            return True
+    return False
+
+
+def filter_lives(lives):
+    """按"空分组规则 / 分组黑名单 / 域名黑名单"过滤 lives，并把被过滤内容按类型落盘。
+
+    落盘为**可直接复用的 tv.txt / tv.m3u 格式**（不是日志 / 详情日志），目录与运行日志相同。
+    :param lives: 合并后的 lives 数组
+    :return: (过滤后的 lives, {过滤类型: 被过滤的分组列表})
+    """
+    if not isinstance(lives, list):
+        return lives, {}
+
+    kept = []
+    buckets = {}      # reason -> [group dict, ...]
+
+    def add(reason, group_item):
+        buckets.setdefault(reason, []).append(group_item)
+
+    for group_item in lives:
+        if not isinstance(group_item, dict):
+            continue
+        group = group_item.get('group')
+
+        # 1) 空分组规则
+        if FILTER_EMPTY_GROUP and _is_empty_group(group):
+            add('empty_group', group_item)
+            continue
+
+        # 2) 分组黑名单
+        if _is_group_blacklisted(group):
+            add('group_blacklist', group_item)
+            continue
+
+        # 3) 域名黑名单（URL 级：只丢弃命中的 URL，保留同频道其它地址）
+        kept_channels = []
+        dropped_channels = []
+        for ch in group_item.get('channels', []) or []:
+            if not isinstance(ch, dict):
+                continue
+            urls = ch.get('urls', []) or []
+            good_urls = [u for u in urls if u and not _is_domain_blacklisted(u)]
+            bad_urls = [u for u in urls if u and _is_domain_blacklisted(u)]
+            if good_urls:
+                new_ch = dict(ch)
+                new_ch['urls'] = good_urls
+                kept_channels.append(new_ch)
+            if bad_urls:
+                dropped_channels.append({'name': ch.get('name'), 'urls': bad_urls})
+        if dropped_channels:
+            add('domain_blacklist', {'group': group, 'channels': dropped_channels})
+        if kept_channels:
+            new_group = dict(group_item)
+            new_group['channels'] = kept_channels
+            kept.append(new_group)
+
+    _write_filtered_buckets(buckets)
+    return kept, buckets
+
+
+def _write_filtered_buckets(buckets):
+    """把被过滤的内容按类型写成可直接复用的 tv.txt / tv.m3u。"""
+    d = _filter_output_dir()
+    for reason, groups in buckets.items():
+        if not groups:
+            continue
+        n_ch = sum(len(g.get('channels', []) or []) for g in groups)
+        try:
+            txt_path = os.path.join(d, f'filtered_{reason}.txt')
+            m3u_path = os.path.join(d, f'filtered_{reason}.m3u')
+            with open(txt_path, 'w', encoding='utf-8') as f:
+                f.write(lives_to_txt(groups))
+            with open(m3u_path, 'w', encoding='utf-8') as f:
+                f.write(lives_to_m3u(groups))
+            print(f"[Filter] {reason}: {len(groups)} 个分组 / {n_ch} 个频道 -> "
+                  f"{txt_path}, {m3u_path}")
+        except Exception as e:
+            print(f"[Filter] {reason}: 落盘失败 {e}")
+
+
 def lives_to_m3u(lives):
     """
     将 lives 数组转换为 m3u 格式
@@ -703,14 +890,15 @@ def lives_to_m3u(lives):
         if not isinstance(group_item, dict):
             continue
         
-        group_name = group_item.get('group', '未分组')
+        # [4.1] 清洗分组名与频道名：剥离内嵌 tvg 属性、去除逗号与双引号
+        group_name = clean_channel_name(group_item.get('group', '未分组'))
         channels = group_item.get('channels', [])
         
         for channel_item in channels:
             if not isinstance(channel_item, dict):
                 continue
             
-            channel_name = channel_item.get('name', '未命名')
+            channel_name = clean_channel_name(channel_item.get('name', '未命名'))
             urls = channel_item.get('urls', [])
             
             for url in urls:
@@ -749,7 +937,8 @@ def lives_to_txt(lives):
         if not isinstance(group_item, dict):
             continue
         
-        group_name = group_item.get('group', '未分组')
+        # [4.1] 清洗分组名与频道名：剥离内嵌 tvg 属性、去除逗号与双引号
+        group_name = clean_channel_name(group_item.get('group', '未分组'))
         channels = group_item.get('channels', [])
         
         # 添加分组定义
@@ -760,7 +949,7 @@ def lives_to_txt(lives):
             if not isinstance(channel_item, dict):
                 continue
             
-            channel_name = channel_item.get('name', '未命名')
+            channel_name = clean_channel_name(channel_item.get('name', '未命名'))
             urls = channel_item.get('urls', [])
             
             # 将多个 URL 用 # 连接
@@ -1112,6 +1301,15 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
     # 合并结果
     merged_lives = merge_lives_groups(valid_lives)
     print(f"[Validate] lives 合并完成：从 {len(valid_lives)} 个元素合并为 {len(merged_lives)} 个元素")
+    
+    # [4.1] 内容过滤（空分组 / 分组黑名单 / 域名黑名单）
+    # 被过滤的内容会按类型落盘为可复用的 tv.txt / tv.m3u（目录与运行日志相同）
+    merged_lives, filtered_buckets = filter_lives(merged_lives)
+    if filtered_buckets:
+        n_filtered = sum(len(v) for v in filtered_buckets.values())
+        detail_info = ", ".join(f"{k}={len(v)}" for k, v in filtered_buckets.items())
+        print(f"[Filter] 已过滤 {n_filtered} 个分组（{detail_info}），"
+              f"剩余 {len(merged_lives)} 个分组")
     
     # 转换为m3u格式并输出
     if output_m3u_path:
