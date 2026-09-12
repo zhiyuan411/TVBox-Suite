@@ -109,6 +109,14 @@ handle_merge_result() {
     fi
 }
 
+# 检查上游main是否比本地main新
+echo -e "${BLUE}   对比本地main 和 ${UPSTREAM_NAME}/${MAIN_BRANCH} 提交...${NC}"
+if git merge-base --is-ancestor ${UPSTREAM_NAME}/${MAIN_BRANCH} ${MAIN_BRANCH}; then
+    echo ""
+    echo -e "${GREEN}✅ 上游 ${UPSTREAM_NAME}/${MAIN_BRANCH} 没有新提交，已是最新。无需合并。${NC}"
+    exit 0
+fi
+
 # 执行第一次合并尝试
 echo -e "${YELLOW}   正在执行: git merge $UPSTREAM_NAME/$MAIN_BRANCH${NC}"
 

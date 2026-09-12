@@ -27,10 +27,12 @@ trap 'rm -f "$LOCK_FILE"; echo "==== 锁文件已清理 ===="' EXIT
 # tvbox源
 #./mergeSources.1.0.py input.txt tv.1.0.json
 #./mergeSources.2.0.py input.txt tv.json
-./mergeSources.3.0.py input.txt ../../web/tv.json ../../web/tv.m3u ../../web/tv.txt
+./mergeSources.4.0.py input.txt ../../web/tv.json ../../web/tv.m3u ../../web/tv.txt
 
-# 去除结果中的api属性的无效url
-#./filterBadApiUrls.sh
+# 去除结果中的api属性的无效url（可用性并发校验，按需启用）
+#./filterBadApiUrls.py ../../web/tv.json
+# 清理 tv.txt / tv.m3u 中不可用的流地址（可用性并发校验，按需启用）
+#./prune_streams.py ../../web/tv.txt ../../web/tv.m3u
 
 # 原始内容
 #no=1
@@ -54,7 +56,7 @@ trap 'rm -f "$LOCK_FILE"; echo "==== 锁文件已清理 ===="' EXIT
 #./mergeSources.2.0.py input.special.txt tv.s.json
 
 # 修正github
-sed -i -e 's@[^"]*https://raw.githubusercontent.com@https://rawgithubusercontent.cnfaq.cn@' -e 's@"jiexiUrl"@"playUrl"@' ./tv*.json
+sed -i -e 's@[^"]*https://raw.githubusercontent.com@https://rawgithubusercontent.cnfaq.cn@' -e 's@"jiexiUrl"@"playUrl"@' ./tv*.json ../../web/tv.json
 
 # 立刻进行一次更新
 cd ../random-sites/
