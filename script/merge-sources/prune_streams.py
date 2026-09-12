@@ -14,7 +14,7 @@ import sys
 import time
 
 import urlcheck
-from progress import logs_dir
+from progress import logs_dir, fmt_duration
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -161,7 +161,7 @@ def main():
         n2 = rewrite_m3u(tv_m3u, bad)
     elapsed = time.time() - t0
     print(f"[prune_streams] 总结: 检查 {len(urls)} 个流地址, 不可用 {len(bad)} 个, "
-          f"tv.txt 移除 {n1} 行, tv.m3u 移除 {n2} 个, 耗时 {elapsed:.1f}s")
+          f"tv.txt 移除 {n1} 行, tv.m3u 移除 {n2} 个, 耗时 {fmt_duration(elapsed)}")
     print(f"[prune_streams] 详情日志: {detail}")
 
 

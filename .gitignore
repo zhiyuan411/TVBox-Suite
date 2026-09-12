@@ -5,6 +5,7 @@
 script/random-sites/tv-counts.txt
 script/merge-sources/web-task.log
 script/merge-sources/web-task-error.log
+script/merge-sources/logs/
 
 # ========== 系统/通用临时文件 ==========
 # Windows
@@ -12,6 +13,8 @@ Thumbs.db
 Desktop.ini
 *.tmp
 *.bak
+# GNU sed -i 原地编辑产生的临时文件（如 sed0mQcUq，应删除而非提交）
+sed??????
 
 # macOS
 .DS_Store
@@ -44,6 +47,7 @@ Desktop.ini
 # 字节码/虚拟机文件
 *.dex
 *.class
+__pycache__/
 proguardMapping.txt
 
 # 构建目录

@@ -9,7 +9,7 @@ import requests
 from pathlib import Path
 from urllib.parse import urljoin  # [新增] 用于标准路径拼接
 from concurrent.futures import ThreadPoolExecutor  # [4.0] 并行抓取链接内容
-from progress import Progress  # [日志] 进度/ETA 展示
+from progress import Progress, detail, normalize_reason, detail_path, logs_dir  # [日志] 进度/ETA/详情分层
 
 from charset_normalizer import from_bytes
 
@@ -137,7 +137,7 @@ def decode_safely(byte_data):
         ]
         for bh in binary_headers:
             if header.startswith(bh):
-                print("  [Skip] 检测到二进制文件头，跳过解码。")
+                detail("  [Skip] 检测到二进制文件头，跳过解码。")
                 return None
 
     encoding = detect_encoding(byte_data)
@@ -157,7 +157,7 @@ def get_local_file_content(file_path):
         # 以二进制模式读取
         with open(file_path, 'rb') as file:
             byte_content = file.read()
-        print(f"Read local file: {file_path}")
+        detail(f"Read local file: {file_path}")
 
         # 解码
         content = decode_safely(byte_content)
@@ -180,19 +180,19 @@ def get_url_content(url, timeout=10):
         content_type = response.headers.get('Content-Type', '').lower()
         skip_types = ['image/', 'video/', 'audio/', 'application/octet-stream', 'application/pdf', 'application/zip']
         if any(t in content_type for t in skip_types):
-            print(f"  [Skip] URL Content-Type 为非文本类型: {content_type}")
+            detail(f"  [Skip] URL Content-Type 为非文本类型: {content_type}")
             return None
 
-        print(f"Fetched URL: {url}")
+        detail(f"Fetched URL: {url}")
 
         # 解码
         content = decode_safely(byte_content)
         return content
     except requests.Timeout as e:
-        print(f"Request timed out for URL {url}: {e}")
+        detail(f"Request timed out for URL {url}: {e}")
         return None
     except requests.RequestException as e:
-        print(f"Error fetching URL {url}: {e}")
+        detail(f"Error fetching URL {url} [reason={normalize_reason(e)}]: {e}")
         return None
 
 def append_to_file_unique(file_path, line, existing_lines=None):
@@ -221,7 +221,7 @@ def append_to_file_unique(file_path, line, existing_lines=None):
         try:
             with open(p, 'a', encoding='utf-8') as f:
                 f.write(line + '\n')
-            print(f"Appended to file: {line} -> {file_path.name}")
+            detail(f"Appended to file: {line} -> {file_path.name}")
         except Exception as e:
             print(f"Error writing to file {file_path}: {e}")
 
@@ -277,7 +277,7 @@ def fetch_and_parse_single_cang(url):
     """
     尝试获取一个 URL 并将其解析为单仓数据
     """
-    print(f"  [Multi->Single] Fetching sub-url: {url}")
+    detail(f"  [Multi->Single] Fetching sub-url: {url}")
     content = None
 
     if url.startswith('/') or url.startswith('.'):
@@ -368,7 +368,7 @@ def process_input_file(input_file_path=INPUT_FILE_PATH):
                 raw_data_map[trimmed_line] = parsed_dict
                 valid_sources.append(trimmed_line)
             except Exception as e:
-                print(f"JSON 解析失败: {e}")
+                detail(f"JSON 解析失败: {e}")
                 invalid_sources.append(trimmed_line)
         else:
             invalid_sources.append(trimmed_line)
@@ -433,37 +433,37 @@ def validate_lives_element(element):
     """
     # 检查元素是否为字典
     if not isinstance(element, dict):
-        print("  [Validate] 跳过：非字典元素")
+        detail("  [Validate] 跳过：非字典元素")
         return False
     
     # 检查是否包含必要字段
     if 'group' not in element:
-        print("  [Validate] 跳过：缺少 group 字段")
+        detail("  [Validate] 跳过：缺少 group 字段")
         return False
     
     if 'channels' not in element:
-        print("  [Validate] 跳过：缺少 channels 字段")
+        detail("  [Validate] 跳过：缺少 channels 字段")
         return False
     
     # 检查 group 字段是否为非空字符串
     if not isinstance(element['group'], str) or not element['group'].strip():
-        print("  [Validate] 跳过：group 字段为空或非字符串")
+        detail("  [Validate] 跳过：group 字段为空或非字符串")
         return False
     
     # 检查 channels 字段是否为数组
     if not isinstance(element['channels'], list):
-        print("  [Validate] 跳过：channels 字段非数组")
+        detail("  [Validate] 跳过：channels 字段非数组")
         return False
     
     # 检查 channels 数组是否为空
     if not element['channels']:
-        print("  [Validate] 跳过：channels 数组为空")
+        detail("  [Validate] 跳过：channels 数组为空")
         return False
     
     # 检查是否包含 proxy://，如果包含则视为无效
     element_str = json.dumps(element)
     if 'proxy://' in element_str:
-        print("  [Validate] 跳过：包含 proxy://")
+        detail("  [Validate] 跳过：包含 proxy://")
         return False
     
     # 检查每个 channel 元素
@@ -482,7 +482,7 @@ def validate_lives_element(element):
                         valid_channels.append(channel)
     
     if not valid_channels:
-        print("  [Validate] 跳过：channels 数组中无合法频道")
+        detail("  [Validate] 跳过：channels 数组中无合法频道")
         return False
     
     # 更新为验证后的 channels
@@ -547,7 +547,7 @@ def parse_m3u_content(content):
         
         return result
     except Exception as e:
-        print(f"[Convert] m3u解析失败: {e}")
+        detail(f"[Convert] m3u解析失败: {e}")
         return None
 
 def parse_txt_content(content):
@@ -614,7 +614,7 @@ def parse_txt_content(content):
         
         return result
     except Exception as e:
-        print(f"[Convert] txt解析失败: {e}")
+        detail(f"[Convert] txt解析失败: {e}")
         return None
 
 
@@ -648,10 +648,10 @@ def convert_to_group_format(element):
         if content:
             # 根据内容特征判断是m3u还是txt格式
             if content.strip().startswith('#EXTM3U'):
-                print("[Convert] 检测到txt后缀的m3u格式内容")
+                detail("[Convert] 检测到txt后缀的m3u格式内容")
                 return parse_m3u_content(content)
             else:
-                print("[Convert] 检测到txt格式内容")
+                detail("[Convert] 检测到txt格式内容")
                 return parse_txt_content(content)
         return None
     
@@ -672,7 +672,7 @@ def convert_to_group_format(element):
             
             return result
         except Exception as e:
-            print(f"[Convert] m3u8转换失败: {e}")
+            detail(f"[Convert] m3u8转换失败: {e}")
             return None
     
     return None
@@ -1065,13 +1065,13 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
     """
     # 当调试模式为true时，输出原始lives
     if DEBUG_MODE:
-        print(f"[DEBUG] 输出原始 lives 到 {DEBUG_ORIGINAL_LIVES_FILE}")
+        detail(f"[DEBUG] 输出原始 lives 到 {DEBUG_ORIGINAL_LIVES_FILE}")
         try:
             with open(DEBUG_ORIGINAL_LIVES_FILE, 'w', encoding='utf-8') as f:
                 json.dump(lives, f, ensure_ascii=False, indent=2)
-            print(f"[DEBUG] 原始 lives 输出成功")
+            detail(f"[DEBUG] 原始 lives 输出成功")
         except Exception as e:
-            print(f"[DEBUG] 输出原始 lives 失败: {e}")
+            detail(f"[DEBUG] 输出原始 lives 失败: {e}")
     
     if not isinstance(lives, list):
         print("[Validate] lives 非数组，初始化为空数组")
@@ -1086,28 +1086,28 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
             valid_lives.append(element)
         else:
             # 尝试转换为group格式（可能触发网络拉取）
-            print("[Validate] 尝试转换非合法元素为group格式")
+            detail("[Validate] 尝试转换非合法元素为group格式")
             converted = convert_to_group_format(element)
             if converted and isinstance(converted, list):
-                print(f"[Validate] 转换成功，添加 {len(converted)} 个group元素")
+                detail(f"[Validate] 转换成功，添加 {len(converted)} 个group元素")
                 valid_lives.extend(converted)
             elif converted:
-                print("[Validate] 转换成功，添加1个group元素")
+                detail("[Validate] 转换成功，添加1个group元素")
                 valid_lives.append(converted)
             else:
-                print("[Validate] 转换失败，跳过该元素")
+                detail("[Validate] 转换失败，跳过该元素")
         conv_pg.update(1)
     conv_pg.finish()
     
     # 当调试模式为true时，输出转换后的valid_lives
     if DEBUG_MODE:
-        print(f"[DEBUG] 输出转换后的 valid_lives 到 {DEBUG_VALID_LIVES_FILE}")
+        detail(f"[DEBUG] 输出转换后的 valid_lives 到 {DEBUG_VALID_LIVES_FILE}")
         try:
             with open(DEBUG_VALID_LIVES_FILE, 'w', encoding='utf-8') as f:
                 json.dump(valid_lives, f, ensure_ascii=False, indent=2)
-            print(f"[DEBUG] 转换后的 valid_lives 输出成功")
+            detail(f"[DEBUG] 转换后的 valid_lives 输出成功")
         except Exception as e:
-            print(f"[DEBUG] 输出转换后的 valid_lives 失败: {e}")
+            detail(f"[DEBUG] 输出转换后的 valid_lives 失败: {e}")
     
     # 合并结果
     merged_lives = merge_lives_groups(valid_lives)
@@ -1270,6 +1270,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 4:
         output_txt_path = sys.argv[4]
 
+    # [日志] 逐条明细（抓取成败/校验跳过/转换成败等）写入文件，控制台仅保留进度与汇总
+    print(f"[mergeSources] 详细日志写入: {logs_dir()}/merge_detail.log")
+
     # 1. 处理输入，获取原始数据
     raw_data_map, valid_sources, invalid_sources = process_input_file(input_file_path)
 
@@ -1311,13 +1314,14 @@ if __name__ == "__main__":
 
     for url, data in raw_data_map.items():
         if is_single_cang(data):
-            print(f"[Single] {url}")
+            detail(f"[Single] {url}")
             single_urls.append(url)
             # 预处理并加入合并队列
             preprocess_single_dict(url, data)
             final_dicts_to_merge.append(data)
         else:
-            print(f"[Multi]  {url} -> Starting deep scan...")
+            print(f"[Multi]  {url}")
+            detail(f"[Multi]  {url} -> Starting deep scan...")
             multi_urls.append(url)
             # 加入有效源列表，确保多仓URL会被写入到输入文件
             valid_sources.append(url)
@@ -1333,11 +1337,11 @@ if __name__ == "__main__":
             for sub_url in extracted_sub_urls:
                 # 检查是否在输入文件的 URL 中存在
                 if sub_url in all_input_urls:
-                    print(f"  [Filter] Skipping URL (exists in input): {sub_url}")
+                    detail(f"  [Filter] Skipping URL (exists in input): {sub_url}")
                     continue
                 # 检查是否在无效历史文件中存在
                 if sub_url in invalid_history_set:
-                    print(f"  [Filter] Skipping URL (exists in invalid history): {sub_url}")
+                    detail(f"  [Filter] Skipping URL (exists in invalid history): {sub_url}")
                     continue
                 # 通过过滤，添加到处理列表
                 filtered_sub_urls.append(sub_url)
@@ -1440,3 +1444,4 @@ if __name__ == "__main__":
 
     # 使用 tmp.valid-json 覆盖原输入文件
     replace_file(tmp_valid_path, input_file_path)
+    print(f"[mergeSources] 无效源 {len(invalid_sources)} 个已记录到 {invalid_history_path.name}")

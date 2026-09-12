@@ -14,7 +14,7 @@ import time
 import json
 
 import urlcheck
-from progress import summarize_bad, logs_dir
+from progress import summarize_bad, logs_dir, fmt_duration
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -88,7 +88,7 @@ def main():
         json.dump(data, f, indent=4, ensure_ascii=False)
     elapsed = time.time() - t0
     print(f"[filterBadApiUrls] 总结: 检查 {len(urls)} 个, 不可用 {len(bad)} 个, "
-          f"耗时 {elapsed:.1f}s, 已写回 {tv_json}")
+          f"耗时 {fmt_duration(elapsed)}, 已写回 {tv_json}")
     print(f"[filterBadApiUrls] 详情日志: {detail}")
 
 
