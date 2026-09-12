@@ -1078,11 +1078,14 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
         return []
     
     valid_lives = []
+    # [4.0][日志] 该循环对非法元素调用 convert_to_group_format()，
+    # 其中 url 以 .m3u/.txt/.m3u8 结尾的元素会发起网络拉取（10s 超时，串行），是主要耗时点。
+    conv_pg = Progress(len(lives), prefix="[mergeSources] 校验lives", interval=2.0)
     for element in lives:
         if validate_lives_element(element):
             valid_lives.append(element)
         else:
-            # 尝试转换为group格式
+            # 尝试转换为group格式（可能触发网络拉取）
             print("[Validate] 尝试转换非合法元素为group格式")
             converted = convert_to_group_format(element)
             if converted and isinstance(converted, list):
@@ -1093,6 +1096,8 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
                 valid_lives.append(converted)
             else:
                 print("[Validate] 转换失败，跳过该元素")
+        conv_pg.update(1)
+    conv_pg.finish()
     
     # 当调试模式为true时，输出转换后的valid_lives
     if DEBUG_MODE:
