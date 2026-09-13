@@ -60,7 +60,7 @@ CONVERT_READ_TIMEOUT = 30      # 读取超时(秒)，按"两次数据包间隔"�
 # 依据样本：web/tv.txt 中"未分组"桶占 39940 个频道 / 74.7% 体积，是脏数据最集中的地方。
 FILTER_EMPTY_GROUP = True
 # 被视为"空分组"的取值（不区分大小写；空串表示 group 缺失或纯空白）
-FILTER_EMPTY_GROUP_VALUES = ['', '未分组', 'undefined', 'null', 'none']
+FILTER_EMPTY_GROUP_VALUES = ['', '未分组', 'undefined', 'null', 'none', '使用公告']
 
 # 分组黑名单：命中（子串匹配，不区分大小写）则整组丢弃。
 # 依据样本统计，以下分组的内容为成人向（合计约 9321 个频道 / 11.9% 体积）：
@@ -797,11 +797,17 @@ def get_most_frequent(stats_dict):
 # 原样写出会导致：
 #   - tv.txt 变成"三段式"（name 内含逗号），下游按第一个逗号切分的解析器会错位；
 #   - tv.m3u 的 EXTINF 引号嵌套（tvg-name="tvgid="xxx" ..."），产物非法且体积膨胀。
-_TVG_ATTR_RE = re.compile(r'(?:tvgid|tvgname|tvglogo|grouptitle)\s*=\s*"[^"]*"', re.I)
+# 兼容两种写法：带引号 tvgid="东南卫视" 与无引号、空格分隔 tvgid= 东南卫视
+_TVG_ATTR_RE = re.compile(r'(?:tvgid|tvgname|tvglogo|grouptitle)\s*=\s*(?:"[^"]*"|\S+)', re.I)
 
 
 def clean_channel_name(name):
-    """清洗频道名：剥离内嵌的 tvg 属性，并移除会破坏 tv.txt / tv.m3u 格式的逗号与双引号。"""
+    """清洗频道名：剥离内嵌的 tvg 属性，并移除会破坏 tv.txt / tv.m3u 格式的逗号与双引号。
+
+    关键修正（P0）：当 name 整串都是 tvg 属性（如
+    'tvgid= 东南卫视 tvgname= 东南卫视 tvglogo= https://... grouptitle= 卫视'）时，
+    直接删除属性会得到空名。因此优先从 tvgname / tvgid 的"值"中提取真实频道名。
+    """
     if name is None:
         return '未命名'
     if not isinstance(name, str):
@@ -809,16 +815,19 @@ def clean_channel_name(name):
     raw = name.strip()
     if not raw:
         return '未命名'
-    # 1) 剥离内嵌的 tvg 属性（tvgid / tvgname / tvglogo / grouptitle="..."）
+    # 1) 提取真实频道名：优先 tvgname，其次 tvgid 的"值"（兼容无引号、空格分隔）
+    m = re.search(r'tvgname\s*=\s*(\S+)', raw, re.I) or re.search(r'tvgid\s*=\s*(\S+)', raw, re.I)
+    extracted = m.group(1) if m else None
+    # 2) 剥离内嵌的 tvg 属性（tvgid / tvgname / tvglogo / grouptitle），兼容无引号写法
     s = _TVG_ATTR_RE.sub(' ', raw)
-    # 2) 若剥离后无有效内容（例如 name 只有 tvg 属性），退回原始值
-    if not s.strip():
-        s = raw
-    # 3) 移除双引号（破坏 m3u 的 tvg-name="..."）与逗号（破坏 txt 按逗号切分）
-    s = s.replace('"', ' ').replace(',', ' ')
-    # 4) 折叠空白
     s = re.sub(r'\s+', ' ', s).strip()
-    return s or '未命名'
+    # 3) 决定最终名：剥离后的残留文本优先；否则用提取到的 tvgname/tvgid 值；再否则退回原值
+    candidate = s if s else (extracted if extracted else raw)
+    # 4) 移除双引号（破坏 m3u 的 tvg-name="..."）与逗号（破坏 txt 按逗号切分）
+    candidate = candidate.replace('"', ' ').replace(',', ' ')
+    # 5) 折叠空白
+    candidate = re.sub(r'\s+', ' ', candidate).strip()
+    return candidate or '未命名'
 
 
 # ================= [4.1] lives 内容过滤（空分组 / 分组黑名单 / 域名黑名单） =================
@@ -915,6 +924,46 @@ def filter_lives(lives):
 
     _write_filtered_buckets(buckets)
     return kept, buckets
+
+
+def prune_empty_lives(lives):
+    """清理合并/过滤后残留的空分组与空频道。
+
+    - 丢弃 channels 为空（或无有效频道）的分组，避免输出里出现形如
+      '制片厂,#genre#' 的空壳分组；
+    - 丢弃频道名为空（清洗后为空白）或无任何可用 URL 的频道。
+    其余频道名会再次经 clean_channel_name 归一化，保证与合并键 / 输出一致。
+    """
+    if not isinstance(lives, list):
+        return lives
+    out = []
+    for group_item in lives:
+        if not isinstance(group_item, dict):
+            continue
+        channels = group_item.get('channels', []) or []
+        kept_channels = []
+        for ch in channels:
+            if not isinstance(ch, dict):
+                continue
+            raw_name = ch.get('name', '')
+            if not (raw_name or '').strip():
+                continue         # 频道名为空（无名称），丢弃
+            nm = clean_channel_name(raw_name)
+            urls = [u for u in (ch.get('urls', []) or []) if u and str(u).strip()]
+            if not nm:           # 清洗后名仍为空
+                continue
+            if not urls:         # 无可用 URL
+                continue
+            new_ch = dict(ch)
+            new_ch['name'] = nm
+            new_ch['urls'] = urls
+            kept_channels.append(new_ch)
+        if not kept_channels:    # 空分组丢弃
+            continue
+        new_group = dict(group_item)
+        new_group['channels'] = kept_channels
+        out.append(new_group)
+    return out
 
 
 def _write_filtered_buckets(buckets):
@@ -1024,10 +1073,7 @@ def lives_to_txt(lives):
                     encoded_urls.append(encoded_url)
                 urls_str = '#'.join(encoded_urls)
                 txt_lines.append(f"{channel_name},{urls_str}")
-        
-        # 添加空行分隔不同分组
-        txt_lines.append('')
-    
+
     return '\n'.join(txt_lines)
 
 
@@ -1124,8 +1170,8 @@ def merge_lives_groups(lives):
                 continue
             
             original_channel_name = channel_item.get('name', '未命名')
-            # 清洗频道名（对所有情况都生效）
-            cleaned_channel_name = clean_string(original_channel_name, CHANNEL_NAME_CLEAN_KEYWORDS)
+            # 清洗频道名（提取 tvgname/tvgid 真实名；作为合并去重键，与输出共用同一归一化结果）
+            cleaned_channel_name = clean_channel_name(original_channel_name)
             
             urls = channel_item.get('urls', [])
             
@@ -1271,15 +1317,21 @@ def merge_lives_groups(lives):
         ratio = url_count / channel_count if channel_count > 0 else 0
         group_stats.append((group_name, channels, channel_count, url_count, ratio))
     
+    # 分组是否含中文字符（用于"中文分组靠前"的最高优先级排序，仅作用于分组）
+    def has_cjk(s):
+        return any('\u4e00' <= c <= '\u9fff' for c in (s or ''))
+
     # 自定义排序规则
     def custom_sort_key(item):
         group_name, channels, channel_count, url_count, ratio = item
+        # 最高优先级：含中文的分组靠前(0)，其他靠后(1)
+        cjk = 0 if has_cjk(group_name) else 1
         if channel_count > 10:
             # 频道数>10：排在前面区域，按URL数/频道数的比值从大到小排序，相同时按频道数降序，再按分组名长度升序
-            return (0, -ratio, -channel_count, len(group_name), group_name)
+            return (cjk, 0, -ratio, -channel_count, len(group_name), group_name)
         else:
             # 频道数<=10：排在后面区域，按频道数从多到少排序，相同时按分组名长度升序
-            return (1, -channel_count, len(group_name), group_name)
+            return (cjk, 1, -channel_count, len(group_name), group_name)
     
     # 按自定义规则排序
     sorted_groups = sorted(group_stats, key=custom_sort_key)
@@ -1393,6 +1445,8 @@ def validate_lives(lives, output_m3u_path=None, output_txt_path=None):
     # [4.1] 内容过滤（空分组 / 分组黑名单 / 域名黑名单）
     # 被过滤的内容会按类型落盘为可复用的 tv.txt / tv.m3u（目录与运行日志相同）
     merged_lives, filtered_buckets = filter_lives(merged_lives)
+    # [清理] 丢弃残留的空分组 / 空频道（如频道名清洗后为空、或所有 URL 已被过滤）
+    merged_lives = prune_empty_lives(merged_lives)
     if filtered_buckets:
         n_filtered = sum(len(v) for v in filtered_buckets.values())
         detail_info = ", ".join(f"{k}={len(v)}" for k, v in filtered_buckets.items())

@@ -1,3 +1,113 @@
+# For more information on configuration, see:
+#   * Official English Documentation: http://nginx.org/en/docs/
+#   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for" '
+                      '"$host" '
+                      '"$upstream_addr"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    # 全局SSL证书配置（所有server块共享）
+    ssl_certificate /etc/letsencrypt/live/cnfaq.cn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cnfaq.cn/privkey.pem;
+    # 全局SSL安全配置
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 4096;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Gzip Settings
+    gzip on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types
+        text/css
+        text/plain
+        text/javascript
+        text/markdown
+        application/javascript
+        application/json
+        application/gpx+xml
+        application/x-javascript
+        application/xml
+        application/xml+rss
+        application/xhtml+xml
+        application/x-font-ttf
+        application/x-font-opentype
+        application/vnd.ms-fontobject
+        image/svg+xml
+        image/x-icon
+        application/rss+xml
+        application/atom_xml
+        application/x-mpegurl
+        application/vnd.apple.mpegurl
+        audio/x-mpegurl;
+    gzip_disable "MSIE [1-6]\.(?!.*SV1)";
+
+#    resolver 180.184.1.1 180.76.76.76 223.5.5.5 ipv6=off valid=300s;
+#    resolver_timeout 5s;
+
+    # 全局定义错误码对应的 URL 路径
+    error_page 404 /errors/404.html;
+    error_page 400 /errors/400.html;
+    error_page 401 /errors/401.html;
+    error_page 403 /errors/403.html;
+    error_page 500 502 503 504 /errors/500.html;
+
+    # 使用 error_page 捕获 418 状态码并重定向到 @invalid_referer location
+    error_page 418 = @invalid_referer;
+
+    # 定义一个共享内存区域来存储会话状态
+    limit_req_zone $binary_remote_addr zone=one:10m rate=1r/s;
+
+    # 定义一个共享内存区域来存储连接状态
+    limit_conn_zone $binary_remote_addr zone=addr:10m;
+
+    # 黑名单规则
+    #deny 146.190.190.67;
+    #deny 159.223.242.210;
+    #deny 190.10.8.89;
+    #deny 157.230.195.44;
+
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+    include /etc/nginx/conf.d/*.conf;
+
+    # 支持wss协议
+    # map $http_upgrade $connection_upgrade {
+    #     default upgrade;
+    #     '' close;
+    # }
+
+
+
+
+
 # 使用ip来访问私有目录
 server {
     listen       80;
@@ -55,6 +165,15 @@ location /private/epg/ {
 
     # 2. 保留原有/private/目录访问逻辑
     location /private/ {
+        try_files $uri =404;
+    }
+
+    # 2.1 tv.m3u 显式启用 gzip 压缩（对应 http://39.107.52.162/private/tv.m3u）
+    # 精确匹配优先级高于 location /private/；强制 Content-Type 为可压缩类型，确保被 gzip
+    location = /private/tv.m3u {
+        default_type application/x-mpegurl;
+        gzip on;
+        gzip_types application/x-mpegurl;
         try_files $uri =404;
     }
 
