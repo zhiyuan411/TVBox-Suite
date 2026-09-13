@@ -5,6 +5,14 @@ import random
 import os
 from datetime import datetime
 
+# 脚本自身所在目录：所有数据文件都相对它定位，不再依赖调用方的 cwd。
+# 背景：update.sh 是以绝对路径调用本脚本的，且 update.sh 自身由 crontab 在
+#       merge-sources 目录下启动，导致 cwd 一直是 merge-sources；
+#       若用 './xxx' 相对路径，tv-counts.txt 会误写到 merge-sources，
+#       且 whitelist.txt / blacklist.txt 读不到（被当作空列表），
+#       进而使 tv.json 的站点顺序被完全随机打乱（白名单置顶/黑名单沉底失效）。
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # 获取当前时间戳并格式化为字符串
 def get_current_timestamp():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -107,10 +115,11 @@ def process_tv_json(tv_json_path, whitelist, blacklist):
 
 if __name__ == "__main__":
     access_log_path = '/var/log/nginx/access.log'
-    counts_file_path = './tv-counts.txt'
-    whitelist_path = './whitelist.txt'
-    blacklist_path = './blacklist.txt'
-    tv_json_path = '../../web/tv.json'
+    # [修复] 统一相对"脚本自身目录"定位（不依赖 cwd），保证被 update.sh 或 cron 调用时行为一致
+    counts_file_path = os.path.join(SCRIPT_DIR, 'tv-counts.txt')
+    whitelist_path = os.path.join(SCRIPT_DIR, 'whitelist.txt')
+    blacklist_path = os.path.join(SCRIPT_DIR, 'blacklist.txt')
+    tv_json_path = os.path.join(SCRIPT_DIR, '..', '..', 'web', 'tv.json')
 
     tv_json_count = count_tv_json_occurrences(access_log_path)
     compare_and_update_count(tv_json_count, counts_file_path)

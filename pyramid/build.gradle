@@ -11,11 +11,31 @@ android {
         targetSdkVersion 28
 
         python {
-            buildPython("/Users/lizhiyuan/anaconda3/bin/python3")
+            // ✅ 动态读取，不含任何硬编码路径
+            def localProperties = new Properties()
+            def localPropertiesFile = rootProject.file('local.properties')
+            if (localPropertiesFile.exists()) {
+                localProperties.load(new FileInputStream(localPropertiesFile))
+            }
+
+            // 优先级：local.properties > 项目级 .venv > 系统 python3
+            def buildPythonPath = localProperties.getProperty('buildPython')
+
+            if (!buildPythonPath) {
+                def venvPython = new File(rootProject.projectDir, ".venv/bin/python3")
+                if (venvPython.exists()) {
+                    buildPythonPath = venvPython.absolutePath
+                } else {
+                    buildPythonPath = "python3"
+                }
+            }
+
+            buildPython(buildPythonPath)
+
             pip {
                 install "lxml"
                 install "ujson"
-                install "pyquery"
+                install "pyquery==1.4.3"
                 install "requests"
                 install "jsonpath"
                 install "cachetools"
