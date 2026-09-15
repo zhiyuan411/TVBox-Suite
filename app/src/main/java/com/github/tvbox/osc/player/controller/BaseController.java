@@ -5,6 +5,7 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
@@ -19,6 +20,11 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.github.tvbox.osc.util.HawkConfig;
+import com.github.tvbox.osc.util.HawkUtils;
+import com.github.tvbox.osc.util.LOG;
+import com.orhanobut.hawk.Hawk;
 
 import java.util.Map;
 
@@ -115,7 +121,15 @@ public abstract class BaseController extends BaseVideoController implements Gest
     private TextView mSpeedTextTop;
     private TextView mSpeedTextTopr;
     private TextView mSpeedTextHide;
+    private TextView mCacheTextTop;
+    private TextView mCacheTextTopr;
+    private TextView mCacheTextHide;
+    // b处缓存数字旁的"MB"单位（小字），随缓存数字有无一起显隐
+    private TextView mCacheUnitTop;
+    private TextView mCacheUnitHide;
     private LinearLayout mSpeedTop;
+    // 缓存大小文本缓存，用于跳过无变化的 setText
+    private String mLastCacheText;
 
     private LinearLayout mDialogVolume;
     private LinearLayout mDialogBrightness;
@@ -127,13 +141,105 @@ public abstract class BaseController extends BaseVideoController implements Gest
     private final Runnable mRunnable = new Runnable() {
         @Override
         public void run() {
-            String format = String.format("%.2f", (float) mControlWrapper.getTcpSpeed() / 1024.0 / 1024.0);
+            long tcpSpeed = mControlWrapper.getTcpSpeed();
+            String format = String.format("%.2f", (float) tcpSpeed / 1024.0 / 1024.0);
             mSpeedTextTop.setText(format);
             mSpeedTextTopr.setText(format);
             mSpeedTextHide.setText(format);
+            updateCacheText();
+            updatePlayInfo();
+            // IJK 卡死看门狗：仅 IJK 播放器、播放中（非暂停/非缓冲）、速度为 0 且位置停滞超阈值时自动重连
+            checkIjkStallAndRecover(tcpSpeed);
             mHandler.postDelayed(this, 1000);
         }
     };
+
+    /**
+     * 刷新"当前内存缓存大小"展示。
+     * 与网速共用 1Hz 的刷新节奏（不再新增定时器），每秒仅多两次 IJK property 读取，开销可忽略；
+     * 文本无变化时跳过 setText，避免无意义的重绘。
+     * 不支持读取缓存字节的播放器（如 Exo/系统播放器）返回 -1，此时清空文本。
+     */
+    private void updateCacheText() {
+        long bufferedBytes = mControlWrapper.getBufferedBytes();
+        // b处（点击/缓冲时顶栏）数字与单位分开展示：数字用大号字，单位"MB"由旁边的静态小字 TextView 承担；
+        // a处（屏显）数字与单位同号字，整体 "5.23MB" 一起展示。
+        String cacheValue = bufferedBytes < 0 ? "" : String.format("%.2f", bufferedBytes / 1024.0 / 1024.0);
+        String cacheText = bufferedBytes < 0 ? "" : String.format("%.2fMB", bufferedBytes / 1024.0 / 1024.0);
+        if (cacheText.equals(mLastCacheText)) return;
+        mLastCacheText = cacheText;
+        // b处数字与单位分离，单位仅在数字非空时显示（缓存不可用时数字与单位一起隐藏，避免只剩"MB"）
+        int unitVisibility = cacheValue.isEmpty() ? View.GONE : View.VISIBLE;
+        if (mCacheTextTop != null) mCacheTextTop.setText(cacheValue);
+        if (mCacheTextTopr != null) mCacheTextTopr.setText(cacheText);
+        if (mCacheTextHide != null) mCacheTextHide.setText(cacheValue);
+        if (mCacheUnitTop != null) mCacheUnitTop.setVisibility(unitVisibility);
+        if (mCacheUnitHide != null) mCacheUnitHide.setVisibility(unitVisibility);
+    }
+
+    /**
+     * 刷新顶部播放信息（分辨率 + 码率等）的钩子，默认空实现，由具体控制器按需覆写。
+     * 与网速/缓存共用 1Hz 刷新节奏，不新增定时器；Live 等未覆写者不受影响。
+     */
+    protected void updatePlayInfo() {
+    }
+
+    // ===== IJK 卡死看门狗 =====
+    private long mStallLastPosition = -1L;
+    private long mStallStartTimeMs = -1L;
+    private int mStallRecoveries = 0;
+    private boolean mAutoReconnecting = false;
+    private static final int MAX_STALL_RECOVERIES = 3;
+
+    /**
+     * IJK 卡死检测：当速度为 0 且播放位置在阈值时间内完全不变化时，认为播放器卡死（连接层 hang 死），
+     * 通过 replay(false) 保留位置重建播放器实例，恢复连接。
+     *
+     * 防误伤：
+     * - 仅作用于 IJK 播放器（PLAY_TYPE == 1）
+     * - 仅在 STATE_PLAYING 且 mControlWrapper.isPlaying() = true 时计时
+     *   （暂停/缓冲/错误/准备等状态下不计时）
+     * - 速度 > 0 或位置发生变化时立即重置计时
+     * - 单次播放会话最多自动重连 3 次，超过后停止自动恢复，等待用户手动干预
+     */
+    private void checkIjkStallAndRecover(long tcpSpeed) {
+        if (Hawk.get(HawkConfig.PLAY_TYPE, 0) != 1) {
+            // 非 IJK 播放器不启用看门狗
+            mStallStartTimeMs = -1L;
+            mStallLastPosition = -1L;
+            return;
+        }
+        if (mCurPlayState != VideoView.STATE_PLAYING || !mControlWrapper.isPlaying()) {
+            mStallStartTimeMs = -1L;
+            mStallLastPosition = -1L;
+            return;
+        }
+        long pos = mControlWrapper.getCurrentPosition();
+        // 卡死阈值(秒 → 毫秒)，getIJKStallTimeout() 内部已对 <5s 的无效值兜底为 30s
+        long stallTimeoutMs = HawkUtils.getIJKStallTimeout() * 1000L;
+        boolean isStuck = (tcpSpeed == 0 && pos == mStallLastPosition && mStallLastPosition >= 0);
+        if (isStuck) {
+            if (mStallStartTimeMs == -1L) {
+                mStallStartTimeMs = SystemClock.uptimeMillis();
+            } else if (SystemClock.uptimeMillis() - mStallStartTimeMs >= stallTimeoutMs) {
+                if (mStallRecoveries < MAX_STALL_RECOVERIES) {
+                    mStallRecoveries++;
+                    mStallStartTimeMs = -1L;
+                    mAutoReconnecting = true;
+                    LOG.i("IJK stall detected for " + stallTimeoutMs
+                            + "ms, auto reconnect (" + mStallRecoveries + "/" + MAX_STALL_RECOVERIES + ")");
+                    mControlWrapper.replay(false);
+                } else {
+                    // 已达上限，停止自动恢复，等待用户手动干预
+                    LOG.i("IJK stall watchdog reached max auto-reconnect attempts, stop recovering");
+                    mStallStartTimeMs = -1L;
+                }
+            }
+        } else {
+            mStallStartTimeMs = -1L;
+        }
+        mStallLastPosition = pos;
+    }
 
     @Override
     protected void initView() {
@@ -149,6 +255,11 @@ public abstract class BaseController extends BaseVideoController implements Gest
         mSpeedTextTop = findViewWithTag("play_speed_top");
         mSpeedTextTopr = findViewWithTag("play_speed_topr");
         mSpeedTextHide = findViewWithTag("play_speed_top_hide");
+        mCacheTextTop = findViewWithTag("play_cache_top");
+        mCacheTextTopr = findViewWithTag("play_cache_topr");
+        mCacheTextHide = findViewWithTag("play_cache_top_hide");
+        mCacheUnitTop = findViewWithTag("play_cache_top_unit");
+        mCacheUnitHide = findViewWithTag("play_cache_top_hide_unit");
         mSpeedTop = findViewWithTag("top_container_hide");
 
         mDialogVolume = findViewWithTag("dialog_volume");
@@ -254,6 +365,17 @@ public abstract class BaseController extends BaseVideoController implements Gest
     public void setPlayState(int playState) {
         super.setPlayState(playState);
         mCurPlayState = playState;
+        // 新一次播放会话开始：区分"用户主动重开"与"看门狗自动重连"
+        // 自动重连触发的 PREPARING 不重置 mStallRecoveries，避免对坏源无限循环自动恢复
+        if (playState == VideoView.STATE_PREPARING) {
+            if (mAutoReconnecting) {
+                mAutoReconnecting = false;
+            } else {
+                mStallRecoveries = 0;
+            }
+            mStallStartTimeMs = -1L;
+            mStallLastPosition = -1L;
+        }
     }
 
     protected boolean isInPlaybackState() {

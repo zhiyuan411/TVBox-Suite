@@ -1938,7 +1938,10 @@ public class LivePlayActivity extends BaseActivity {
         @Override
         public void run() {
             if (mVideoView == null) return;
-            tvNetSpeed.setText(String.format("%.2fMB/s", (float) mVideoView.getTcpSpeed() / 1024.0 / 1024.0));
+            // 网速 + 当前已缓存到内存的数据量（用于直观观察缓冲水位，不支持的播放器不展示）
+            long bufferedBytes = mVideoView.getBufferedBytes();
+            String cacheText = bufferedBytes < 0 ? "" : String.format(" | %.2fMB", bufferedBytes / 1024.0 / 1024.0);
+            tvNetSpeed.setText(String.format("%.2fMB/s%s", (float) mVideoView.getTcpSpeed() / 1024.0 / 1024.0, cacheText));
             mHandler.postDelayed(this, 1000);
         }
     };

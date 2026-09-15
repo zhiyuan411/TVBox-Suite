@@ -101,6 +101,16 @@ public class ControlWrapper implements MediaPlayerControl, IVideoController {
     }
 
     @Override
+    public long getBufferedBytes() {
+        return mPlayerControl.getBufferedBytes();
+    }
+
+    @Override
+    public long getBitRate() {
+        return mPlayerControl.getBitRate();
+    }
+
+    @Override
     public void replay(boolean resetPosition) {
         mPlayerControl.replay(resetPosition);
     }

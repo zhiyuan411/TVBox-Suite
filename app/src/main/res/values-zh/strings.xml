@@ -76,6 +76,14 @@
     <string name="mn_ijk_cache_play">IJK缓存</string>
     <string name="mn_reset">重置</string>
     <string name="mn_fastsearch">聚搜</string>
+    <string name="mn_search_thread">搜索并发数</string>
+    <string name="mn_spider_thread">插件搜索并发数</string>
+    <string name="mn_search_performance">搜索性能</string>
+    <string name="dia_search_performance">搜索性能</string>
+    <string name="mn_max_requests">总并发上限</string>
+    <string name="mn_max_requests_per_host">单域名并发上限</string>
+    <string name="mn_batch_size">快速搜索批次大小</string>
+    <string name="hint_restart_required">需重启生效</string>
 
     // Settings Dialog Pop-Up //
     <string name="dia_source">请选择数据源</string>
@@ -201,9 +209,13 @@
     <string-array name="media_content_General" >
         <item>点播播放器首选</item>
     </string-array>
+    <!-- 必须与 values/strings.xml 的 media_content_tag_IjkPlayer 顺序、数量保持一致：
+         IjkMediaCodecMode, IjkCacheSize, IjkBufferSize, IjkStallTimeout -->
     <string-array name="media_content_IjkPlayer">
         <item>解码模式</item>
-        <item>缓存</item>
+        <item>磁盘缓存上限</item>
+        <item>内存缓冲上限</item>
+        <item>卡死阈值</item>
     </string-array>
 
     <string-array name="media_content_ExoPlayer">

@@ -203,6 +203,56 @@ public class IjkPlayer extends AbstractPlayer implements IMediaPlayer.OnErrorLis
         return mMediaPlayer.getTcpSpeed();
     }
 
+    /**
+     * IJK 原生 packet 队列已缓存的数据量（视频+音频，单位字节）。
+     * 该值即 read 线程填充的内存缓冲大小，也是暂停后"继续缓存"能积累到的量
+     * （上限受 native max-buffer-size 限制，见 IjkmPlayer#applyIjkMaxBufferOverride）。
+     */
+    @Override
+    public long getBufferedBytes() {
+        long video = mMediaPlayer.getVideoCachedBytes();
+        long audio = mMediaPlayer.getAudioCachedBytes();
+        return Math.max(video, 0) + Math.max(audio, 0);
+    }
+
+    /**
+     * IJK 平均码率(bit/s)。
+     *
+     * 主方案(C)：用 native packet 队列的「字节 / 时长」推算。队列中的字节与时长来自同一批已
+     * demux 的包，其比值即「已缓冲那段内容的实际平均码率」，与下载速度无关；因此对 HLS(m3u8)
+     * 的多切片、单切片、变码率以及直播/本地文件都成立，且无需额外网络请求。
+     *
+     * 兜底方案(A)：当缓冲窗口不足(起步 / seek 刚结束)时，退回容器级码率 ic->bit_rate
+     * （native 打开时由 ffmpeg estimate_timings 计算，mp4 等可用，m3u8 通常为 0）。
+     *
+     * 返回 <=0 表示两者都取不到，UI 侧隐藏码率。
+     */
+    @Override
+    public long getBitRate() {
+        if (mMediaPlayer == null) return -1;
+        // 方案 C：队列字节/时长推算（video 优先，纯音频退化到 audio）
+        long videoBytes = Math.max(mMediaPlayer.getVideoCachedBytes(), 0);
+        long videoMs = Math.max(mMediaPlayer.getVideoCachedDuration(), 0);
+        long audioBytes = Math.max(mMediaPlayer.getAudioCachedBytes(), 0);
+        long audioMs = Math.max(mMediaPlayer.getAudioCachedDuration(), 0);
+
+        long bitRate = 0;
+        if (videoBytes > 0 && videoMs >= MIN_BITRATE_WINDOW_MS) {
+            bitRate += videoBytes * 8000 / videoMs;
+        }
+        if (audioBytes > 0 && audioMs >= MIN_BITRATE_WINDOW_MS) {
+            bitRate += audioBytes * 8000 / audioMs;
+        }
+        if (bitRate > 0) return bitRate;
+
+        // 方案 A：容器级码率兜底
+        long containerBitRate = mMediaPlayer.getBitRate();
+        return containerBitRate > 0 ? containerBitRate : -1;
+    }
+
+    /** 队列推算码率所需的最小缓冲窗口(ms)，窗口过小会让比值被抖动放大 */
+    private static final long MIN_BITRATE_WINDOW_MS = 2000;
+
     @Override
     public boolean onError(IMediaPlayer mp, int what, int extra) {
         mPlayerEventListener.onError(-1, "未知播放错误");

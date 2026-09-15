@@ -9,6 +9,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 
 import androidx.annotation.NonNull;
+import androidx.media3.common.Format;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.PlaybackParameters;
 import androidx.media3.common.Player;
@@ -282,6 +283,27 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
             return 0;
         }
         return PlayerUtils.getNetSpeed(mAppContext);
+    }
+
+    /**
+     * Exo 平均码率(bit/s)：取当前选中音视频轨道 Format.bitrate 之和。
+     * 对 HLS，Exo 自身已解析 master playlist 的 BANDWIDTH/AVERAGE-BANDWIDTH 并写入 Format.bitrate，
+     * 因此这里通常能展示标称带宽；取不到时返回 -1，UI 隐藏。
+     */
+    @SuppressLint("UnsafeOptInUsageError")
+    @Override
+    public long getBitRate() {
+        if (mMediaPlayer == null) return -1;
+        long bitRate = 0;
+        Format videoFormat = mMediaPlayer.getVideoFormat();
+        if (videoFormat != null && videoFormat.bitrate != Format.NO_VALUE) {
+            bitRate += videoFormat.bitrate;
+        }
+        Format audioFormat = mMediaPlayer.getAudioFormat();
+        if (audioFormat != null && audioFormat.bitrate != Format.NO_VALUE) {
+            bitRate += audioFormat.bitrate;
+        }
+        return bitRate > 0 ? bitRate : -1;
     }
 
     @Override

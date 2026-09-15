@@ -177,24 +177,6 @@ public class SearchActivity extends BaseActivity {
         return rootView.getBottom() == r.bottom;
     }
 
-    private List<Runnable> pauseRunnable = null;
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (pauseRunnable != null && pauseRunnable.size() > 0) {
-            allRunCount.set(pauseRunnable.size());
-            if (sourceViewModel != null) {
-                sourceViewModel.initExecutor();
-                for (Runnable runnable : pauseRunnable) {
-                    sourceViewModel.execute(runnable);
-                }
-            }
-            pauseRunnable.clear();
-            pauseRunnable = null;
-        }
-    }
-
     private void initView() {
         EventBus.getDefault().register(this);
         llLayout = findViewById(R.id.llLayout);
@@ -268,15 +250,7 @@ public class SearchActivity extends BaseActivity {
                 FastClickCheckUtil.check(view);
                 Movie.Video video = searchAdapter.getData().get(position);
                 if (video != null) {
-                    try {
-                        if (sourceViewModel != null) {
-                            pauseRunnable = sourceViewModel.shutdownNow();
-                            JsLoader.stopAll();
-                            sourceViewModel.destroyExecutor();
-                        }
-                    } catch (Throwable th) {
-                        th.printStackTrace();
-                    }
+                    // 方案A：不再暂停/销毁搜索执行器，让搜索在后台继续，返回后可看到继续累积的结果
                     Bundle bundle = new Bundle();
                     bundle.putString("id", video.id);
                     bundle.putString("sourceKey", video.sourceKey);
@@ -1057,6 +1031,8 @@ public class SearchActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         cancel();
+        // 方案A：进入详情/播放时不再暂停搜索，搜索任务会持续到本页销毁为止；
+        // 页面真正销毁时才取消网络请求并关闭执行器。
         try {
             if (sourceViewModel != null) {
                 sourceViewModel.shutdownNow();

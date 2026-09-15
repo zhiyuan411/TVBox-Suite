@@ -64,8 +64,14 @@ public class MediaSettingDialog extends BaseDialog {
                 case IjkMediaCodecMode:
                     HawkUtils.nextIJKCodec();
                     break;
-                case IjkCache:
-                    HawkUtils.nextIJKCache();
+                case IjkCacheSize:
+                    HawkUtils.nextIJKCacheMaxSize();
+                    break;
+                case IjkBufferSize:
+                    HawkUtils.nextIJKMaxBufferSize();
+                    break;
+                case IjkStallTimeout:
+                    HawkUtils.nextIJKStallTimeout();
                     break;
                 case ExoRenderer:
                     HawkUtils.nextExoRenderer();
@@ -106,7 +112,13 @@ public class MediaSettingDialog extends BaseDialog {
             String[] strings = getContext().getResources().getStringArray(id);
             int idTag = getContext().getResources().getIdentifier("media_content_tag_" + key, "array", BuildConfig.APPLICATION_ID);
             String[] tags = getContext().getResources().getStringArray(idTag);
-            for (int i = 0; i < strings.length; i++) {
+            // 文案数组与 tag 数组必须一一对应；长度不一致时按较短的遍历，避免丢项或越界崩溃
+            int count = Math.min(strings.length, tags.length);
+            if (strings.length != tags.length) {
+                LogUtils.w("MediaSettingDialog: media_content_" + key + " (" + strings.length
+                        + ") 与 media_content_tag_" + key + " (" + tags.length + ") 数量不一致，请检查各 values 资源是否均已同步");
+            }
+            for (int i = 0; i < count; i++) {
                 String content = strings[i];
                 String tag = tags[i];
                 contentEntityList.add(new MediaSettingEntity(content, tag));
@@ -146,8 +158,14 @@ public class MediaSettingDialog extends BaseDialog {
                 case IjkMediaCodecMode:
                     tvContent.setText(HawkUtils.getIJKCodec());
                     break;
-                case IjkCache:
-                    tvContent.setText(HawkUtils.getIJKCacheDesc());
+                case IjkCacheSize:
+                    tvContent.setText(HawkUtils.getIJKCacheMaxSizeDesc());
+                    break;
+                case IjkBufferSize:
+                    tvContent.setText(HawkUtils.getIJKMaxBufferSizeDesc());
+                    break;
+                case IjkStallTimeout:
+                    tvContent.setText(HawkUtils.getIJKStallTimeoutDesc());
                     break;
                 case ExoRenderer:
                     tvContent.setText(HawkUtils.getExoRendererDesc());
@@ -189,6 +207,6 @@ public class MediaSettingDialog extends BaseDialog {
 
     //数据枚举
     public enum MediaSettingEnum {
-        IjkMediaCodecMode, IjkCache, ExoRenderer, ExoRendererMode,VodPlayerPreferred
+        IjkMediaCodecMode, IjkCacheSize, IjkBufferSize, IjkStallTimeout, ExoRenderer, ExoRendererMode,VodPlayerPreferred
     }
 }

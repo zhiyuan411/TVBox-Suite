@@ -28,6 +28,7 @@ import javax.net.ssl.SSLSocketFactory;
 
 import okhttp3.Cache;
 import okhttp3.ConnectionSpec;
+import okhttp3.Dispatcher;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.dnsoverhttps.DnsOverHttps;
@@ -189,6 +190,13 @@ public class OkGoHelper {
 
         //builder.retryOnConnectionFailure(false);
         builder.connectionSpecs(getConnectionSpec());
+        // 以用户在「搜索性能」中配置的 Dispatcher 上限覆盖 OkHttp 默认（maxRequests=64 / maxRequestsPerHost=5）。
+        // 配置在进程启动时读取一次，运行时修改需重启生效。
+        // 注：OkHttp 3.12.11 的 Dispatcher 仅有 () 与 (ExecutorService) 两个构造器，需先 new 出实例再设上限。
+        Dispatcher dispatcher = new Dispatcher();
+        dispatcher.setMaxRequests(HawkConfig.getOkhttpMaxRequests());
+        dispatcher.setMaxRequestsPerHost(HawkConfig.getOkhttpMaxRequestsPerHost());
+        builder.dispatcher(dispatcher);
         builder = builder.addInterceptor(loggingInterceptor)
                 .readTimeout(DEFAULT_MILLISECONDS, TimeUnit.MILLISECONDS)
                 .writeTimeout(DEFAULT_MILLISECONDS, TimeUnit.MILLISECONDS)

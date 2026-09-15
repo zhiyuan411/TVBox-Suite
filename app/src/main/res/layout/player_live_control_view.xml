@@ -109,7 +109,7 @@
 
             <LinearLayout
                 android:id="@+id/tv_speed_top_hide"
-                android:layout_width="@dimen/vs_120"
+                android:layout_width="wrap_content"
                 android:layout_height="@dimen/vs_40"
                 android:orientation="horizontal"
                 android:tag="tv_speed_top">
@@ -134,7 +134,7 @@
 
                 <TextView
                     android:id="@+id/tv_MPBS_top_hide"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="bottom|right"
                     android:layout_marginEnd="@dimen/vs_2"
@@ -145,6 +145,25 @@
                     android:shadowDy="0"
                     android:shadowRadius="3"
                     android:text="Mbps"
+                    android:textColor="@color/color_FFFFFF"
+                    android:textSize="@dimen/ts_16"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_cache_top_hide"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|right"
+                    android:layout_marginEnd="@dimen/vs_2"
+                    android:layout_marginRight="@dimen/vs_2"
+                    android:ellipsize="none"
+                    android:gravity="right"
+                    android:maxLines="1"
+                    android:shadowColor="@color/color_FF000000"
+                    android:shadowDx="0"
+                    android:shadowDy="0"
+                    android:shadowRadius="3"
+                    android:tag="play_cache_top_hide"
                     android:textColor="@color/color_FFFFFF"
                     android:textSize="@dimen/ts_16"
                     android:textStyle="bold" />
@@ -235,7 +254,7 @@
 
                 <LinearLayout
                     android:id="@+id/tv_speed_top"
-                    android:layout_width="@dimen/vs_120"
+                    android:layout_width="wrap_content"
                     android:layout_height="@dimen/vs_40"
                     android:orientation="horizontal"
                     android:tag="tv_speed_top">
@@ -260,7 +279,7 @@
 
                     <TextView
                         android:id="@+id/tv_MPBS_top"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|right"
                         android:layout_marginEnd="@dimen/vs_2"
@@ -271,6 +290,25 @@
                         android:shadowDy="0"
                         android:shadowRadius="3"
                         android:text="Mbps"
+                        android:textColor="@color/color_FFFFFF"
+                        android:textSize="@dimen/ts_16"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_cache_top"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|right"
+                        android:layout_marginEnd="@dimen/vs_2"
+                        android:layout_marginRight="@dimen/vs_2"
+                        android:ellipsize="none"
+                        android:gravity="right"
+                        android:maxLines="1"
+                        android:shadowColor="@color/color_FF000000"
+                        android:shadowDx="0"
+                        android:shadowDy="0"
+                        android:shadowRadius="3"
+                        android:tag="play_cache_top"
                         android:textColor="@color/color_FFFFFF"
                         android:textSize="@dimen/ts_16"
                         android:textStyle="bold" />

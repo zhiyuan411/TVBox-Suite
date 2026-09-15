@@ -61,6 +61,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -78,27 +79,71 @@ public class SourceViewModel extends ViewModel {
     public MutableLiveData<JSONObject> playResult;
     private ExecutorService searchExecutorService;
     public Gson gson;
-    
-    // 共享的固定大小线程池，用于处理 Python 插件（类型为 3 的源）的搜索任务
-    private static final ExecutorService pythonExecutorService = Executors.newFixedThreadPool(5);
-    
+
+    // 等待“插件执行额度(信号量)”的超时时间，避免额度不足时长时间阻塞调度线程
+    private static final int SPIDER_PERMIT_WAIT_SECONDS = 20;
+
+    // 插件（类型为 3 的源）搜索任务的执行载体线程池。
+    // 注意：真正的并发上限由 SPIDER_SEARCH_SEMAPHORE 控制（可在设置页自定义），
+    //       本线程池只提供“可超时/可中断”的执行载体，容量取“调度并发”与“插件并发上限”的较大值，避免成为瓶颈。
+    private static volatile ExecutorService pythonExecutorService;
+    private static volatile int pythonExecutorSize = -1;
+    private static final Object pythonExecutorLock = new Object();
+
     /**
-     * 获取 Python 插件执行线程池
+     * 获取插件搜索执行线程池
      * @return 线程池实例
      */
     public static ExecutorService getPythonExecutorService() {
+        int size = Math.max(HawkConfig.getSearchThreadCount(), HawkConfig.getSearchSpiderConcurrency());
+        if (pythonExecutorService == null || size != pythonExecutorSize) {
+            synchronized (pythonExecutorLock) {
+                if (pythonExecutorService == null || size != pythonExecutorSize) {
+                    if (pythonExecutorService != null) {
+                        // 设置变更时优雅关闭旧池（不影响已在执行的任务），由调用方兜底处理拒绝提交的情况
+                        pythonExecutorService.shutdown();
+                    }
+                    pythonExecutorService = Executors.newFixedThreadPool(size);
+                    pythonExecutorSize = size;
+                }
+            }
+        }
         return pythonExecutorService;
     }
-    
+
     // 共享的固定大小线程池，用于处理 JavaScript 插件的执行
+    // ⚠️ 死代码（保留，请勿删除）：自 JsSpider 改为“每个插件实例独立的单线程执行器”以规避 QuickJS
+    //    Native 内存泄漏/崩溃后，该线程池已无任何调用方。为兼容可能存在的外部引用与历史逻辑而保留。
     private static final ExecutorService jsExecutorService = Executors.newFixedThreadPool(5);
-    
+
     /**
-     * 获取 JavaScript 插件执行线程池
+     * 获取 JavaScript 插件执行线程池（死代码，见字段注释）
      * @return 线程池实例
      */
     public static ExecutorService getJsExecutorService() {
         return jsExecutorService;
+    }
+
+    // 插件(type==3)子进程执行的共享信号量：
+    // 将“搜索调度并发”与“子进程插件执行并发”解耦——调度可以按需 fan-out，
+    // 但真正同时打到 :spider 子进程的插件数量由此信号量限制（每个并发 ≈ 一个存活的插件实例，
+    // 直接决定子进程内存峰值）。数量可在设置页自定义，默认 5（与旧版一致）。
+    private static volatile Semaphore spiderSearchSemaphore;
+    private static volatile int spiderSearchSemaphorePermits = -1;
+    private static final Object spiderSemaphoreLock = new Object();
+
+    private static Semaphore getSpiderSearchSemaphore() {
+        int permits = HawkConfig.getSearchSpiderConcurrency();
+        if (spiderSearchSemaphore == null || permits != spiderSearchSemaphorePermits) {
+            synchronized (spiderSemaphoreLock) {
+                if (spiderSearchSemaphore == null || permits != spiderSearchSemaphorePermits) {
+                    // 公平信号量，避免个别源长期得不到执行
+                    spiderSearchSemaphore = new Semaphore(permits, true);
+                    spiderSearchSemaphorePermits = permits;
+                }
+            }
+        }
+        return spiderSearchSemaphore;
     }
 
     private SpiderServiceClient mSpiderClient;
@@ -109,7 +154,7 @@ public class SourceViewModel extends ViewModel {
             searchExecutorService = null;
             JsLoader.stopAll();
         }
-        searchExecutorService = Executors.newFixedThreadPool(5);
+        searchExecutorService = Executors.newFixedThreadPool(HawkConfig.getSearchThreadCount());
     }
 
     public void execute(Runnable runnable) {
@@ -681,8 +726,32 @@ public class SourceViewModel extends ViewModel {
             }
             int type = sourceBean.getType();
             if (type == 3) {
+                // 解耦：调度线程先获取“插件执行额度”，拿到后才真正把任务投递到子进程执行。
+                // 未获取到额度（等待超时/被中断）时按无结果处理，保证计数与搜索流程正常推进。
+                Semaphore spiderPermit = getSpiderSearchSemaphore();
+                boolean permitAcquired = false;
                 try {
-                    Future<String> future = pythonExecutorService.submit(new Callable<String>() {
+                    permitAcquired = spiderPermit.tryAcquire(SPIDER_PERMIT_WAIT_SECONDS, TimeUnit.SECONDS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+                if (!permitAcquired) {
+                    Log.e("SourceViewModel", "等待插件执行额度超时: " + sourceBean.getKey());
+                    try {
+                        json(searchResult, "", sourceBean.getKey());
+                    } catch (Exception e) {
+                        Log.e("SourceViewModel", "处理搜索结果异常", e);
+                        try {
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                        } catch (Exception ex) {
+                            Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
+                        }
+                    }
+                    return;
+                }
+                try {
+                    // 此线程池仅提供“可超时/可中断”的执行载体，真正的并发上限由上面的信号量控制
+                    Future<String> future = getPythonExecutorService().submit(new Callable<String>() {
                         @Override
                         public String call() throws Exception {
                             try {
@@ -743,6 +812,9 @@ public class SourceViewModel extends ViewModel {
                             Log.e("SourceViewModel", "发布搜索结果事件异常", ex);
                         }
                     }
+                } finally {
+                    // 释放插件执行额度，让后续排队的源可以继续执行
+                    spiderPermit.release();
                 }
             } else if (type == 0 || type == 1) {
                 try {

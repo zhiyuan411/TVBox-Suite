@@ -151,6 +151,23 @@ public abstract class AbstractPlayer {
     public abstract long getTcpSpeed();
 
     /**
+     * 获取当前已缓存到内存中的数据大小(字节)，用于 UI 展示当前缓冲区占用。
+     * 各播放器实现中 IJK 支持读取该值，其余播放器返回 -1 表示不支持。
+     */
+    public long getBufferedBytes() {
+        return -1;
+    }
+
+    /**
+     * 获取当前视频流的平均码率(bit/s)，用于 UI 展示。
+     * 默认返回 -1 表示不支持；IJK 由已缓冲包的「字节/时长」推算（覆盖 HLS 多/单切片与变码率），
+     * Exo 取当前轨道的 Format.bitrate，其余播放器可保持默认。
+     */
+    public long getBitRate() {
+        return -1;
+    }
+
+    /**
      * 绑定VideoView
      */
     public void setPlayerEventListener(PlayerEventListener playerEventListener) {

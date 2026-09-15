@@ -239,6 +239,8 @@ public class VodController extends BaseController {
     LinearLayout mTopRoot;
     TextView mPlayTitle;
     TextView mPlayerResolution;
+    // 上次展示的"分辨率 x 码率"文本，文本无变化时跳过 setText
+    private String mLastPlayInfoText;
     LinearLayout mSpeedHidell;
     LinearLayout mSpeedll;
 
@@ -1291,6 +1293,37 @@ public class VodController extends BaseController {
 
     boolean isBottomVisible() {
         return mBottomRoot.getVisibility() == VISIBLE;
+    }
+
+    /**
+     * 每秒刷新左上角「分辨率 x 码率」。
+     * 复用 BaseController 的 1Hz 定时器（不新增定时器）；分辨率沿用原 tv_resolution，
+     * 码率仅在播放器能取到时以「 | x.xxMbps」追加其后，取不到则只显示分辨率。
+     * 文本无变化时跳过 setText，避免无意义重绘。
+     */
+    @Override
+    protected void updatePlayInfo() {
+        if (mPlayerResolution == null) return;
+        int[] size = mControlWrapper.getVideoSize();
+        if (size == null || size.length < 2 || size[0] <= 0 || size[1] <= 0) return;
+        StringBuilder sb = new StringBuilder();
+        sb.append(size[0]).append(" x ").append(size[1]);
+        long bitRate = mControlWrapper.getBitRate();
+        if (bitRate > 0) {
+            sb.append(" | ").append(formatBitRate(bitRate));
+        }
+        String text = sb.toString();
+        if (text.equals(mLastPlayInfoText)) return;
+        mLastPlayInfoText = text;
+        mPlayerResolution.setText(text);
+    }
+
+    private String formatBitRate(long bitRate) {
+        double mbps = bitRate / 1000.0 / 1000.0;
+        if (mbps >= 1000) {
+            return String.format(Locale.US, "%.2fGbps", mbps / 1000.0);
+        }
+        return String.format(Locale.US, "%.2fMbps", mbps);
     }
 
     void showBottom() {

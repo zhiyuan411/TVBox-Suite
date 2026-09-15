@@ -76,6 +76,14 @@
     <string name="mn_ijk_cache_play">IJK Cache</string>
     <string name="mn_reset">resetApp</string>
     <string name="mn_fastsearch">FastSearch</string>
+    <string name="mn_search_thread">Search Concurrency</string>
+    <string name="mn_spider_thread">Plugin Search Concurrency</string>
+    <string name="mn_search_performance">Search Performance</string>
+    <string name="dia_search_performance">Search Performance</string>
+    <string name="mn_max_requests">Max Requests (Total)</string>
+    <string name="mn_max_requests_per_host">Max Requests Per Host</string>
+    <string name="mn_batch_size">Fast Search Batch Size</string>
+    <string name="hint_restart_required">Restart required</string>
 
     // Settings Dialog Pop-Up //
     <string name="dia_source">Select Source</string>
@@ -231,7 +239,9 @@
 
     <string-array name="media_content_tag_IjkPlayer">
         <item>IjkMediaCodecMode</item>
-        <item>IjkCache</item>
+        <item>IjkCacheSize</item>
+        <item>IjkBufferSize</item>
+        <item>IjkStallTimeout</item>
     </string-array>
 
     <!--    用于展示名称-->
@@ -250,7 +260,9 @@
 
     <string-array name="media_content_IjkPlayer">
         <item>MediaCodecMode</item>
-        <item>Cache</item>
+        <item>CacheSize</item>
+        <item>BufferSize</item>
+        <item>StallTimeout</item>
     </string-array>
 
     <string-array name="media_content_ExoPlayer_renderer">

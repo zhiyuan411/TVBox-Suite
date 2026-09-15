@@ -64,7 +64,7 @@
 
             <LinearLayout
                 android:id="@+id/tv_speed_top"
-                android:layout_width="@dimen/vs_120"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_marginEnd="@dimen/vs_15"
                 android:layout_marginRight="@dimen/vs_15"
@@ -102,6 +102,42 @@
                     android:shadowDy="0"
                     android:shadowRadius="3"
                     android:text="Mbps"
+                    android:textColor="@color/color_FFFFFF"
+                    android:textSize="@dimen/ts_16"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_cache_top"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center"
+                    android:layout_marginStart="@dimen/vs_5"
+                    android:layout_marginLeft="@dimen/vs_5"
+                    android:ellipsize="none"
+                    android:gravity="right"
+                    android:maxLines="1"
+                    android:shadowColor="@color/color_FF000000"
+                    android:shadowDx="0"
+                    android:shadowDy="0"
+                    android:shadowRadius="3"
+                    android:tag="play_cache_top"
+                    android:textColor="@color/color_FFFFFF"
+                    android:textSize="@dimen/ts_22"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center"
+                    android:layout_marginStart="@dimen/vs_5"
+                    android:layout_marginLeft="@dimen/vs_5"
+                    android:gravity="right"
+                    android:shadowColor="@color/color_FF000000"
+                    android:shadowDx="0"
+                    android:shadowDy="0"
+                    android:shadowRadius="3"
+                    android:tag="play_cache_top_unit"
+                    android:text="MB"
                     android:textColor="@color/color_FFFFFF"
                     android:textSize="@dimen/ts_16"
                     android:textStyle="bold" />
@@ -198,7 +234,7 @@
             android:textColor="@color/color_FFFFFF_80"
             android:textStyle="bold"
             android:textSize="@dimen/ts_22" />
-            
+
         <TextView
             android:id="@+id/tv_MPBS_top"
             android:layout_width="wrap_content"
@@ -207,11 +243,25 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:paddingTop="@dimen/vs_5"
-            android:paddingRight="@dimen/vs_10"            
+            android:paddingRight="@dimen/vs_10"
             android:text="Mbps"
             android:textColor="@color/color_FFFFFF_80"
             android:textSize="@dimen/ts_22"
             android:textStyle="bold" />        
+
+        <TextView
+            android:id="@+id/tv_cache_topr"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingTop="@dimen/vs_5"
+            android:paddingRight="@dimen/vs_10"
+            android:tag="play_cache_topr"
+            android:textColor="@color/color_FFFFFF_80"
+            android:textStyle="bold"
+            android:textSize="@dimen/ts_22" />
 
         <TextView
             android:id="@+id/tv_seek_time"
@@ -285,7 +335,7 @@
 
             <LinearLayout
                 android:id="@+id/tv_speed_top_hide"
-                android:layout_width="@dimen/vs_120"
+                android:layout_width="wrap_content"
                 android:layout_height="@dimen/vs_40"
                 android:layout_marginEnd="@dimen/vs_15"
                 android:layout_marginRight="@dimen/vs_15"
@@ -323,6 +373,42 @@
                     android:shadowDy="0"
                     android:shadowRadius="3"
                     android:text="Mbps"
+                    android:textColor="@color/color_FFFFFF"
+                    android:textSize="@dimen/ts_16"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_cache_top_hide"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|right"
+                    android:layout_marginStart="@dimen/vs_5"
+                    android:layout_marginLeft="@dimen/vs_5"
+                    android:ellipsize="none"
+                    android:gravity="right"
+                    android:maxLines="1"
+                    android:shadowColor="@color/color_FF000000"
+                    android:shadowDx="0"
+                    android:shadowDy="0"
+                    android:shadowRadius="3"
+                    android:tag="play_cache_top_hide"
+                    android:textColor="@color/color_FFFFFF"
+                    android:textSize="@dimen/ts_22"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|right"
+                    android:layout_marginStart="@dimen/vs_5"
+                    android:layout_marginLeft="@dimen/vs_5"
+                    android:gravity="right"
+                    android:shadowColor="@color/color_FF000000"
+                    android:shadowDx="0"
+                    android:shadowDy="0"
+                    android:shadowRadius="3"
+                    android:tag="play_cache_top_hide_unit"
+                    android:text="MB"
                     android:textColor="@color/color_FFFFFF"
                     android:textSize="@dimen/ts_16"
                     android:textStyle="bold" />

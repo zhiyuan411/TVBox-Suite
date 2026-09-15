@@ -89,17 +89,117 @@ public class HawkUtils {
         ijkCodes.get(index).selected(true);
     }
 
-    public static boolean getIJKCache() {
-        return Hawk.get(HawkConfig.IJK_CACHE_PLAY, false);
+    /**
+     * IJK 磁盘缓存上限(MB)
+     * >0  启用磁盘缓存，并作为 cache_max_capacity
+     * <=0 关闭磁盘缓存
+     */
+    public static int getIJKCacheMaxSize() {
+        return Hawk.get(HawkConfig.IJK_CACHE_MAX_SIZE, 2048);
     }
 
-    public static void nextIJKCache() {
-        boolean ijkCache = getIJKCache();
-        Hawk.put(HawkConfig.IJK_CACHE_PLAY, !ijkCache);
+    public static void setIJKCacheMaxSize(int mb) {
+        Hawk.put(HawkConfig.IJK_CACHE_MAX_SIZE, mb);
     }
 
-    public static String getIJKCacheDesc() {
-        return getIJKCache() ? "开启" : "关闭";
+    public static void nextIJKCacheMaxSize() {
+        int[] opts = {0, 256, 512, 1024, 2048, 4096};
+        int current = getIJKCacheMaxSize();
+        int idx = 0;
+        for (int i = 0; i < opts.length; i++) {
+            if (opts[i] == current) {
+                idx = i;
+                break;
+            }
+        }
+        idx = (idx + 1) % opts.length;
+        setIJKCacheMaxSize(opts[idx]);
+    }
+
+    public static String getIJKCacheMaxSizeDesc() {
+        int v = getIJKCacheMaxSize();
+        if (v <= 0) return "关闭";
+        return v % 1024 == 0 ? (v / 1024 + "GB") : (v + "MB");
+    }
+
+    /**
+     * IJK 卡死看门狗阈值(秒)：播放中速度为 0 且位置停滞超过该值则自动重连。
+     * <5s 视为无效值，取默认 30s。
+     */
+    public static int getIJKStallTimeout() {
+        int v = Hawk.get(HawkConfig.IJK_STALL_TIMEOUT, 30);
+        return v < 5 ? 30 : v;
+    }
+
+    public static void setIJKStallTimeout(int seconds) {
+        Hawk.put(HawkConfig.IJK_STALL_TIMEOUT, seconds);
+    }
+
+    public static void nextIJKStallTimeout() {
+        int[] opts = {5, 10, 20, 30, 45, 60};
+        int current = getIJKStallTimeout();
+        int idx = 0;
+        for (int i = 0; i < opts.length; i++) {
+            if (opts[i] == current) {
+                idx = i;
+                break;
+            }
+        }
+        idx = (idx + 1) % opts.length;
+        setIJKStallTimeout(opts[idx]);
+    }
+
+    public static String getIJKStallTimeoutDesc() {
+        return getIJKStallTimeout() + "秒";
+    }
+
+    /**
+     * IJK native 中 max-buffer-size 允许的最大值(MB)。
+     * 实测本工程内置 libijkplayer.so 的 AVOption：min=0 / max=15728640 / default=15728640，
+     * 即默认已是最大值 15MB，>15MB 的设置会被 AVOption 直接拒绝（不会生效）。
+     */
+    public static final int IJK_MAX_BUFFER_LIMIT_MB = 15;
+
+    /**
+     * 无上限缓冲（infbuf=1）：关闭 IJK read 线程的"队列已满就停"限制，
+     * 会一直往内存里读到整片结束（或直播流被暂停观看前的全部数据），内存占用无上限。
+     */
+    public static final int IJK_MAX_BUFFER_UNLIMITED = -1;
+
+    /**
+     * IJK 内存缓冲上限(MB)
+     * >0  覆盖 tv.json 的 max-buffer-size（并钳制到 native 允许的 15MB）
+     * <=0 走 tv.json 的配置，缺失时使用 native 默认水位（15MB）
+     * -1  无上限（infbuf=1）
+     */
+    public static int getIJKMaxBufferSize() {
+        int v = Hawk.get(HawkConfig.IJK_MAX_BUFFER_SIZE, 0);
+        if (v == IJK_MAX_BUFFER_UNLIMITED) return IJK_MAX_BUFFER_UNLIMITED;
+        return v <= 0 ? 0 : Math.min(v, IJK_MAX_BUFFER_LIMIT_MB);
+    }
+
+    public static void setIJKMaxBufferSize(int mb) {
+        Hawk.put(HawkConfig.IJK_MAX_BUFFER_SIZE, mb);
+    }
+
+    public static void nextIJKMaxBufferSize() {
+        int[] opts = {0, 2, 4, 8, IJK_MAX_BUFFER_LIMIT_MB, IJK_MAX_BUFFER_UNLIMITED};
+        int current = getIJKMaxBufferSize();
+        int idx = 0;
+        for (int i = 0; i < opts.length; i++) {
+            if (opts[i] == current) {
+                idx = i;
+                break;
+            }
+        }
+        idx = (idx + 1) % opts.length;
+        setIJKMaxBufferSize(opts[idx]);
+    }
+
+    public static String getIJKMaxBufferSizeDesc() {
+        int v = getIJKMaxBufferSize();
+        if (v == IJK_MAX_BUFFER_UNLIMITED) return "无上限(慎用)";
+        return v <= 0 ? "默认(" + IJK_MAX_BUFFER_LIMIT_MB + "MB)" : (v + "MB");
     }
 
     /**

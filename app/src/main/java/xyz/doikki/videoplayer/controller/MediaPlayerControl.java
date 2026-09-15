@@ -36,6 +36,16 @@ public interface MediaPlayerControl {
 
     long getTcpSpeed();
 
+    /**
+     * 获取当前已缓存到内存中的数据大小(字节)，-1 表示不支持
+     */
+    long getBufferedBytes();
+
+    /**
+     * 获取当前视频流的平均码率(bit/s)，-1 表示不支持
+     */
+    long getBitRate();
+
     void replay(boolean resetPosition);
 
     void setMirrorRotation(boolean enable);

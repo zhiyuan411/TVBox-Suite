@@ -623,6 +623,22 @@ public class BaseVideoView<P extends AbstractPlayer> extends FrameLayout
     }
 
     /**
+     * 获取当前已缓存到内存中的数据大小(字节)
+     */
+    @Override
+    public long getBufferedBytes() {
+        return mMediaPlayer != null ? mMediaPlayer.getBufferedBytes() : -1;
+    }
+
+    /**
+     * 获取当前视频流的平均码率(bit/s)，-1 表示当前播放器不支持
+     */
+    @Override
+    public long getBitRate() {
+        return mMediaPlayer != null ? mMediaPlayer.getBitRate() : -1;
+    }
+
+    /**
      * 设置播放速度
      */
     @Override

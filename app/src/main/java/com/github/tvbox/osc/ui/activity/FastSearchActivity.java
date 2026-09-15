@@ -28,6 +28,7 @@ import com.github.tvbox.osc.ui.adapter.FastListAdapter;
 import com.github.tvbox.osc.ui.adapter.FastSearchAdapter;
 import com.github.tvbox.osc.ui.adapter.SearchWordAdapter;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
+import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.MemoryMonitor;
 import com.github.tvbox.osc.util.SearchHelper;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
@@ -125,7 +126,9 @@ public class FastSearchActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         if (pauseRunnable != null && pauseRunnable.size() > 0) {
-            searchExecutorService = Executors.newFixedThreadPool(5);
+            // 修复：点击结果进入详情时置为 true 的取消标志必须复位，否则续跑的任务体会因 !isSearchCancelled 为 false 而跳过搜索
+            isSearchCancelled = false;
+            searchExecutorService = Executors.newFixedThreadPool(HawkConfig.getSearchThreadCount());
             allRunCount.set(pauseRunnable.size());
             for (Runnable runnable : pauseRunnable) {
                 searchExecutorService.execute(runnable);
@@ -210,16 +213,11 @@ public class FastSearchActivity extends BaseActivity {
                 FastClickCheckUtil.check(view);
                 Movie.Video video = searchAdapter.getData().get(position);
                 if (video != null) {
-                    try {
-                        isSearchCancelled = true;
-                        if (searchExecutorService != null) {
-                            pauseRunnable = searchExecutorService.shutdownNow();
-                            searchExecutorService = null;
-                            JsLoader.stopAll();
-                        }
-                    } catch (Throwable th) {
-                        th.printStackTrace();
-                    }
+                    // 方案A：进入详情/播放时【不再暂停搜索】，让搜索在后台继续，保持"批次驱动链"完整。
+                    // 原因：此处若 shutdownNow()，① 正在执行的任务被中断且不会回到待办队列（永久丢失）；
+                    // ② 批次驱动线程 await 结束后发现 isSearchCancelled 会直接 return 而不启动下一批，
+                    // 导致批次链断裂——后续批次永不启动，返回后表现为"搜索结果停止增长"。
+                    // 取消标志仅在页面销毁(search/onDestroy)时使用，用于终止本轮搜索。
                     Bundle bundle = new Bundle();
                     bundle.putString("id", video.id);
                     bundle.putString("sourceKey", video.sourceKey);
@@ -237,16 +235,11 @@ public class FastSearchActivity extends BaseActivity {
                 FastClickCheckUtil.check(view);
                 Movie.Video video = searchAdapterFilter.getData().get(position);
                 if (video != null) {
-                    try {
-                        isSearchCancelled = true;
-                        if (searchExecutorService != null) {
-                            pauseRunnable = searchExecutorService.shutdownNow();
-                            searchExecutorService = null;
-                            JsLoader.stopAll();
-                        }
-                    } catch (Throwable th) {
-                        th.printStackTrace();
-                    }
+                    // 方案A：进入详情/播放时【不再暂停搜索】，让搜索在后台继续，保持"批次驱动链"完整。
+                    // 原因：此处若 shutdownNow()，① 正在执行的任务被中断且不会回到待办队列（永久丢失）；
+                    // ② 批次驱动线程 await 结束后发现 isSearchCancelled 会直接 return 而不启动下一批，
+                    // 导致批次链断裂——后续批次永不启动，返回后表现为"搜索结果停止增长"。
+                    // 取消标志仅在页面销毁(search/onDestroy)时使用，用于终止本轮搜索。
                     Bundle bundle = new Bundle();
                     bundle.putString("id", video.id);
                     bundle.putString("sourceKey", video.sourceKey);
@@ -366,10 +359,17 @@ public class FastSearchActivity extends BaseActivity {
         
         if (mSearchTitle != null) {
             finishedCount = searchAdapter.getData().size();
+            // 补充搜索进度：已处理源数/勾选的源总数。由每个源处理完成(results 事件)驱动更新，
+            // 粒度为"源"——比批次(50个/批)更细、比单次 URL 请求更粗，频率约等于结果回调，开销极小。
+            String progressSuffix = "";
+            if (totalSourceCount > 0 && !isSearchFinished) {
+                int done = Math.min(finishedSourceCount.get(), totalSourceCount);
+                progressSuffix = String.format(" (%d/%d)", done, totalSourceCount);
+            }
             if (isSearchFinished) {
                 mSearchTitle.setText(String.format(getString(R.string.fs_results) + " : %d (搜索完毕)", finishedCount));
             } else {
-                mSearchTitle.setText(String.format(getString(R.string.fs_results) + " : %d", finishedCount));
+                mSearchTitle.setText(String.format(getString(R.string.fs_results) + " : %d%s", finishedCount, progressSuffix));
             }
         }
         if (event.type == RefreshEvent.TYPE_SEARCH_RESULT) {
@@ -411,8 +411,12 @@ public class FastSearchActivity extends BaseActivity {
 
     private ExecutorService searchExecutorService = null;
     private final AtomicInteger allRunCount = new AtomicInteger(0);
-    private static final int BATCH_SIZE = 50;
+    // 批次大小由用户在「搜索性能」配置；每次搜索任务重新读取，无需重启。
+    private int BATCH_SIZE = HawkConfig.DEFAULT_SEARCH_BATCH_SIZE;
     private volatile boolean isSearchCancelled = false;
+    // 搜索进度：已处理完成的源数量 / 本次勾选的源总数（用于 UI 展示，事件驱动更新）
+    private final AtomicInteger finishedSourceCount = new AtomicInteger(0);
+    private volatile int totalSourceCount = 0;
 
     private void searchResult() {
         isSearchCancelled = false;
@@ -459,7 +463,11 @@ public class FastSearchActivity extends BaseActivity {
             return;
         }
         
-        searchExecutorService = Executors.newFixedThreadPool(5);
+        // 初始化搜索进度计数
+        totalSourceCount = siteKey.size();
+        finishedSourceCount.set(0);
+
+        searchExecutorService = Executors.newFixedThreadPool(HawkConfig.getSearchThreadCount());
         executeSearchBatches(siteKey, 0);
     }
     
@@ -492,11 +500,14 @@ public class FastSearchActivity extends BaseActivity {
             finishSearch();
             return;
         }
-        
-        final int batchEndIndex = Math.min(batchStartIndex + BATCH_SIZE, siteKey.size());
+        // 每次进入都重新读取用户最新配置，支持设置变更后下次搜索即时生效
+        BATCH_SIZE = HawkConfig.getSearchBatchSize();
+        final int batchSize = BATCH_SIZE;
+
+        final int batchEndIndex = Math.min(batchStartIndex + batchSize, siteKey.size());
         final List<String> batchKeys = siteKey.subList(batchStartIndex, batchEndIndex);
-        final int batchNumber = (batchStartIndex / BATCH_SIZE) + 1;
-        final int totalBatches = (siteKey.size() + BATCH_SIZE - 1) / BATCH_SIZE;
+        final int batchNumber = (batchStartIndex / batchSize) + 1;
+        final int totalBatches = (siteKey.size() + batchSize - 1) / batchSize;
         final int totalSources = siteKey.size();
         
         Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "/" + totalBatches + "] 开始，处理源：" + batchStartIndex + " - " + (batchEndIndex - 1) + "，共 " + batchKeys.size() + " 个源");
@@ -539,6 +550,8 @@ public class FastSearchActivity extends BaseActivity {
                             }
                         }
                     } finally {
+                        // 该源已处理完毕（成功/失败/无结果均计入），用于 UI 展示"已处理/总数"进度
+                        finishedSourceCount.incrementAndGet();
                         allRunCount.decrementAndGet();
                         batchLatch.countDown();
                     }
@@ -575,8 +588,8 @@ public class FastSearchActivity extends BaseActivity {
                     }
                     // ====================================
                     
-                    cleanupBetweenBatches();
-                    
+                    logBatchStats(batchNumber, totalBatches, batchErrorCount.get());
+
                     if (!isSearchCancelled) {
                         SystemClock.sleep(500);
                         executeSearchBatches(siteKey, batchEndIndex);
@@ -604,22 +617,20 @@ public class FastSearchActivity extends BaseActivity {
                 searchExecutorService = null;
             }
             JsLoader.stopAll();
-            System.gc();
-            
+
             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
         } catch (Throwable th) {
             Log.e("FastSearchActivity", "完成搜索异常", th);
         }
     }
     
-    private void cleanupBetweenBatches() {
-        try {
-            JsLoader.stopAll();
-            System.gc();
-            SystemClock.sleep(100);
-        } catch (Throwable th) {
-            Log.e("FastSearchActivity", "批次间清理异常", th);
-        }
+    /**
+     * 批次间只做统计输出，不再强制 GC / 清理。
+     * 历史背景：早期在批次间执行 JsLoader.stopAll() + System.gc() + sleep 是为了缓解 QuickJS Native 泄漏导致的 OOM，
+     * 但实测 GC 无法降低泄漏持续增长的内存占用；改为 :spider 独立子进程隔离崩溃后，该强制清理已无必要，故仅保留统计。
+     */
+    private void logBatchStats(int batchNumber, int totalBatches, int errorCount) {
+        Log.d("FastSearchActivity", "[快速搜索][批次 " + batchNumber + "/" + totalBatches + "] 批次统计，错误数：" + errorCount);
     }
     
     private void handleOOM(String threadName, String sourceKey, OutOfMemoryError e) {
